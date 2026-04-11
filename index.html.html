@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patrimonio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{--bg:#000;--s1:#0d0d0d;--s2:#161616;--s3:#1f1f1f;--border:#222;--border2:#333;--text:#fff;--text2:#a0a0a0;--text3:#555;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--orange:#fb923c;--purple:#c084fc;--yellow:#facc15;--teal:#2dd4bf;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:14px;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+aside{width:210px;min-width:210px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.brand{padding:1.5rem 1.3rem 1.1rem;border-bottom:1px solid var(--border);}
+.brand h1{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:-0.3px;}
+.brand p{font-size:0.7rem;color:var(--text3);margin-top:2px;}
+nav{padding:0.8rem 0.6rem;flex:1;}
+.nav-item{display:flex;align-items:center;gap:0.65rem;padding:0.5rem 0.75rem;border-radius:7px;cursor:pointer;font-size:0.81rem;color:var(--text2);transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--s2);color:var(--text);}
+.nav-item.active{background:var(--s3);color:var(--text);font-weight:500;}
+.aside-foot{padding:0.8rem 1.3rem;border-top:1px solid var(--border);font-size:0.68rem;color:var(--text3);}
+main{flex:1;overflow-y:auto;}
+.page{display:none;padding:1.6rem 1.8rem;min-height:100%;}
+.page.active{display:block;}
+.page-hd{margin-bottom:1.4rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.page-hd h2{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:600;}
+.page-hd p{color:var(--text2);font-size:0.8rem;margin-top:3px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:.9rem;margin-bottom:1.4rem;}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+.kpi-lbl{font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.35rem;}
+.kpi-val{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:600;}
+.kpi-sub{font-size:0.68rem;margin-top:3px;color:var(--text3);}
+.pos{color:var(--green);}.neg{color:var(--red);}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1.2rem;}
+.card-hd{padding:.8rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;}
+.card-hd h3{font-family:'Space Grotesk',sans-serif;font-size:.83rem;font-weight:600;}
+.card-bd{padding:1rem 1.1rem;}
+.charts-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.2rem;}
+canvas{max-width:100%;}
+table{width:100%;border-collapse:collapse;font-size:.81rem;}
+th{padding:.5rem .9rem;text-align:left;color:var(--text3);font-size:.67rem;text-transform:uppercase;letter-spacing:.8px;font-weight:500;border-bottom:1px solid var(--border);}
+td{padding:.6rem .9rem;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--s2);}
+.empty-row td{text-align:center;color:var(--text3);padding:2.5rem;}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:.67rem;font-weight:500;}
+.b-liq{background:#1a2e1a;color:var(--green);}
+.b-inv{background:#1a1a2e;color:var(--blue);}
+.b-cry{background:#2e1a0e;color:var(--orange);}
+.b-wal{background:#2a1a2e;color:var(--purple);}
+.b-tra{background:#0e2a2e;color:var(--teal);}
+.b-alt{background:#222;color:var(--text2);}
+.b-in{background:#1a2e1a;color:var(--green);}
+.b-out{background:#2e1a1a;color:var(--red);}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:.4rem .9rem;border-radius:7px;border:none;font-family:'Inter',sans-serif;font-size:.79rem;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-p{background:#fff;color:#000;}.btn-p:hover{background:#e8e8e8;}
+.btn-g{background:transparent;color:var(--text2);border:1px solid var(--border);}.btn-g:hover{border-color:var(--border2);color:var(--text);}
+.btn-d{background:transparent;color:var(--red);border:1px solid #2e1a1a;}.btn-d:hover{background:#2e1a1a;}
+.btn-teal{background:transparent;color:var(--teal);border:1px solid #0e2a2e;}.btn-teal:hover{background:#0e2a2e;}
+.btn-sm{padding:.26rem .6rem;font-size:.72rem;}
+.btn-sync{background:transparent;color:var(--green);border:1px solid #1a3a1a;font-size:.72rem;padding:.28rem .65rem;}.btn-sync:hover{background:#1a3a1a;}
+.filters{display:flex;gap:.55rem;margin-bottom:1rem;flex-wrap:wrap;}
+.filters input,.filters select{background:var(--s1);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.79rem;padding:.36rem .7rem;outline:none;transition:border-color .15s;}
+.filters input:focus,.filters select:focus{border-color:var(--border2);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.6rem;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:1.2rem;}
+.fg{margin-bottom:.85rem;}
+.fg label{display:block;font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.32rem;}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.82rem;padding:.52rem .72rem;outline:none;transition:border-color .15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--border2);}
+.fg textarea{resize:vertical;min-height:52px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.mf{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);}
+.period-row{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap;}
+.period-row span{font-size:.71rem;color:var(--text3);margin-right:.15rem;}
+.pb{padding:.25rem .65rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:.71rem;cursor:pointer;transition:all .15s;}
+.pb.active,.pb:hover{background:var(--s3);color:var(--text);border-color:var(--border2);}
+.at-wrap{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:.9rem;}
+.at{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;border:1px solid transparent;font-size:.71rem;cursor:pointer;transition:all .15s;}
+.at.on{border-color:var(--border2);}.at.off{opacity:.32;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.tip{margin-top:.7rem;padding:.8rem .95rem;background:var(--s1);border:1px solid var(--border);border-radius:9px;font-size:.74rem;color:var(--text3);}
+.tip strong{color:var(--text2);}
+.chart-tabs{display:flex;gap:.3rem;}
+.ct{padding:.22rem .6rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:.68rem;cursor:pointer;transition:all .15s;}
+.ct.active{background:var(--s3);color:var(--text);border-color:var(--border2);}
+.b-tra-row td{background:#0a1f1f!important;}
+
+/* Sync status bar */
+.sync-bar{display:flex;align-items:center;gap:.5rem;padding:.4rem .8rem;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:.72rem;margin-bottom:1rem;}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.err{background:var(--red);}
+.sync-dot.loading{background:var(--yellow);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sync-txt{color:var(--text2);}
+.sync-time{color:var(--text3);margin-left:auto;}
+
+/* Setup modal */
+.setup-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:1rem;}
+.setup-box p{font-size:.79rem;color:var(--text2);line-height:1.6;}
+.setup-box code{background:var(--s3);padding:1px 5px;border-radius:3px;font-size:.75rem;color:var(--teal);}
+
+@media(max-width:720px){
+  .shell{flex-direction:column;height:auto;}
+  aside{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
+  nav{display:flex;flex-wrap:wrap;gap:3px;padding:.5rem;}
+  .nav-item{width:auto;padding:.36rem .62rem;font-size:.75rem;}
+  main{overflow-y:unset;}
+  .page{padding:.9rem;}
+  .charts-2{grid-template-columns:1fr;}
+  .aside-foot{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><h1>◈ Patrimonio</h1><p>Gestione personale</p></div>
+  <nav>
+    <button class="nav-item active" onclick="goTo('dashboard',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+    </button>
+    <button class="nav-item" onclick="goTo('asset',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Asset
+    </button>
+    <button class="nav-item" onclick="goTo('movimenti',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Movimenti
+    </button>
+    <button class="nav-item" onclick="goTo('andamento',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Andamento
+    </button>
+    <button class="nav-item" onclick="goTo('impostazioni',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Impostazioni
+    </button>
+  </nav>
+  <div class="aside-foot">
+    <div style="margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem">
+      <span id="aside-sync-dot" class="sync-dot ok"></span>
+      <span id="aside-sync-txt" style="color:var(--text2);font-size:.69rem">Google Sheets</span>
+    </div>
+    <button class="btn btn-sync" style="width:100%;justify-content:center;margin-bottom:.4rem" onclick="syncNow()">↺ Sincronizza ora</button>
+    <button class="btn btn-g" style="width:100%;margin-bottom:.4rem;justify-content:center;font-size:.72rem" onclick="esporta()">⬇ Backup JSON</button>
+    <label class="btn btn-g" style="width:100%;justify-content:center;cursor:pointer;font-size:.72rem">
+      ⬆ Ripristina JSON
+      <input type="file" accept=".json" onchange="importa(event)" style="display:none">
+    </label>
+  </div>
+</aside>
+<main>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-hd"><div><h2>Dashboard</h2><p>Panoramica del patrimonio</p></div>
+    <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza</button>
+  </div>
+  <div id="sync-bar-dash"></div>
+  <div class="kpi-row" id="kpi-row"></div>
+  <div class="charts-2">
+    <div class="card"><div class="card-hd"><h3>Allocazione asset</h3></div><div class="card-bd"><canvas id="cAlloc" height="220"></canvas></div></div>
+    <div class="card"><div class="card-hd"><h3>Entrate vs Uscite — mese corrente</h3></div><div class="card-bd"><canvas id="cInOut" height="220"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-hd"><h3>Uscite per categoria — mese corrente</h3></div><div class="card-bd"><canvas id="cCat" height="175"></canvas></div></div>
+</div>
+
+<!-- ASSET -->
+<div class="page" id="page-asset">
+  <div class="page-hd">
+    <div><h2>Asset</h2><p>Conti, investimenti, crypto, wallet digitali</p></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-teal" onclick="openSnap()">📸 Aggiorna valori</button>
+      <button class="btn btn-p" onclick="openAsset()">+ Aggiungi asset</button>
+    </div>
+  </div>
+  <div class="card">
+    <table><thead><tr><th>Nome / Istituto</th><th>Tipo</th><th>Valuta</th><th style="text-align:right">Importo</th><th style="text-align:right">EUR</th><th>Ultimo aggiornamento</th><th>Note</th><th></th></tr></thead>
+    <tbody id="asset-tb"></tbody></table>
+  </div>
+</div>
+
+<!-- MOVIMENTI -->
+<div class="page" id="page-movimenti">
+  <div class="page-hd">
+    <div><h2>Movimenti</h2><p>Entrate, uscite e trasferimenti tra conti</p></div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn btn-teal" onclick="openTrasf()">⇄ Trasferimento</button>
+      <button class="btn btn-p" onclick="openMov()">+ Aggiungi</button>
+    </div>
+  </div>
+  <div class="filters">
+    <select id="f-tipo" onchange="renderMov()"><option value="">Tutti</option><option value="entrata">Entrate</option><option value="uscita">Uscite</option><option value="trasferimento">Trasferimenti</option></select>
+    <select id="f-cat" onchange="renderMov()"><option value="">Tutte le categorie</option></select>
+    <input type="month" id="f-mese" onchange="renderMov()">
+  </div>
+  <div class="card">
+    <table><thead><tr><th>Data</th><th>Descrizione</th><th>Tipo</th><th>Categoria</th><th>Asset</th><th style="text-align:right">EUR</th><th></th></tr></thead>
+    <tbody id="mov-tb"></tbody></table>
+  </div>
+</div>
+
+<!-- ANDAMENTO -->
+<div class="page" id="page-andamento">
+  <div class="page-hd"><div><h2>Andamento nel tempo</h2><p>Storico snapshot patrimonio e asset</p></div></div>
+  <div class="card" style="margin-bottom:1.2rem">
+    <div class="card-hd">
+      <h3>Patrimonio netto totale</h3>
+      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <div class="chart-tabs">
+          <button class="ct active" onclick="setChartType('totale','line',this)">Linea</button>
+          <button class="ct" onclick="setChartType('totale','area',this)">Area</button>
+          <button class="ct" onclick="setChartType('totale','bar',this)">Barre</button>
+        </div>
+        <div class="period-row">
+          <span>Periodo:</span>
+          <button class="pb active" onclick="setPer(3,this)">3M</button>
+          <button class="pb" onclick="setPer(6,this)">6M</button>
+          <button class="pb" onclick="setPer(12,this)">1A</button>
+          <button class="pb" onclick="setPer(0,this)">Tutto</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-bd"><canvas id="cTotale" height="175"></canvas></div>
+  </div>
+  <div class="charts-2">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-hd"><h3>Area per asset</h3>
+        <div class="chart-tabs">
+          <button class="ct active" onclick="setChartType('area','stacked',this)">Impilato</button>
+          <button class="ct" onclick="setChartType('area','stream',this)">Libero</button>
+        </div>
+      </div>
+      <div class="card-bd"><canvas id="cArea" height="200"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-hd"><h3>Distribuzione per tipo</h3>
+        <div class="chart-tabs">
+          <button class="ct active" onclick="setChartType('dist','doughnut',this)">Torta</button>
+          <button class="ct" onclick="setChartType('dist','polarArea',this)">Polare</button>
+          <button class="ct" onclick="setChartType('dist','bar',this)">Barre</button>
+        </div>
+      </div>
+      <div class="card-bd"><canvas id="cDist" height="200"></canvas></div>
+    </div>
+  </div>
+  <div style="margin-bottom:1.2rem"></div>
+  <div class="card">
+    <div class="card-hd"><h3>Andamento per asset</h3>
+      <div class="chart-tabs">
+        <button class="ct active" onclick="setChartType('parz','line',this)">Valore €</button>
+        <button class="ct" onclick="setChartType('parz','perf',this)">Performance %</button>
+      </div>
+    </div>
+    <div class="card-bd">
+      <div class="at-wrap" id="at-wrap"></div>
+      <canvas id="cParz" height="195"></canvas>
+    </div>
+  </div>
+  <div class="tip">💡 <strong>Come funziona:</strong> usa <strong>📸 Aggiorna valori</strong> nella sezione Asset ogni settimana per registrare lo snapshot. I grafici mostrano l'evoluzione storica.</div>
+</div>
+
+<!-- IMPOSTAZIONI -->
+<div class="page" id="page-impostazioni">
+  <div class="page-hd"><div><h2>Impostazioni</h2><p>Configurazione Google Sheets</p></div></div>
+
+  <div class="card">
+    <div class="card-hd"><h3>🔗 Connessione Google Sheets</h3></div>
+    <div class="card-bd">
+      <div class="setup-box">
+        <p>Incolla qui sotto l'URL dello script Google Apps Script che hai creato. Trovi il link nella pagina di distribuzione dello script (quello che inizia con <code>https://script.google.com/macros/s/...</code>).</p>
+      </div>
+      <div class="fg">
+        <label>URL Google Apps Script</label>
+        <input id="cfg-url" placeholder="https://script.google.com/macros/s/..." style="font-size:.75rem">
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="salvaConfig()">Salva configurazione</button>
+        <button class="btn btn-teal" onclick="testConnesione()">🔌 Testa connessione</button>
+        <div id="test-result" style="font-size:.77rem;color:var(--text3)"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h3>☁️ Stato sincronizzazione</h3></div>
+    <div class="card-bd">
+      <div id="sync-status-box" style="font-size:.82rem;color:var(--text2);line-height:1.8">
+        Caricamento...
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+        <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza ora</button>
+        <button class="btn btn-g" onclick="pushToSheets()">⬆ Carica su Sheets</button>
+        <button class="btn btn-g" onclick="pullFromSheets()">⬇ Scarica da Sheets</button>
+      </div>
+      <div style="margin-top:.8rem;font-size:.71rem;color:var(--text3)">
+        <strong style="color:var(--text2)">⬆ Carica:</strong> sovrascrive Google Sheets con i dati locali<br>
+        <strong style="color:var(--text2)">⬇ Scarica:</strong> sovrascrive i dati locali con Google Sheets<br>
+        <strong style="color:var(--text2)">↺ Sincronizza:</strong> carica automaticamente ogni modifica
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h3>📱 Come usare su iPhone</h3></div>
+    <div class="card-bd">
+      <div class="setup-box">
+        <p>1. Manda questo file HTML a te stesso via email o AirDrop<br>
+        2. Su iPhone, apri il file con <strong>Safari</strong><br>
+        3. Tocca il tasto <strong>Condividi</strong> (rettangolo con freccia su)<br>
+        4. Seleziona <strong>"Aggiungi alla schermata Home"</strong><br>
+        5. Diventa un'icona come una vera app!<br><br>
+        I dati si sincronizzano tramite Google Sheets — quello che inserisci sul PC appare sull'iPhone e viceversa.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODAL ASSET -->
+<div class="overlay" id="mo-asset">
+  <div class="modal">
+    <h3 id="ma-title">Nuovo Asset</h3>
+    <div class="fg"><label>Nome / Istituto</label><input id="a-nome" placeholder="es. Intesa Sanpaolo, Binance, PayPal, Fineco…"></div>
+    <div class="fr">
+      <div class="fg"><label>Macro tipologia</label>
+        <select id="a-tipo">
+          <option value="liquidita">💰 Liquidità</option>
+          <option value="investimenti">📈 Investimenti</option>
+          <option value="crypto">₿ Crypto</option>
+          <option value="wallet">💳 Wallet digitale</option>
+          <option value="altro">📦 Altro</option>
+        </select>
+      </div>
+      <div class="fg"><label>Valuta</label>
+        <select id="a-val">
+          <option value="EUR">EUR €</option><option value="USD">USD $</option>
+          <option value="BTC">BTC ₿</option><option value="ETH">ETH Ξ</option>
+          <option value="USDT">USDT</option><option value="GBP">GBP £</option><option value="CHF">CHF</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Importo (valuta scelta)</label><input type="number" id="a-imp" placeholder="0.00" step="0.01"></div>
+      <div class="fg"><label>Controvalore EUR</label><input type="number" id="a-eur" placeholder="0.00" step="0.01"></div>
+    </div>
+    <div class="fg"><label>Note (opzionale)</label><textarea id="a-note" placeholder="Conto corrente principale, portafoglio ETF…"></textarea></div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-asset')">Annulla</button>
+      <button class="btn btn-p" onclick="saveAsset()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SNAPSHOT -->
+<div class="overlay" id="mo-snap">
+  <div class="modal" style="width:520px">
+    <h3>📸 Aggiorna valori asset</h3>
+    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1.1rem">Inserisci i valori aggiornati in EUR. Solo gli asset modificati verranno snappati.</p>
+    <div class="fg"><label>Data snapshot</label><input type="date" id="snap-data"></div>
+    <div id="snap-list" style="display:flex;flex-direction:column;gap:.6rem;max-height:320px;overflow-y:auto;padding-right:.3rem;margin-bottom:.8rem"></div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-snap')">Annulla</button>
+      <button class="btn btn-p" onclick="saveSnap()">Salva snapshot</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMENTO -->
+<div class="overlay" id="mo-mov">
+  <div class="modal">
+    <h3 id="mm-title">Nuovo movimento</h3>
+    <div class="fr">
+      <div class="fg"><label>Data</label><input type="date" id="m-data"></div>
+      <div class="fg"><label>Tipo</label>
+        <select id="m-tipo" onchange="updCats()">
+          <option value="entrata">↑ Entrata</option>
+          <option value="uscita">↓ Uscita</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Descrizione</label><input id="m-desc" placeholder="es. Stipendio, Spesa Esselunga…"></div>
+    <div class="fr">
+      <div class="fg"><label>Categoria</label><select id="m-cat"></select></div>
+      <div class="fg"><label>Asset collegato</label><select id="m-asset" onchange="onMovAssetChange()"><option value="">— nessuno —</option></select></div>
+    </div>
+    <div class="fg"><label>Importo EUR</label><input type="number" id="m-imp" placeholder="0.00" step="0.01" min="0"></div>
+    <div class="fg" id="fg-new-bal" style="display:none">
+      <label>Nuovo saldo asset (opz.)</label>
+      <input type="number" id="m-newbal" placeholder="Lascia vuoto = calcolo automatico" step="0.01">
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="m-bal-hint"></div>
+    </div>
+    <div class="fg"><label>Note (opzionale)</label><input id="m-note" placeholder=""></div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-mov')">Annulla</button>
+      <button class="btn btn-p" onclick="saveMov()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TRASFERIMENTO -->
+<div class="overlay" id="mo-trasf">
+  <div class="modal">
+    <h3>⇄ Trasferimento tra conti</h3>
+    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1rem">Sposta denaro da un asset all'altro.</p>
+    <div class="fg"><label>Data</label><input type="date" id="tr-data"></div>
+    <div class="fg"><label>Descrizione (opzionale)</label><input id="tr-desc" placeholder="es. Ricarica Revolut…"></div>
+    <div class="fr">
+      <div class="fg"><label>📤 Da (conto origine)</label><select id="tr-from"><option value="">— seleziona —</option></select></div>
+      <div class="fg"><label>📥 A (conto destinazione)</label><select id="tr-to"><option value="">— seleziona —</option></select></div>
+    </div>
+    <div class="fg"><label>Importo EUR</label><input type="number" id="tr-imp" placeholder="0.00" step="0.01" min="0" oninput="updTrasfPreview()"></div>
+    <div id="tr-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.8rem;font-size:.77rem;color:var(--text2);margin-bottom:.5rem"></div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-trasf')">Annulla</button>
+      <button class="btn btn-p" onclick="saveTrasf()">Esegui trasferimento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const CFG_KEY = 'pat_config';
+const DATA_KEY = 'pat4';
+
+function getCfg(){
+  try{ return JSON.parse(localStorage.getItem(CFG_KEY))||{}; }catch(e){ return {}; }
+}
+function saveCfg(cfg){ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+function getScriptUrl(){ return getCfg().scriptUrl||''; }
+
+// ── SYNC STATUS ──
+let lastSync = null;
+let syncOk = false;
+
+function setSyncStatus(ok, msg){
+  syncOk = ok;
+  lastSync = new Date();
+  const dot = document.getElementById('aside-sync-dot');
+  const txt = document.getElementById('aside-sync-txt');
+  if(dot){ dot.className = 'sync-dot '+(ok?'ok':'err'); }
+  if(txt){ txt.textContent = ok ? 'Sincronizzato' : 'Offline'; }
+  updateSettingsStatus();
+}
+
+function setSyncLoading(){
+  const dot = document.getElementById('aside-sync-dot');
+  if(dot){ dot.className = 'sync-dot loading'; }
+  const txt = document.getElementById('aside-sync-txt');
+  if(txt){ txt.textContent = 'Sincronizzazione...'; }
+}
+
+function updateSettingsStatus(){
+  const box = document.getElementById('sync-status-box');
+  if(!box) return;
+  const url = getScriptUrl();
+  const timeStr = lastSync ? lastSync.toLocaleTimeString('it-IT') : '—';
+  box.innerHTML = `
+    <div>URL Script: <span style="color:${url?'var(--green)':'var(--red)'};">${url ? '✓ Configurato' : '✗ Non configurato'}</span></div>
+    <div>Stato: <span style="color:${syncOk?'var(--green)':'var(--red)'};">${syncOk ? '✓ Connesso a Google Sheets' : '✗ Dati salvati solo in locale'}</span></div>
+    <div>Ultima sincronizzazione: <span style="color:var(--text3)">${timeStr}</span></div>
+    <div>Record in memoria: <span style="color:var(--text3)">${db.assets.length} asset, ${db.movimenti.length} movimenti, ${db.snapshots.length} snapshot</span></div>`;
+}
+
+// ── GOOGLE SHEETS API ──
+async function pushToSheets(){
+  const url = getScriptUrl();
+  if(!url){ alert('Configura prima l\'URL dello script nelle Impostazioni.'); return; }
+  setSyncLoading();
+  try{
+    await fetch(url, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(db)
+    });
+    setSyncStatus(true, 'OK');
+    return true;
+  }catch(e){
+    setSyncStatus(false, e.message);
+    return false;
+  }
+}
+
+async function pullFromSheets(){
+  const url = getScriptUrl();
+  if(!url){ return false; }
+  setSyncLoading();
+  try{
+    const resp = await fetch(url+'?action=get', {method:'GET', mode:'cors'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    if(data && data.assets){
+      db = data;
+      if(!db.snapshots) db.snapshots = [];
+      saveLocal();
+      renderAll();
+      setSyncStatus(true, 'OK');
+      return true;
+    }
+    setSyncStatus(false, 'Dati non validi');
+    return false;
+  }catch(e){
+    // con no-cors non possiamo leggere la risposta, usiamo solo push
+    setSyncStatus(false, 'Solo push disponibile');
+    return false;
+  }
+}
+
+async function syncNow(){
+  // Prima prova a scaricare (pull), se fallisce usa dati locali e fa push
+  const url = getScriptUrl();
+  if(!url){
+    setSyncStatus(false, 'URL non configurato');
+    return;
+  }
+  // Tenta pull
+  const pulled = await pullFromSheets();
+  if(!pulled){
+    // Fallback: push dei dati locali
+    await pushToSheets();
+  }
+}
+
+async function testConnesione(){
+  const url = document.getElementById('cfg-url').value.trim();
+  const res = document.getElementById('test-result');
+  if(!url){ res.textContent = '⚠ Inserisci prima un URL'; res.style.color='var(--yellow)'; return; }
+  res.textContent = '⏳ Test in corso...'; res.style.color='var(--text3)';
+  try{
+    await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true})});
+    res.textContent = '✓ Connessione riuscita! Salva la configurazione.';
+    res.style.color = 'var(--green)';
+  }catch(e){
+    res.textContent = '✗ Errore: '+e.message;
+    res.style.color = 'var(--red)';
+  }
+}
+
+function salvaConfig(){
+  const url = document.getElementById('cfg-url').value.trim();
+  if(!url){ alert('Inserisci un URL valido.'); return; }
+  const cfg = getCfg();
+  cfg.scriptUrl = url;
+  saveCfg(cfg);
+  alert('✓ Configurazione salvata! Ora clicca "Sincronizza ora" per testare.');
+  updateSettingsStatus();
+}
+
+// ── CONSTANTS ──
+const CAT_IN  = ['Stipendio','Freelance / Consulenza','Affitto attivo','Dividendi / Cedole','Vendita asset','Rimborso','Regalo / Eredità','Rendita','Altro reddito'];
+const CAT_OUT = ['Supermercato','Ristorante / Bar','Cibo e Delivery','Affitto / Mutuo','Bollette (luce, gas, acqua)','Internet / Telefono','Salute / Farmacia','Benessere / Sport / Palestra','Abbigliamento','Trasporti / Carburante / Parcheggio','Viaggi / Vacanze','Tecnologia','Abbonamenti streaming','Istruzione / Libri / Corsi','Assicurazioni','Tasse / Imposte','Risparmio / Investimento','Regali','Varie / Altro'];
+const TLABELS = {liquidita:'💰 Liquidità',investimenti:'📈 Investimenti',crypto:'₿ Crypto',wallet:'💳 Wallet',altro:'📦 Altro'};
+const TBADGE  = {liquidita:'b-liq',investimenti:'b-inv',crypto:'b-cry',wallet:'b-wal',altro:'b-alt'};
+const TCOLORS = {liquidita:'#4ade80',investimenti:'#60a5fa',crypto:'#fb923c',wallet:'#c084fc',altro:'#a1a1aa'};
+const ACOLORS = ['#60a5fa','#4ade80','#fb923c','#c084fc','#facc15','#f87171','#34d399','#a78bfa','#38bdf8','#e879f9'];
+
+// ── STATE ──
+let db = {assets:[],movimenti:[],snapshots:[]};
+let eAsset=null, eMov=null;
+let period=3;
+let toggles={};
+let charts={};
+let chartTypes={totale:'line', area:'stacked', dist:'doughnut', parz:'line'};
+
+function saveLocal(){ localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
+
+// Salva localmente E poi manda a Sheets
+async function save(){
+  saveLocal();
+  await pushToSheets();
+}
+
+function load(){
+  try{
+    let r = localStorage.getItem(DATA_KEY);
+    if(!r) r = localStorage.getItem('pat3');
+    if(r) db = JSON.parse(r);
+    if(!db.snapshots) db.snapshots = [];
+  }catch(e){}
+}
+
+function renderAll(){
+  renderDash();
+  renderAsset();
+  renderMov();
+}
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function thisMonth(){ const n=new Date(); return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; }
+function esc(s){ return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fEUR(n){ return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0); }
+function fNum(n){ return(n||0).toLocaleString('it-IT',{maximumFractionDigits:4}); }
+function destroyC(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+// ── NAV ──
+function goTo(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='dashboard') renderDash();
+  if(name==='asset') renderAsset();
+  if(name==='movimenti') renderMov();
+  if(name==='andamento') renderAnd();
+  if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
+}
+
+// ── MODALS ──
+function closeM(id){ document.getElementById(id).classList.remove('open'); eAsset=null; eMov=null; }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+// ── ASSET MODAL ──
+function openAsset(id){
+  eAsset=id||null;
+  const a=id?db.assets.find(x=>x.id===id):null;
+  document.getElementById('ma-title').textContent=a?'Modifica Asset':'Nuovo Asset';
+  document.getElementById('a-nome').value=a?.nome||'';
+  document.getElementById('a-tipo').value=a?.tipo||'liquidita';
+  document.getElementById('a-val').value=a?.valuta||'EUR';
+  document.getElementById('a-imp').value=a?.importo||'';
+  document.getElementById('a-eur').value=a?.eur||'';
+  document.getElementById('a-note').value=a?.note||'';
+  document.getElementById('mo-asset').classList.add('open');
+}
+function saveAsset(){
+  const nome=document.getElementById('a-nome').value.trim();
+  if(!nome)return alert('Inserisci un nome.');
+  const importo=parseFloat(document.getElementById('a-imp').value)||0;
+  const eur=parseFloat(document.getElementById('a-eur').value)||0;
+  const t=today();
+  if(eAsset){
+    const a=db.assets.find(x=>x.id===eAsset);
+    const prev=a.eur; a.nome=nome; a.tipo=document.getElementById('a-tipo').value;
+    a.valuta=document.getElementById('a-val').value; a.importo=importo; a.eur=eur;
+    a.note=document.getElementById('a-note').value.trim(); a.aggiornato=t;
+    if(prev!==eur) snap(a.id,t,eur);
+  }else{
+    const a={id:uid(),nome,tipo:document.getElementById('a-tipo').value,
+      valuta:document.getElementById('a-val').value,importo,eur,
+      note:document.getElementById('a-note').value.trim(),creato:t,aggiornato:t};
+    db.assets.push(a); snap(a.id,t,eur);
+  }
+  save(); closeM('mo-asset'); renderAsset(); renderDash();
+}
+function delAsset(id){
+  if(!confirm('Eliminare questo asset?'))return;
+  db.assets=db.assets.filter(a=>a.id!==id);
+  db.snapshots=db.snapshots.filter(s=>s.assetId!==id);
+  save(); renderAsset(); renderDash();
+}
+
+// ── SNAPSHOT ──
+function openSnap(){
+  document.getElementById('snap-data').value=today();
+  const list=document.getElementById('snap-list');
+  list.innerHTML=db.assets.map(a=>`
+    <div style="display:flex;align-items:center;gap:.7rem;padding:.55rem .7rem;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.8rem;font-weight:500">${esc(a.nome)}</div>
+        <div style="font-size:.69rem;color:var(--text3)">${TLABELS[a.tipo]} · attuale: <strong style="color:var(--text2)">${fEUR(a.eur)}</strong></div>
+      </div>
+      <input type="number" id="sn-${a.id}" placeholder="${a.eur}" step="0.01"
+        style="width:115px;background:var(--s1);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82rem;padding:.38rem .6rem;outline:none;text-align:right">
+    </div>`).join('');
+  document.getElementById('mo-snap').classList.add('open');
+}
+function saveSnap(){
+  const date=document.getElementById('snap-data').value||today();
+  let changed=0;
+  db.assets.forEach(a=>{
+    const inp=document.getElementById('sn-'+a.id);
+    const val=parseFloat(inp.value);
+    if(!isNaN(val) && val!==a.eur){ a.eur=val; a.aggiornato=date; snap(a.id,date,val); changed++; }
+  });
+  if(!changed){ alert('Nessun valore modificato.'); return; }
+  save(); closeM('mo-snap'); renderAsset(); renderDash();
+  alert(`✓ Snapshot salvato per ${changed} asset in data ${date}.`);
+}
+
+// ── MOV MODAL ──
+function openMov(id){
+  eMov=id||null;
+  const m=id?db.movimenti.find(x=>x.id===id):null;
+  document.getElementById('mm-title').textContent=m?'Modifica movimento':'Nuovo movimento';
+  document.getElementById('m-data').value=m?.data||today();
+  document.getElementById('m-tipo').value=m?.tipo||'uscita';
+  document.getElementById('m-desc').value=m?.desc||'';
+  document.getElementById('m-imp').value=m?.importo||'';
+  document.getElementById('m-note').value=m?.note||'';
+  document.getElementById('m-newbal').value='';
+  updCats(m?.cat); updAssets(m?.assetId); onMovAssetChange();
+  document.getElementById('mo-mov').classList.add('open');
+}
+function onMovAssetChange(){
+  const assetId=document.getElementById('m-asset').value;
+  const a=db.assets.find(x=>x.id===assetId);
+  const fg=document.getElementById('fg-new-bal');
+  const hint=document.getElementById('m-bal-hint');
+  if(a){ fg.style.display='block'; hint.textContent=`Saldo attuale: ${fEUR(a.eur)} — lascia vuoto per aggiornamento automatico`; }
+  else { fg.style.display='none'; }
+}
+function updCats(sel){
+  const t=document.getElementById('m-tipo').value;
+  const cats=t==='entrata'?CAT_IN:CAT_OUT;
+  document.getElementById('m-cat').innerHTML=cats.map(c=>`<option value="${c}"${c===sel?'selected':''}>${c}</option>`).join('');
+}
+function updAssets(sel){
+  document.getElementById('m-asset').innerHTML='<option value="">— nessuno —</option>'+
+    db.assets.map(a=>`<option value="${a.id}"${a.id===sel?'selected':''}>${esc(a.nome)}</option>`).join('');
+}
+function saveMov(){
+  const desc=document.getElementById('m-desc').value.trim();
+  const importo=parseFloat(document.getElementById('m-imp').value)||0;
+  if(!desc)return alert('Inserisci una descrizione.');
+  if(!importo)return alert('Inserisci un importo.');
+  const assetId=document.getElementById('m-asset').value;
+  const tipo=document.getElementById('m-tipo').value;
+  const data=document.getElementById('m-data').value;
+  if(eMov){
+    const old=db.movimenti.find(x=>x.id===eMov);
+    if(old.assetId){ const oa=db.assets.find(x=>x.id===old.assetId); if(oa){ if(old.tipo==='entrata') oa.eur-=old.importo; else oa.eur+=old.importo; } }
+    old.data=data; old.tipo=tipo; old.desc=desc; old.cat=document.getElementById('m-cat').value;
+    old.assetId=assetId; old.importo=importo; old.note=document.getElementById('m-note').value.trim();
+  }else{
+    db.movimenti.push({id:uid(),data,tipo,desc,cat:document.getElementById('m-cat').value,assetId,importo,note:document.getElementById('m-note').value.trim()});
+  }
+  if(assetId){
+    const a=db.assets.find(x=>x.id===assetId);
+    if(a){
+      const newBalInput=parseFloat(document.getElementById('m-newbal').value);
+      if(!isNaN(newBalInput)){ a.eur=newBalInput; }
+      else { if(tipo==='entrata') a.eur+=importo; else a.eur-=importo; }
+      a.aggiornato=data; snap(a.id,data,a.eur);
+    }
+  }
+  save(); closeM('mo-mov'); renderMov(); renderDash();
+}
+function delMov(id){
+  if(!confirm('Eliminare questo movimento?'))return;
+  const m=db.movimenti.find(x=>x.id===id);
+  if(m && m.assetId && m.tipo!=='trasferimento'){
+    const a=db.assets.find(x=>x.id===m.assetId);
+    if(a){ if(m.tipo==='entrata') a.eur-=m.importo; else a.eur+=m.importo; }
+  }
+  if(m && m.trasfId){
+    const pair=db.movimenti.find(x=>x.trasfId===m.trasfId && x.id!==id);
+    if(pair){
+      const pa=db.assets.find(x=>x.id===pair.assetId);
+      if(pa){ if(pair.tipo==='entrata') pa.eur-=pair.importo; else pa.eur+=pair.importo; }
+      db.movimenti=db.movimenti.filter(x=>x.id!==pair.id);
+    }
+  }
+  db.movimenti=db.movimenti.filter(x=>x.id!==id);
+  save(); renderMov(); renderDash();
+}
+
+// ── TRASFERIMENTO ──
+function openTrasf(){
+  document.getElementById('tr-data').value=today();
+  document.getElementById('tr-desc').value='';
+  document.getElementById('tr-imp').value='';
+  document.getElementById('tr-preview').style.display='none';
+  const opts='<option value="">— seleziona —</option>'+db.assets.map(a=>`<option value="${a.id}">${esc(a.nome)} (${fEUR(a.eur)})</option>`).join('');
+  document.getElementById('tr-from').innerHTML=opts;
+  document.getElementById('tr-to').innerHTML=opts;
+  document.getElementById('tr-from').onchange=updTrasfPreview;
+  document.getElementById('tr-to').onchange=updTrasfPreview;
+  document.getElementById('mo-trasf').classList.add('open');
+}
+function updTrasfPreview(){
+  const fromId=document.getElementById('tr-from').value;
+  const toId=document.getElementById('tr-to').value;
+  const imp=parseFloat(document.getElementById('tr-imp').value)||0;
+  const prev=document.getElementById('tr-preview');
+  if(!fromId||!toId||!imp){prev.style.display='none';return;}
+  const from=db.assets.find(a=>a.id===fromId);
+  const to=db.assets.find(a=>a.id===toId);
+  if(!from||!to){prev.style.display='none';return;}
+  prev.style.display='block';
+  prev.innerHTML=`<div style="margin-bottom:.4rem;color:var(--text);font-weight:500">Riepilogo trasferimento</div>
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <div><span style="color:var(--red)">📤 ${esc(from.nome)}</span><br><span style="font-size:.67rem">${fEUR(from.eur)} → ${fEUR(from.eur-imp)}</span></div>
+      <div style="font-size:1.2rem;color:var(--text3)">→</div>
+      <div><span style="color:var(--green)">📥 ${esc(to.nome)}</span><br><span style="font-size:.67rem">${fEUR(to.eur)} → ${fEUR(to.eur+imp)}</span></div>
+    </div>`;
+}
+function saveTrasf(){
+  const fromId=document.getElementById('tr-from').value;
+  const toId=document.getElementById('tr-to').value;
+  const imp=parseFloat(document.getElementById('tr-imp').value)||0;
+  const data=document.getElementById('tr-data').value||today();
+  let desc=document.getElementById('tr-desc').value.trim();
+  if(!fromId||!toId)return alert('Seleziona i conti di origine e destinazione.');
+  if(fromId===toId)return alert('I conti devono essere diversi.');
+  if(!imp)return alert('Inserisci un importo.');
+  const from=db.assets.find(a=>a.id===fromId);
+  const to=db.assets.find(a=>a.id===toId);
+  if(!desc) desc=`Trasferimento ${from.nome} → ${to.nome}`;
+  const tid=uid();
+  db.movimenti.push({id:uid(),data,tipo:'trasferimento',desc,cat:'Trasferimento',assetId:fromId,importo:imp,note:'',trasfId:tid,trasfDir:'out'});
+  db.movimenti.push({id:uid(),data,tipo:'trasferimento',desc,cat:'Trasferimento',assetId:toId,importo:imp,note:'',trasfId:tid,trasfDir:'in'});
+  from.eur-=imp; from.aggiornato=data; snap(fromId,data,from.eur);
+  to.eur+=imp; to.aggiornato=data; snap(toId,data,to.eur);
+  save(); closeM('mo-trasf'); renderMov(); renderDash();
+}
+
+// ── SNAPSHOTS ──
+function snap(assetId,date,eur){
+  db.snapshots=db.snapshots.filter(s=>!(s.assetId===assetId&&s.date===date));
+  db.snapshots.push({assetId,date,eur});
+  db.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+// ── RENDER ASSET ──
+function renderAsset(){
+  const tb=document.getElementById('asset-tb');
+  if(!db.assets.length){tb.innerHTML='<tr class="empty-row"><td colspan="8">Nessun asset. Clicca "+ Aggiungi asset" per iniziare.</td></tr>';return;}
+  const tot=db.assets.reduce((s,a)=>s+a.eur,0);
+  tb.innerHTML=db.assets.map(a=>`
+    <tr>
+      <td><strong>${esc(a.nome)}</strong></td>
+      <td><span class="badge ${TBADGE[a.tipo]||'b-alt'}">${TLABELS[a.tipo]||a.tipo}</span></td>
+      <td style="color:var(--text2)">${a.valuta}</td>
+      <td style="text-align:right">${fNum(a.importo)}</td>
+      <td style="text-align:right"><strong>${fEUR(a.eur)}</strong><br><span style="font-size:.66rem;color:var(--text3)">${tot?((a.eur/tot)*100).toFixed(1)+'%':''}</span></td>
+      <td style="font-size:.72rem;color:var(--text3)">${a.aggiornato||a.creato||'—'}</td>
+      <td style="color:var(--text3);font-size:.75rem;max-width:140px">${esc(a.note||'—')}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-g btn-sm" onclick="openAsset('${a.id}')">✏</button>
+        <button class="btn btn-d btn-sm" onclick="delAsset('${a.id}')">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+// ── RENDER MOVIMENTI ──
+function renderMov(){
+  const cats=[...new Set(db.movimenti.map(m=>m.cat))].sort();
+  const fc=document.getElementById('f-cat'); const pv=fc.value;
+  fc.innerHTML='<option value="">Tutte le categorie</option>'+cats.map(c=>`<option value="${c}"${c===pv?'selected':''}>${c}</option>`).join('');
+  const tipo=document.getElementById('f-tipo').value;
+  const cat=fc.value;
+  const mese=document.getElementById('f-mese').value;
+  let rows=[...db.movimenti].sort((a,b)=>b.data.localeCompare(a.data));
+  if(tipo)rows=rows.filter(m=>m.tipo===tipo);
+  if(cat)rows=rows.filter(m=>m.cat===cat);
+  if(mese)rows=rows.filter(m=>m.data.startsWith(mese));
+  const tb=document.getElementById('mov-tb');
+  if(!rows.length){tb.innerHTML='<tr class="empty-row"><td colspan="7">Nessun movimento trovato.</td></tr>';return;}
+  tb.innerHTML=rows.map(m=>{
+    const ast=db.assets.find(a=>a.id===m.assetId);
+    const isTrasf=m.tipo==='trasferimento';
+    const badgeClass=isTrasf?'b-tra':(m.tipo==='entrata'?'b-in':'b-out');
+    const badgeTxt=isTrasf?(m.trasfDir==='in'?'⇄ Trasf. in':'⇄ Trasf. out'):(m.tipo==='entrata'?'↑ Entrata':'↓ Uscita');
+    const amtClass=isTrasf?(m.trasfDir==='in'?'pos':'neg'):(m.tipo==='entrata'?'pos':'neg');
+    const amtSign=isTrasf?(m.trasfDir==='in'?'+':'-'):(m.tipo==='entrata'?'+':'-');
+    return`<tr${isTrasf?' class="b-tra-row"':''}>
+      <td style="color:var(--text2)">${m.data}</td>
+      <td>${esc(m.desc)}</td>
+      <td><span class="badge ${badgeClass}">${badgeTxt}</span></td>
+      <td style="font-size:.75rem;color:var(--text2)">${esc(m.cat)}</td>
+      <td style="font-size:.75rem;color:var(--text3)">${ast?esc(ast.nome):'—'}</td>
+      <td style="text-align:right;font-weight:500" class="${amtClass}">${amtSign}${fEUR(m.importo)}</td>
+      <td style="white-space:nowrap">
+        ${!isTrasf?`<button class="btn btn-g btn-sm" onclick="openMov('${m.id}')">✏</button>`:''}
+        <button class="btn btn-d btn-sm" onclick="delMov('${m.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER DASHBOARD ──
+function renderDash(){
+  const tot=db.assets.reduce((s,a)=>s+a.eur,0);
+  const tm=thisMonth();
+  const mm=db.movimenti.filter(m=>m.data.startsWith(tm)&&m.tipo!=='trasferimento');
+  const ent=mm.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
+  const usc=mm.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
+  const saldo=ent-usc;
+  document.getElementById('kpi-row').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Patrimonio totale</div><div class="kpi-val">${fEUR(tot)}</div><div class="kpi-sub">${db.assets.length} asset registrati</div></div>
+    <div class="kpi"><div class="kpi-lbl">Entrate mese</div><div class="kpi-val pos">${fEUR(ent)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Uscite mese</div><div class="kpi-val neg">${fEUR(usc)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Saldo netto mese</div><div class="kpi-val ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
+  destroyC('cAlloc');
+  const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
+  charts['cAlloc']=new Chart(document.getElementById('cAlloc'),{type:'doughnut',
+    data:{labels:Object.keys(grp).map(k=>TLABELS[k]),datasets:[{data:Object.values(grp),backgroundColor:Object.keys(grp).map(k=>TCOLORS[k]),borderWidth:2,borderColor:'#0d0d0d'}]},
+    options:{plugins:{legend:{position:'right',labels:{color:'#a0a0a0',font:{size:11},boxWidth:10}}},cutout:'62%',maintainAspectRatio:true}});
+  destroyC('cInOut');
+  charts['cInOut']=new Chart(document.getElementById('cInOut'),{type:'bar',
+    data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:2,borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0'},grid:{display:false}}}}});
+  destroyC('cCat');
+  const cd={};mm.filter(m=>m.tipo==='uscita').forEach(m=>{cd[m.cat]=(cd[m.cat]||0)+m.importo;});
+  const ce=Object.entries(cd).sort((a,b)=>b[1]-a[1]);
+  charts['cCat']=new Chart(document.getElementById('cCat'),{type:'bar',
+    data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:2,borderRadius:4}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:11}},grid:{display:false}}}}});
+}
+
+// ── CHART TYPE SWITCHING ──
+function setChartType(key,val,btn){
+  chartTypes[key]=val;
+  btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAnd();
+}
+
+// ── RENDER ANDAMENTO ──
+function setPer(m,btn){period=m;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAnd();}
+function getFilteredSnaps(){
+  let snaps=[...db.snapshots];
+  if(period){ const cut=new Date();cut.setMonth(cut.getMonth()-period);const cs=cut.toISOString().slice(0,10);snaps=snaps.filter(s=>s.date>=cs); }
+  return snaps;
+}
+function renderAnd(){
+  db.assets.forEach(a=>{if(toggles[a.id]===undefined)toggles[a.id]=true;});
+  document.getElementById('at-wrap').innerHTML=db.assets.length
+    ?db.assets.map((a,i)=>`<span class="at ${toggles[a.id]?'on':'off'}" onclick="tog('${a.id}')">
+        <span class="dot" style="background:${ACOLORS[i%ACOLORS.length]}"></span>${esc(a.nome)}</span>`).join('')
+    :'<span style="font-size:.77rem;color:var(--text3)">Aggiungi asset per visualizzare</span>';
+  const snaps=getFilteredSnaps();
+  const dates=[...new Set(snaps.map(s=>s.date))].sort();
+  const totVals=dates.map(d=>db.assets.reduce((sum,a)=>{
+    const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);
+    return rel.length?sum+rel[rel.length-1].eur:sum;
+  },0));
+  destroyC('cTotale');
+  const tt=chartTypes.totale;
+  const totDs={label:'Patrimonio',data:totVals,borderColor:'#fff',backgroundColor:tt==='area'?'rgba(255,255,255,.08)':'rgba(255,255,255,.04)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#fff',fill:tt==='area',tension:.35};
+  charts['cTotale']=new Chart(document.getElementById('cTotale'),{type:tt==='bar'?'bar':'line',data:{labels:dates,datasets:[totDs]},options:{...lineOpts(false)}});
+  destroyC('cArea');
+  const areaDs=db.assets.map((a,i)=>{
+    const col=ACOLORS[i%ACOLORS.length];
+    const data=dates.map(d=>{const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);return rel.length?rel[rel.length-1].eur:null;});
+    return{label:a.nome,data,borderColor:col,backgroundColor:col+'55',borderWidth:1.5,pointRadius:2,fill:chartTypes.area==='stacked',tension:.3,spanGaps:true,stack:'s'};
+  });
+  charts['cArea']=new Chart(document.getElementById('cArea'),{type:'line',data:{labels:dates,datasets:areaDs},options:{...lineOpts(true),scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:7},grid:{color:'#1a1a1a'}},y:{stacked:chartTypes.area==='stacked',ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}}});
+  destroyC('cDist');
+  const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
+  const distLabels=Object.keys(grp).map(k=>TLABELS[k]);
+  const distData=Object.values(grp);
+  const distColors=Object.keys(grp).map(k=>TCOLORS[k]);
+  const dt=chartTypes.dist;
+  if(dt==='bar'){
+    charts['cDist']=new Chart(document.getElementById('cDist'),{type:'bar',data:{labels:distLabels,datasets:[{data:distData,backgroundColor:distColors.map(c=>c+'44'),borderColor:distColors,borderWidth:2,borderRadius:5}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0'},grid:{display:false}}}}});
+  } else {
+    charts['cDist']=new Chart(document.getElementById('cDist'),{type:dt,data:{labels:distLabels,datasets:[{data:distData,backgroundColor:distColors,borderWidth:2,borderColor:'#0d0d0d'}]},options:{plugins:{legend:{position:'right',labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}}},cutout:dt==='doughnut'?'60%':undefined}});
+  }
+  destroyC('cParz');
+  const filtAssets=db.assets.filter(a=>toggles[a.id]);
+  const isPer=chartTypes.parz==='perf';
+  const parzDs=filtAssets.map((a,i)=>{
+    const idx=db.assets.indexOf(a);
+    const col=ACOLORS[idx%ACOLORS.length];
+    let firstVal=null;
+    const data=dates.map(d=>{
+      const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);
+      if(!rel.length)return null;
+      const v=rel[rel.length-1].eur;
+      if(isPer){ if(firstVal===null)firstVal=v; return firstVal?+((v-firstVal)/firstVal*100).toFixed(2):0; }
+      return v;
+    });
+    return{label:a.nome,data,borderColor:col,backgroundColor:col+'22',borderWidth:2,pointRadius:2.5,pointBackgroundColor:col,fill:false,tension:.3,spanGaps:true};
+  });
+  charts['cParz']=new Chart(document.getElementById('cParz'),{type:'line',data:{labels:dates,datasets:parzDs},options:{...lineOpts(filtAssets.length>0),scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>isPer?v.toFixed(1)+'%':fEUR(v)},grid:{color:'#1a1a1a'}}},plugins:{...lineOpts(true).plugins,tooltip:{callbacks:{label:c=>isPer?`${c.dataset.label}: ${c.parsed.y>0?'+':''}${c.parsed.y.toFixed(2)}%`:`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}}}});
+}
+function tog(id){toggles[id]=!toggles[id];renderAnd();}
+function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:true,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
+
+// ── EXPORT / IMPORT ──
+function esporta(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='patrimonio_backup_'+today()+'.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+function importa(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.assets||!data.movimenti)return alert('File non valido.');
+      if(!confirm('Vuoi caricare questo backup? I dati attuali verranno sostituiti.'))return;
+      db=data; if(!db.snapshots)db.snapshots=[];
+      save(); renderAll();
+      alert('Dati importati correttamente!');
+    }catch(err){alert('Errore nel file.');}
+  };
+  r.readAsText(file);
+  e.target.value='';
+}
+
+// ── INIT ──
+load();
+document.getElementById('f-mese').value=thisMonth();
+updCats();
+renderDash();
+renderAsset();
+
+// Carica URL salvato nelle impostazioni
+const savedUrl = getScriptUrl();
+if(savedUrl){
+  document.getElementById('cfg-url') && (document.getElementById('cfg-url').value = savedUrl);
+  // Tenta sync iniziale silenzioso
+  setTimeout(()=> syncNow(), 1000);
+} else {
+  setSyncStatus(false, 'Non configurato');
+}
+</script>
+</body>
+</html>
