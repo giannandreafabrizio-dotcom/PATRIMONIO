@@ -28,7 +28,14 @@ main{flex:1;overflow-y:auto;}
 .page-hd h2{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:600;}
 .page-hd p{color:var(--text2);font-size:0.8rem;margin-top:3px;}
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:.9rem;margin-bottom:1.4rem;}
-.kpi{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.k-tot::before{background:var(--text);}
+.kpi.k-liq::before{background:var(--green);}
+.kpi.k-inv::before{background:var(--blue);}
+.kpi.k-cry::before{background:var(--orange);}
+.kpi.k-wal::before{background:var(--purple);}
+.kpi.k-alt::before{background:var(--text2);}
 .kpi-lbl{font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.35rem;}
 .kpi-val{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:600;}
 .kpi-sub{font-size:0.68rem;margin-top:3px;color:var(--text3);}
@@ -205,58 +212,27 @@ tbody tr:hover td{background:var(--s2);}
 <!-- ANDAMENTO -->
 <div class="page" id="page-andamento">
   <div class="page-hd"><div><h2>Andamento nel tempo</h2><p>Storico snapshot patrimonio e asset</p></div></div>
-  <div class="card" style="margin-bottom:1.2rem">
+  <div class="kpi-row" id="and-kpi-row"></div>
+  <div class="card">
     <div class="card-hd">
-      <h3>Patrimonio netto totale</h3>
-      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
-        <div class="chart-tabs">
-          <button class="ct active" onclick="setChartType('totale','line',this)">Linea</button>
-          <button class="ct" onclick="setChartType('totale','area',this)">Area</button>
-          <button class="ct" onclick="setChartType('totale','bar',this)">Barre</button>
-        </div>
+      <h3>Performance del patrimonio</h3>
+      <div class="chart-tabs" id="and-tabs">
+        <button class="ct active" onclick="setAndTab('tot',this)">Patrimonio totale</button>
+        <button class="ct" onclick="setAndTab('tipo',this)">Per tipo asset</button>
+        <button class="ct" onclick="setAndTab('asset',this)">Per singolo asset</button>
+      </div>
+    </div>
+    <div class="card-bd">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:.7rem">
         <div class="period-row">
-          <span>Periodo:</span>
           <button class="pb active" onclick="setPer(3,this)">3M</button>
           <button class="pb" onclick="setPer(6,this)">6M</button>
           <button class="pb" onclick="setPer(12,this)">1A</button>
           <button class="pb" onclick="setPer(0,this)">Tutto</button>
         </div>
       </div>
-    </div>
-    <div class="card-bd"><canvas id="cTotale" height="175"></canvas></div>
-  </div>
-  <div class="charts-2">
-    <div class="card" style="margin-bottom:0">
-      <div class="card-hd"><h3>Area per asset</h3>
-        <div class="chart-tabs">
-          <button class="ct active" onclick="setChartType('area','stacked',this)">Impilato</button>
-          <button class="ct" onclick="setChartType('area','stream',this)">Libero</button>
-        </div>
-      </div>
-      <div class="card-bd"><canvas id="cArea" height="200"></canvas></div>
-    </div>
-    <div class="card" style="margin-bottom:0">
-      <div class="card-hd"><h3>Distribuzione per tipo</h3>
-        <div class="chart-tabs">
-          <button class="ct active" onclick="setChartType('dist','doughnut',this)">Torta</button>
-          <button class="ct" onclick="setChartType('dist','polarArea',this)">Polare</button>
-          <button class="ct" onclick="setChartType('dist','bar',this)">Barre</button>
-        </div>
-      </div>
-      <div class="card-bd"><canvas id="cDist" height="200"></canvas></div>
-    </div>
-  </div>
-  <div style="margin-bottom:1.2rem"></div>
-  <div class="card">
-    <div class="card-hd"><h3>Andamento per asset</h3>
-      <div class="chart-tabs">
-        <button class="ct active" onclick="setChartType('parz','line',this)">Valore €</button>
-        <button class="ct" onclick="setChartType('parz','perf',this)">Performance %</button>
-      </div>
-    </div>
-    <div class="card-bd">
-      <div class="at-wrap" id="at-wrap"></div>
-      <canvas id="cParz" height="195"></canvas>
+      <div class="at-wrap" id="at-wrap" style="display:none"></div>
+      <canvas id="cMain" height="220"></canvas>
     </div>
   </div>
   <div class="tip">💡 <strong>Come funziona:</strong> usa <strong>📸 Aggiorna valori</strong> nella sezione Asset ogni settimana per registrare lo snapshot. I grafici mostrano l'evoluzione storica.</div>
@@ -565,7 +541,7 @@ let eAsset=null, eMov=null;
 let period=3;
 let toggles={};
 let charts={};
-let chartTypes={totale:'line', area:'stacked', dist:'doughnut', parz:'line'};
+
 
 function saveLocal(){ localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
 
@@ -904,75 +880,90 @@ function renderDash(){
     options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:11}},grid:{display:false}}}}});
 }
 
-// ── CHART TYPE SWITCHING ──
-function setChartType(key,val,btn){
-  chartTypes[key]=val;
+// ── ANDAMENTO: tab + periodo ──
+let andTab='tot';
+function setAndTab(t,btn){
+  andTab=t;
   btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('at-wrap').style.display=(t==='asset')?'flex':'none';
   renderAnd();
 }
-
-// ── RENDER ANDAMENTO ──
 function setPer(m,btn){period=m;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAnd();}
 function getFilteredSnaps(){
   let snaps=[...db.snapshots];
   if(period){ const cut=new Date();cut.setMonth(cut.getMonth()-period);const cs=cut.toISOString().slice(0,10);snaps=snaps.filter(s=>s.date>=cs); }
   return snaps;
 }
+function valAt(assetId,d){
+  const rel=db.snapshots.filter(s=>s.assetId===assetId&&s.date<=d);
+  return rel.length?rel[rel.length-1].eur:null;
+}
+function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:true,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
+
+// ── KPI CARDS ANDAMENTO ──
+function renderAndKpi(dates){
+  const tot=db.assets.reduce((s,a)=>s+a.eur,0);
+  let totStart=null;
+  if(dates.length){
+    totStart=db.assets.reduce((s,a)=>{const v=valAt(a.id,dates[0]);return s+(v!==null?v:a.eur);},0);
+  }
+  const totChangePct=(totStart&&totStart!==0)?((tot-totStart)/totStart*100):null;
+  const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
+  const order=['liquidita','investimenti','crypto','wallet','altro'];
+  const kColClass={liquidita:'k-liq',investimenti:'k-inv',crypto:'k-cry',wallet:'k-wal',altro:'k-alt'};
+  let html=`<div class="kpi k-tot"><div class="kpi-lbl">Patrimonio totale</div><div class="kpi-val">${fEUR(tot)}</div>
+    <div class="kpi-sub ${totChangePct===null?'':(totChangePct>=0?'pos':'neg')}">${totChangePct===null?'—':(totChangePct>=0?'+':'')+totChangePct.toFixed(1)+'% nel periodo'}</div></div>`;
+  order.forEach(k=>{
+    if(grp[k]===undefined)return;
+    const pct=tot?(grp[k]/tot*100):0;
+    html+=`<div class="kpi ${kColClass[k]||''}"><div class="kpi-lbl">${TLABELS[k]}</div><div class="kpi-val">${fEUR(grp[k])}</div><div class="kpi-sub">${pct.toFixed(1)}% del totale</div></div>`;
+  });
+  document.getElementById('and-kpi-row').innerHTML=html;
+}
+
+// ── RENDER ANDAMENTO ──
 function renderAnd(){
   db.assets.forEach(a=>{if(toggles[a.id]===undefined)toggles[a.id]=true;});
   document.getElementById('at-wrap').innerHTML=db.assets.length
     ?db.assets.map((a,i)=>`<span class="at ${toggles[a.id]?'on':'off'}" onclick="tog('${a.id}')">
         <span class="dot" style="background:${ACOLORS[i%ACOLORS.length]}"></span>${esc(a.nome)}</span>`).join('')
     :'<span style="font-size:.77rem;color:var(--text3)">Aggiungi asset per visualizzare</span>';
+  document.getElementById('at-wrap').style.display=(andTab==='asset')?'flex':'none';
+
   const snaps=getFilteredSnaps();
   const dates=[...new Set(snaps.map(s=>s.date))].sort();
-  const totVals=dates.map(d=>db.assets.reduce((sum,a)=>{
-    const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);
-    return rel.length?sum+rel[rel.length-1].eur:sum;
-  },0));
-  destroyC('cTotale');
-  const tt=chartTypes.totale;
-  const totDs={label:'Patrimonio',data:totVals,borderColor:'#fff',backgroundColor:tt==='area'?'rgba(255,255,255,.08)':'rgba(255,255,255,.04)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#fff',fill:tt==='area',tension:.35};
-  charts['cTotale']=new Chart(document.getElementById('cTotale'),{type:tt==='bar'?'bar':'line',data:{labels:dates,datasets:[totDs]},options:{...lineOpts(false)}});
-  destroyC('cArea');
-  const areaDs=db.assets.map((a,i)=>{
-    const col=ACOLORS[i%ACOLORS.length];
-    const data=dates.map(d=>{const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);return rel.length?rel[rel.length-1].eur:null;});
-    return{label:a.nome,data,borderColor:col,backgroundColor:col+'55',borderWidth:1.5,pointRadius:2,fill:chartTypes.area==='stacked',tension:.3,spanGaps:true,stack:'s'};
-  });
-  charts['cArea']=new Chart(document.getElementById('cArea'),{type:'line',data:{labels:dates,datasets:areaDs},options:{...lineOpts(true),scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:7},grid:{color:'#1a1a1a'}},y:{stacked:chartTypes.area==='stacked',ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}}});
-  destroyC('cDist');
-  const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
-  const distLabels=Object.keys(grp).map(k=>TLABELS[k]);
-  const distData=Object.values(grp);
-  const distColors=Object.keys(grp).map(k=>TCOLORS[k]);
-  const dt=chartTypes.dist;
-  if(dt==='bar'){
-    charts['cDist']=new Chart(document.getElementById('cDist'),{type:'bar',data:{labels:distLabels,datasets:[{data:distData,backgroundColor:distColors.map(c=>c+'44'),borderColor:distColors,borderWidth:2,borderRadius:5}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0'},grid:{display:false}}}}});
-  } else {
-    charts['cDist']=new Chart(document.getElementById('cDist'),{type:dt,data:{labels:distLabels,datasets:[{data:distData,backgroundColor:distColors,borderWidth:2,borderColor:'#0d0d0d'}]},options:{plugins:{legend:{position:'right',labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}}},cutout:dt==='doughnut'?'60%':undefined}});
-  }
-  destroyC('cParz');
-  const filtAssets=db.assets.filter(a=>toggles[a.id]);
-  const isPer=chartTypes.parz==='perf';
-  const parzDs=filtAssets.map((a,i)=>{
-    const idx=db.assets.indexOf(a);
-    const col=ACOLORS[idx%ACOLORS.length];
-    let firstVal=null;
-    const data=dates.map(d=>{
-      const rel=db.snapshots.filter(s=>s.assetId===a.id&&s.date<=d);
-      if(!rel.length)return null;
-      const v=rel[rel.length-1].eur;
-      if(isPer){ if(firstVal===null)firstVal=v; return firstVal?+((v-firstVal)/firstVal*100).toFixed(2):0; }
-      return v;
+
+  renderAndKpi(dates);
+
+  destroyC('cMain');
+  const ctx=document.getElementById('cMain');
+
+  if(andTab==='tot'){
+    const totVals=dates.map(d=>db.assets.reduce((sum,a)=>{const v=valAt(a.id,d);return v!==null?sum+v:sum;},0));
+    const ds={label:'Patrimonio',data:totVals,borderColor:'#fff',backgroundColor:'rgba(255,255,255,.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#fff',fill:true,tension:.4};
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[ds]},options:lineOpts(false)});
+  } else if(andTab==='tipo'){
+    const order=['liquidita','investimenti','crypto','wallet','altro'];
+    const typesPresent=order.filter(t=>db.assets.some(a=>a.tipo===t));
+    const dsArr=typesPresent.map(t=>{
+      const assetsOfType=db.assets.filter(a=>a.tipo===t);
+      const data=dates.map(d=>assetsOfType.reduce((s,a)=>{const v=valAt(a.id,d);return v!==null?s+v:s;},0));
+      return{label:TLABELS[t],data,borderColor:TCOLORS[t],backgroundColor:TCOLORS[t]+'33',borderWidth:2,pointRadius:2,fill:true,tension:.4};
     });
-    return{label:a.nome,data,borderColor:col,backgroundColor:col+'22',borderWidth:2,pointRadius:2.5,pointBackgroundColor:col,fill:false,tension:.3,spanGaps:true};
-  });
-  charts['cParz']=new Chart(document.getElementById('cParz'),{type:'line',data:{labels:dates,datasets:parzDs},options:{...lineOpts(filtAssets.length>0),scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>isPer?v.toFixed(1)+'%':fEUR(v)},grid:{color:'#1a1a1a'}}},plugins:{...lineOpts(true).plugins,tooltip:{callbacks:{label:c=>isPer?`${c.dataset.label}: ${c.parsed.y>0?'+':''}${c.parsed.y.toFixed(2)}%`:`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}}}});
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(true)});
+  } else {
+    const filtAssets=db.assets.filter(a=>toggles[a.id]);
+    const dsArr=filtAssets.map(a=>{
+      const idx=db.assets.indexOf(a);
+      const col=ACOLORS[idx%ACOLORS.length];
+      const data=dates.map(d=>valAt(a.id,d));
+      return{label:a.nome,data,borderColor:col,backgroundColor:col+'22',borderWidth:2,pointRadius:2.5,pointBackgroundColor:col,fill:false,tension:.3,spanGaps:true};
+    });
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0)});
+  }
 }
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
-function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:true,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
 
 // ── EXPORT / IMPORT ──
 function esporta(){
