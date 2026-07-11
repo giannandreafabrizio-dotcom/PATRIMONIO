@@ -167,11 +167,22 @@ tbody tr:hover td{background:var(--s2);}
   </div>
   <div id="sync-bar-dash"></div>
   <div class="kpi-row" id="kpi-row"></div>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:.9rem">
+    <div class="period-row">
+      <span>Mese:</span>
+      <button class="pb" id="dm-prev" onclick="chgDashMonth(1)">‹ Prec.</button>
+      <span id="dm-label" style="min-width:92px;text-align:center;color:var(--text);font-weight:500;font-size:.79rem"></span>
+      <button class="pb" id="dm-next" onclick="chgDashMonth(-1)">Succ. ›</button>
+    </div>
+  </div>
+
   <div class="charts-2">
     <div class="card"><div class="card-hd"><h3>Allocazione asset</h3></div><div class="card-bd"><canvas id="cAlloc" height="220"></canvas></div></div>
-    <div class="card"><div class="card-hd"><h3>Entrate vs Uscite — mese corrente</h3></div><div class="card-bd"><canvas id="cInOut" height="220"></canvas></div></div>
+    <div class="card"><div class="card-hd"><h3 id="cInOut-title">Entrate vs Uscite</h3></div><div class="card-bd"><canvas id="cInOut" height="220"></canvas></div></div>
   </div>
-  <div class="card"><div class="card-hd"><h3>Uscite per categoria — mese corrente</h3></div><div class="card-bd"><canvas id="cCat" height="175"></canvas></div></div>
+  <div class="card"><div class="card-hd"><h3 id="cCat-title">Uscite per categoria</h3></div><div class="card-bd"><canvas id="cCat" height="175"></canvas></div></div>
+  <div class="card"><div class="card-hd"><h3>Storico entrate / uscite / saldo — ultimi 6 mesi</h3></div><div class="card-bd"><canvas id="cHist" height="200"></canvas></div></div>
 </div>
 
 <!-- ASSET -->
@@ -541,6 +552,22 @@ let eAsset=null, eMov=null;
 let period=3;
 let toggles={};
 let charts={};
+let dashMonthOffset=0;
+
+// ── HELPER MESI ──
+const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+function monthKeyOffset(offset){
+  const n=new Date(); n.setDate(1); n.setMonth(n.getMonth()-offset);
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+}
+function monthLabelIt(key){
+  const [y,m]=key.split('-').map(Number);
+  return `${MESI_IT[m-1]} ${y}`;
+}
+function chgDashMonth(delta){
+  dashMonthOffset=Math.max(0,dashMonthOffset+delta);
+  renderDash();
+}
 
 
 function saveLocal(){ localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
@@ -853,16 +880,30 @@ function renderMov(){
 // ── RENDER DASHBOARD ──
 function renderDash(){
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
-  const tm=thisMonth();
+  const tm=monthKeyOffset(dashMonthOffset);
+  const isCurrent=dashMonthOffset===0;
+
+  const dmLabel=document.getElementById('dm-label');
+  const dmNext=document.getElementById('dm-next');
+  if(dmLabel) dmLabel.textContent=monthLabelIt(tm);
+  if(dmNext){ dmNext.disabled=isCurrent; dmNext.style.opacity=isCurrent?.4:1; dmNext.style.cursor=isCurrent?'default':'pointer'; }
+
   const mm=db.movimenti.filter(m=>m.data.startsWith(tm)&&m.tipo!=='trasferimento');
   const ent=mm.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
   const usc=mm.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
   const saldo=ent-usc;
+  const suff=isCurrent?' mese':` — ${monthLabelIt(tm)}`;
   document.getElementById('kpi-row').innerHTML=`
-    <div class="kpi"><div class="kpi-lbl">Patrimonio totale</div><div class="kpi-val">${fEUR(tot)}</div><div class="kpi-sub">${db.assets.length} asset registrati</div></div>
-    <div class="kpi"><div class="kpi-lbl">Entrate mese</div><div class="kpi-val pos">${fEUR(ent)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Uscite mese</div><div class="kpi-val neg">${fEUR(usc)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Saldo netto mese</div><div class="kpi-val ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
+    <div class="kpi k-tot"><div class="kpi-lbl">Patrimonio totale</div><div class="kpi-val">${fEUR(tot)}</div><div class="kpi-sub">${db.assets.length} asset registrati</div></div>
+    <div class="kpi"><div class="kpi-lbl">Entrate${suff}</div><div class="kpi-val pos">${fEUR(ent)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Uscite${suff}</div><div class="kpi-val neg">${fEUR(usc)}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Saldo netto${suff}</div><div class="kpi-val ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
+
+  const cInOutTitle=document.getElementById('cInOut-title');
+  const cCatTitle=document.getElementById('cCat-title');
+  if(cInOutTitle) cInOutTitle.textContent=`Entrate vs Uscite — ${isCurrent?'mese corrente':monthLabelIt(tm)}`;
+  if(cCatTitle) cCatTitle.textContent=`Uscite per categoria — ${isCurrent?'mese corrente':monthLabelIt(tm)}`;
+
   destroyC('cAlloc');
   const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
   charts['cAlloc']=new Chart(document.getElementById('cAlloc'),{type:'doughnut',
@@ -878,6 +919,36 @@ function renderDash(){
   charts['cCat']=new Chart(document.getElementById('cCat'),{type:'bar',
     data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:2,borderRadius:4}]},
     options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:11}},grid:{display:false}}}}});
+
+  renderHist();
+}
+
+// ── STORICO ULTIMI 6 MESI (entrate / uscite / saldo) ──
+function renderHist(){
+  destroyC('cHist');
+  const monthKeys=[]; for(let i=5;i>=0;i--) monthKeys.push(monthKeyOffset(dashMonthOffset+i));
+  const labels=monthKeys.map(monthLabelIt);
+  const entArr=[], uscArr=[], saldoArr=[];
+  monthKeys.forEach(mk=>{
+    const mmk=db.movimenti.filter(m=>m.data.startsWith(mk)&&m.tipo!=='trasferimento');
+    const e=mmk.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
+    const u=mmk.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
+    entArr.push(e); uscArr.push(u); saldoArr.push(e-u);
+  });
+  const cvs=document.getElementById('cHist');
+  if(!cvs)return;
+  charts['cHist']=new Chart(cvs,{
+    data:{labels,datasets:[
+      {type:'bar',label:'Entrate',data:entArr,backgroundColor:'rgba(74,222,128,.35)',borderColor:'#4ade80',borderWidth:1.5,borderRadius:4,order:2},
+      {type:'bar',label:'Uscite',data:uscArr,backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1.5,borderRadius:4,order:2},
+      {type:'line',label:'Saldo netto',data:saldoArr,borderColor:'#60a5fa',borderWidth:2,pointRadius:3,pointBackgroundColor:'#60a5fa',fill:false,tension:.3,order:1}
+    ]},
+    options:{
+      plugins:{legend:{position:'top',align:'end',labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y<0?'-':''}${fEUR(Math.abs(c.parsed.y))}`}}},
+      scales:{x:{ticks:{color:'#555',font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}
+    }});
 }
 
 // ── ANDAMENTO: tab + periodo ──
