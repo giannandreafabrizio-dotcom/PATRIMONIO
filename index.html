@@ -945,23 +945,47 @@ function renderDash(){
   const saldo=ent-usc;
   const suff=isCurrent?' mese':` — ${monthLabelIt(tm)}`;
 
-  // Hero: patrimonio totale + variazione sui 3 mesi precedenti (se disponibile)
+  // Hero: patrimonio totale + 4 confronti (mese / 3 mesi / anno / da inizio app)
   const heroTot=document.getElementById('hero-tot');
   const heroSub=document.getElementById('hero-sub');
   if(heroTot) heroTot.textContent=fEUR(tot);
   if(heroSub){
-    const d3=new Date(); d3.setMonth(d3.getMonth()-3);
-    const cut=d3.toISOString().slice(0,10);
-    const relSnaps=db.snapshots.filter(s=>s.date<=cut);
-    let startTot=null;
-    if(relSnaps.length){
-      startTot=db.assets.reduce((s,a)=>{const rel=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(rel.length?rel[rel.length-1].eur:a.eur);},0);
+    function totAlDate(cut){
+      const rel=db.snapshots.filter(s=>s.date<=cut);
+      if(!rel.length) return null;
+      return db.assets.reduce((s,a)=>{const r=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(r.length?r[r.length-1].eur:a.eur);},0);
     }
-    if(startTot&&startTot!==0){
-      const pct=(tot-startTot)/startTot*100;
-      heroSub.textContent=`${pct>=0?'+':''}${pct.toFixed(1)}% negli ultimi 3 mesi`;
-      heroSub.className='hero-sub '+(pct>=0?'pos':'neg');
-    } else { heroSub.textContent=`${db.assets.length} asset registrati`; heroSub.className='hero-sub'; }
+    function variazione(cutDate,label){
+      const startTot=totAlDate(cutDate);
+      if(startTot===null||startTot===0) return null;
+      const diff=tot-startTot;
+      const pct=diff/startTot*100;
+      return{label,pct,diff};
+    }
+    const now=new Date();
+    const cutMese=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+    const d3=new Date(now); d3.setMonth(d3.getMonth()-3);
+    const cut3m=d3.toISOString().slice(0,10);
+    const cutAnno=`${now.getFullYear()}-01-01`;
+    const allDates=db.snapshots.map(s=>s.date).sort();
+    const cutInizio=allDates.length?allDates[0]:null;
+
+    const voci=[
+      variazione(cutMese,'da inizio mese'),
+      variazione(cut3m,'ultimi 3 mesi'),
+      variazione(cutAnno,'da inizio anno'),
+      cutInizio?variazione(cutInizio,'da quando usi Patrimonio'):null
+    ].filter(v=>v!==null);
+
+    if(voci.length){
+      heroSub.innerHTML=voci.map(v=>{
+        const cls=v.pct>=0?'pos':'neg';
+        const sign=v.pct>=0?'+':'';
+        return`<div class="hero-sub ${cls}" style="margin-top:2px">${sign}${v.pct.toFixed(1)}% (${sign}${fEUR(v.diff)}) ${v.label}</div>`;
+      }).join('');
+    } else {
+      heroSub.innerHTML=`<div class="hero-sub">${db.assets.length} asset registrati</div>`;
+    }
   }
 
   document.getElementById('kpi-row').innerHTML=`
