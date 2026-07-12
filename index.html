@@ -112,6 +112,35 @@ tbody tr:hover td{background:var(--s2);}
 .setup-box p{font-size:.79rem;color:var(--text2);line-height:1.6;}
 .setup-box code{background:var(--s3);padding:1px 5px;border-radius:3px;font-size:.75rem;color:var(--teal);}
 
+/* Apple-style: vetro satinato, pillola, kpi con icona */
+.glass{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,.08);border-radius:20px;}
+.hero-row{display:flex;justify-content:space-between;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-bottom:1.3rem;}
+.hero-lbl{font-size:.8rem;color:#8e8e93;font-weight:500;margin-bottom:.5rem;}
+.hero-val{font-family:-apple-system,'SF Pro Display','Inter',sans-serif;font-size:2.1rem;color:#fff;font-weight:600;letter-spacing:-.5px;margin-bottom:2px;}
+.hero-sub{font-size:.82rem;font-weight:500;}
+.hero-sub.pos{color:#30d158;}.hero-sub.neg{color:#ff453a;}
+.pie-block{display:flex;align-items:center;gap:16px;}
+.pie-wrap{position:relative;width:150px;height:150px;flex-shrink:0;}
+.pie-legend{display:flex;flex-direction:column;gap:8px;}
+.pie-legend span{font-size:.78rem;color:#d1d1d6;display:flex;align-items:center;gap:7px;}
+.pie-legend .pct{color:#8e8e93;margin-left:3px;}
+.pie-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.month-pill-row{display:flex;justify-content:center;margin-bottom:1.2rem;}
+.month-pill{display:flex;align-items:center;gap:2px;padding:4px;}
+.pill-btn{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;}
+.pill-btn:hover{background:rgba(255,255,255,.08);}
+.pill-btn:disabled{color:#48484a;cursor:default;background:transparent;}
+.pill-label{font-size:.82rem;color:#fff;font-weight:500;padding:0 14px;min-width:100px;text-align:center;}
+.kpi3-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.2rem;}
+.kpi3{padding:1rem;}
+.kpi3-hd{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.kpi3-icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;}
+.kpi3-lbl{font-size:.75rem;color:#8e8e93;}
+.kpi3-val{font-size:1.15rem;color:#fff;font-weight:600;}
+.gcard{margin-bottom:1.2rem;}
+.gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
+.gcard-bd{padding:1rem 1.1rem 1.1rem;}
+
 @media(max-width:720px){
   .shell{flex-direction:column;height:auto;}
   aside{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
@@ -121,6 +150,7 @@ tbody tr:hover td{background:var(--s2);}
   .page{padding:.9rem;}
   .charts-2{grid-template-columns:1fr;}
   .aside-foot{display:none;}
+  .hero-row{flex-direction:column;align-items:flex-start;}
 }
 </style>
 </head>
@@ -166,23 +196,43 @@ tbody tr:hover td{background:var(--s2);}
     <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza</button>
   </div>
   <div id="sync-bar-dash"></div>
-  <div class="kpi-row" id="kpi-row"></div>
 
-  <div style="display:flex;justify-content:flex-end;margin-bottom:.9rem">
-    <div class="period-row">
-      <span>Mese:</span>
-      <button class="pb" id="dm-prev" onclick="chgDashMonth(1)">‹ Prec.</button>
-      <span id="dm-label" style="min-width:92px;text-align:center;color:var(--text);font-weight:500;font-size:.79rem"></span>
-      <button class="pb" id="dm-next" onclick="chgDashMonth(-1)">Succ. ›</button>
+  <div class="glass" style="padding:1.3rem 1.4rem;margin-bottom:1.2rem">
+    <div class="hero-row">
+      <div>
+        <div class="hero-lbl">Patrimonio totale</div>
+        <div class="hero-val" id="hero-tot">€ 0</div>
+        <div class="hero-sub" id="hero-sub">—</div>
+      </div>
+      <div class="pie-block">
+        <div class="pie-wrap"><canvas id="cAlloc"></canvas></div>
+        <div class="pie-legend" id="pie-legend"></div>
+      </div>
     </div>
   </div>
 
-  <div class="charts-2">
-    <div class="card"><div class="card-hd"><h3>Allocazione asset</h3></div><div class="card-bd"><canvas id="cAlloc" height="220"></canvas></div></div>
-    <div class="card"><div class="card-hd"><h3 id="cInOut-title">Entrate vs Uscite</h3></div><div class="card-bd"><canvas id="cInOut" height="220"></canvas></div></div>
+  <div class="month-pill-row">
+    <div class="glass month-pill">
+      <button class="pill-btn" id="dm-prev" onclick="chgDashMonth(1)" aria-label="Mese precedente"><i class="ti ti-chevron-left"></i></button>
+      <span class="pill-label" id="dm-label"></span>
+      <button class="pill-btn" id="dm-next" onclick="chgDashMonth(-1)" aria-label="Mese successivo"><i class="ti ti-chevron-right"></i></button>
+    </div>
   </div>
-  <div class="card"><div class="card-hd"><h3 id="cCat-title">Uscite per categoria</h3></div><div class="card-bd"><canvas id="cCat" height="175"></canvas></div></div>
-  <div class="card"><div class="card-hd"><h3>Storico entrate / uscite / saldo — ultimi 6 mesi</h3></div><div class="card-bd"><canvas id="cHist" height="200"></canvas></div></div>
+
+  <div class="kpi3-row" id="kpi-row"></div>
+
+  <div class="glass gcard">
+    <div class="gcard-hd" id="cInOut-title">Entrate vs Uscite</div>
+    <div class="gcard-bd"><canvas id="cInOut" height="200"></canvas></div>
+  </div>
+  <div class="glass gcard">
+    <div class="gcard-hd" id="cCat-title">Uscite per categoria</div>
+    <div class="gcard-bd"><canvas id="cCat" height="175"></canvas></div>
+  </div>
+  <div class="glass gcard">
+    <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
+    <div class="gcard-bd"><canvas id="cHist" height="200"></canvas></div>
+  </div>
 </div>
 
 <!-- ASSET -->
@@ -539,7 +589,7 @@ function salvaConfig(){
 }
 
 // ── CONSTANTS ──
-const CAT_IN  = ['Stipendio VVF','Nutrizionista','Dividendi / Cedole','Vendita asset','Rimborso','Regalo / Eredità','Rendita','Nutrigest','Vincita','Altro reddito'];
+const CAT_IN  = ['Stipendio VVF','Buoni pasto VVF','Buoni pasto','Nutrizionista','Dividendi / Cedole','Vendita asset','Rimborso','Regalo / Eredità','Rendita','Nutrigest','Vincita','Altro reddito'];
 const CAT_OUT = ['Cibo','Mensa VVF','Internet / Telefono','Farmacia da detrarre','Benessere / Sport / Palestra','Abbigliamento','Carburante','Biglietti aerei','Affitto Mirianna','Abbonamenti streaming','Istruzione / Libri / Corsi','Assicurazioni','Tasse / Imposte','Regali','Droga','Nutrigest','Gioco d\'azzardo','Risparmio / Investimento','Varie / Altro'];
 const TLABELS = {liquidita:'💰 Liquidità',investimenti:'📈 Investimenti',crypto:'₿ Crypto',wallet:'💳 Wallet',altro:'📦 Altro'};
 const TBADGE  = {liquidita:'b-liq',investimenti:'b-inv',crypto:'b-cry',wallet:'b-wal',altro:'b-alt'};
@@ -878,6 +928,7 @@ function renderMov(){
 }
 
 // ── RENDER DASHBOARD ──
+const KPI_ICONS={ent:{bg:'#30d158',fg:'#000',ic:'ti-arrow-down'},usc:{bg:'#ff453a',fg:'#fff',ic:'ti-arrow-up'},sal:{bg:'#0a84ff',fg:'#fff',ic:'ti-scale'}};
 function renderDash(){
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
   const tm=monthKeyOffset(dashMonthOffset);
@@ -886,18 +937,37 @@ function renderDash(){
   const dmLabel=document.getElementById('dm-label');
   const dmNext=document.getElementById('dm-next');
   if(dmLabel) dmLabel.textContent=monthLabelIt(tm);
-  if(dmNext){ dmNext.disabled=isCurrent; dmNext.style.opacity=isCurrent?.4:1; dmNext.style.cursor=isCurrent?'default':'pointer'; }
+  if(dmNext){ dmNext.disabled=isCurrent; }
 
   const mm=db.movimenti.filter(m=>m.data.startsWith(tm)&&m.tipo!=='trasferimento');
   const ent=mm.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
   const usc=mm.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
   const saldo=ent-usc;
   const suff=isCurrent?' mese':` — ${monthLabelIt(tm)}`;
+
+  // Hero: patrimonio totale + variazione sui 3 mesi precedenti (se disponibile)
+  const heroTot=document.getElementById('hero-tot');
+  const heroSub=document.getElementById('hero-sub');
+  if(heroTot) heroTot.textContent=fEUR(tot);
+  if(heroSub){
+    const d3=new Date(); d3.setMonth(d3.getMonth()-3);
+    const cut=d3.toISOString().slice(0,10);
+    const relSnaps=db.snapshots.filter(s=>s.date<=cut);
+    let startTot=null;
+    if(relSnaps.length){
+      startTot=db.assets.reduce((s,a)=>{const rel=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(rel.length?rel[rel.length-1].eur:a.eur);},0);
+    }
+    if(startTot&&startTot!==0){
+      const pct=(tot-startTot)/startTot*100;
+      heroSub.textContent=`${pct>=0?'+':''}${pct.toFixed(1)}% negli ultimi 3 mesi`;
+      heroSub.className='hero-sub '+(pct>=0?'pos':'neg');
+    } else { heroSub.textContent=`${db.assets.length} asset registrati`; heroSub.className='hero-sub'; }
+  }
+
   document.getElementById('kpi-row').innerHTML=`
-    <div class="kpi k-tot"><div class="kpi-lbl">Patrimonio totale</div><div class="kpi-val">${fEUR(tot)}</div><div class="kpi-sub">${db.assets.length} asset registrati</div></div>
-    <div class="kpi"><div class="kpi-lbl">Entrate${suff}</div><div class="kpi-val pos">${fEUR(ent)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Uscite${suff}</div><div class="kpi-val neg">${fEUR(usc)}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Saldo netto${suff}</div><div class="kpi-val ${saldo>=0?'pos':'neg'}">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
+    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.ent.bg}"><i class="ti ${KPI_ICONS.ent.ic}" style="color:${KPI_ICONS.ent.fg}"></i></div><span class="kpi3-lbl">Entrate${suff}</span></div><div class="kpi3-val">${fEUR(ent)}</div></div>
+    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.usc.bg}"><i class="ti ${KPI_ICONS.usc.ic}" style="color:${KPI_ICONS.usc.fg}"></i></div><span class="kpi3-lbl">Uscite${suff}</span></div><div class="kpi3-val">${fEUR(usc)}</div></div>
+    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.sal.bg}"><i class="ti ${KPI_ICONS.sal.ic}" style="color:${KPI_ICONS.sal.fg}"></i></div><span class="kpi3-lbl">Saldo netto${suff}</span></div><div class="kpi3-val">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
 
   const cInOutTitle=document.getElementById('cInOut-title');
   const cCatTitle=document.getElementById('cCat-title');
@@ -906,9 +976,18 @@ function renderDash(){
 
   destroyC('cAlloc');
   const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
+  const APPLE_TCOLORS={liquidita:'#0a84ff',investimenti:'#30d158',crypto:'#ff9f0a',wallet:'#bf5af2',altro:'#8e8e93'};
+  const grpKeys=Object.keys(grp);
   charts['cAlloc']=new Chart(document.getElementById('cAlloc'),{type:'doughnut',
-    data:{labels:Object.keys(grp).map(k=>TLABELS[k]),datasets:[{data:Object.values(grp),backgroundColor:Object.keys(grp).map(k=>TCOLORS[k]),borderWidth:2,borderColor:'#0d0d0d'}]},
-    options:{plugins:{legend:{position:'right',labels:{color:'#a0a0a0',font:{size:11},boxWidth:10}}},cutout:'62%',maintainAspectRatio:true}});
+    data:{labels:grpKeys.map(k=>TLABELS[k]),datasets:[{data:Object.values(grp),backgroundColor:grpKeys.map(k=>APPLE_TCOLORS[k]||'#8e8e93'),borderWidth:3,borderColor:'#000'}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fEUR(c.parsed)}`}}},cutout:'68%',maintainAspectRatio:true}});
+  const legEl=document.getElementById('pie-legend');
+  if(legEl){
+    legEl.innerHTML=grpKeys.map(k=>{
+      const pct=tot?(grp[k]/tot*100):0;
+      return`<span><span class="pie-dot" style="background:${APPLE_TCOLORS[k]||'#8e8e93'}"></span>${TLABELS[k]}<span class="pct">${pct.toFixed(0)}%</span></span>`;
+    }).join('');
+  }
   destroyC('cInOut');
   charts['cInOut']=new Chart(document.getElementById('cInOut'),{type:'bar',
     data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:2,borderRadius:6}]},
