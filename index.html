@@ -953,7 +953,7 @@ function renderDash(){
     function totAlDate(cut){
       const rel=db.snapshots.filter(s=>s.date<=cut);
       if(!rel.length) return null;
-      return db.assets.reduce((s,a)=>{const r=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(r.length?r[r.length-1].eur:a.eur);},0);
+      return db.assets.reduce((s,a)=>{const r=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(r.length?r[r.length-1].eur:0);},0);
     }
     function variazione(cutDate,label){
       const startTot=totAlDate(cutDate);
@@ -966,15 +966,19 @@ function renderDash(){
     const cutMese=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
     const d3=new Date(now); d3.setMonth(d3.getMonth()-3);
     const cut3m=d3.toISOString().slice(0,10);
-    const cutAnno=`${now.getFullYear()}-01-01`;
-    const allDates=db.snapshots.map(s=>s.date).sort();
-    const cutInizio=allDates.length?allDates[0]:null;
+
+    // Baseline fissa "da inizio Patrimonio": totale di fine aprile 2026 (82.668€, primo mese
+    // con tutti gli asset inseriti) meno le entrate di aprile (2.691€) = 79.977€.
+    // Fissata manualmente perché il calcolo automatico sugli snapshot dei primissimi giorni
+    // (6-15 aprile) non è affidabile: alcuni asset non esistevano ancora e venivano
+    // conteggiati con valore 0 o col valore odierno, falsando il confronto.
+    const BASELINE_INIZIO=79977;
+    const BASELINE_INIZIO_LABEL='da inizio Patrimonio';
 
     const voci=[
       variazione(cutMese,'da inizio mese'),
       variazione(cut3m,'ultimi 3 mesi'),
-      variazione(cutAnno,'da inizio anno'),
-      cutInizio?variazione(cutInizio,'da quando usi Patrimonio'):null
+      {label:BASELINE_INIZIO_LABEL,pct:(tot-BASELINE_INIZIO)/BASELINE_INIZIO*100,diff:tot-BASELINE_INIZIO}
     ].filter(v=>v!==null);
 
     if(voci.length){
