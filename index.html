@@ -145,6 +145,14 @@ tbody tr:hover td{background:var(--s2);}
 .rm-val{font-size:.92rem;font-weight:600;}
 .rm-hd{font-size:.8rem;color:#8e8e93;font-weight:500;margin-bottom:.4rem;}
 .gcard{margin-bottom:1.2rem;}
+.dash-charts-row{display:flex;flex-direction:column;}
+.dash-charts-row .gcard{margin-bottom:1.2rem;}
+.chart-wrap{position:relative;width:100%;height:190px;}
+@media (min-width:1024px){
+  .dash-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;align-items:start;}
+  .dash-charts-row .gcard{margin-bottom:0;}
+  .chart-wrap{height:165px;}
+}
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
 
@@ -229,17 +237,19 @@ tbody tr:hover td{background:var(--s2);}
 
   <div class="kpi3-row" id="kpi-row"></div>
 
-  <div class="glass gcard">
-    <div class="gcard-hd" id="cInOut-title">Entrate vs Uscite</div>
-    <div class="gcard-bd"><canvas id="cInOut" height="200"></canvas></div>
-  </div>
-  <div class="glass gcard">
-    <div class="gcard-hd" id="cCat-title">Uscite per categoria</div>
-    <div class="gcard-bd"><canvas id="cCat" height="175"></canvas></div>
-  </div>
-  <div class="glass gcard">
-    <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
-    <div class="gcard-bd"><canvas id="cHist" height="200"></canvas></div>
+  <div class="dash-charts-row">
+    <div class="glass gcard">
+      <div class="gcard-hd" id="cInOut-title">Entrate vs Uscite</div>
+      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cInOut" height="200"></canvas></div></div>
+    </div>
+    <div class="glass gcard">
+      <div class="gcard-hd" id="cCat-title">Uscite per categoria</div>
+      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cCat" height="175"></canvas></div></div>
+    </div>
+    <div class="glass gcard">
+      <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
+      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cHist" height="200"></canvas></div></div>
+    </div>
   </div>
 </div>
 
@@ -1063,14 +1073,14 @@ function renderDash(){
   }
   destroyC('cInOut');
   charts['cInOut']=new Chart(document.getElementById('cInOut'),{type:'bar',
-    data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:2,borderRadius:6}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0'},grid:{display:false}}}}});
+    data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:1.5,borderRadius:5,barPercentage:.45,categoryPercentage:.6}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',font:{size:10},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0',font:{size:10}},grid:{display:false}}}}});
   destroyC('cCat');
   const cd={};mm.filter(m=>m.tipo==='uscita').forEach(m=>{cd[m.cat]=(cd[m.cat]||0)+m.importo;});
   const ce=Object.entries(cd).sort((a,b)=>b[1]-a[1]);
   charts['cCat']=new Chart(document.getElementById('cCat'),{type:'bar',
-    data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:2,borderRadius:4}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:11}},grid:{display:false}}}}});
+    data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:1.5,borderRadius:4,barPercentage:.5,categoryPercentage:.65}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:10},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:10}},grid:{display:false}}}}});
 
   renderHist();
 }
@@ -1091,15 +1101,16 @@ function renderHist(){
   if(!cvs)return;
   charts['cHist']=new Chart(cvs,{
     data:{labels,datasets:[
-      {type:'bar',label:'Entrate',data:entArr,backgroundColor:'rgba(74,222,128,.35)',borderColor:'#4ade80',borderWidth:1.5,borderRadius:4,order:2},
-      {type:'bar',label:'Uscite',data:uscArr,backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1.5,borderRadius:4,order:2},
+      {type:'bar',label:'Entrate',data:entArr,backgroundColor:'rgba(74,222,128,.35)',borderColor:'#4ade80',borderWidth:1.5,borderRadius:4,order:2,barPercentage:.6,categoryPercentage:.7},
+      {type:'bar',label:'Uscite',data:uscArr,backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1.5,borderRadius:4,order:2,barPercentage:.6,categoryPercentage:.7},
       {type:'line',label:'Saldo netto',data:saldoArr,borderColor:'#60a5fa',borderWidth:2,pointRadius:3,pointBackgroundColor:'#60a5fa',fill:false,tension:.3,order:1}
     ]},
     options:{
+      maintainAspectRatio:false,
       plugins:{legend:{position:'top',align:'end',labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},
         tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y<0?'-':''}${fEUR(Math.abs(c.parsed.y))}`}}},
-      scales:{x:{ticks:{color:'#555',font:{size:10}},grid:{display:false}},
-        y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}
+      scales:{x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}},
+        y:{ticks:{color:'#555',font:{size:9},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}
     }});
 }
 
