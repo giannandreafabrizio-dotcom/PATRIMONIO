@@ -137,6 +137,13 @@ tbody tr:hover td{background:var(--s2);}
 .kpi3-icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;}
 .kpi3-lbl{font-size:.75rem;color:#8e8e93;}
 .kpi3-val{font-size:1.15rem;color:#fff;font-weight:600;}
+.snap-remind{display:flex;align-items:center;gap:.7rem;padding:.7rem 1rem;background:rgba(255,159,10,.1);border:0.5px solid rgba(255,159,10,.3);border-radius:14px;margin-bottom:1.2rem;font-size:.79rem;color:#ffb340;flex-wrap:wrap;}
+.snap-remind span{flex:1;min-width:180px;}
+.rm-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 0;border-bottom:0.5px solid rgba(255,255,255,.07);flex-wrap:wrap;}
+.rm-row:last-child{border-bottom:none;}
+.rm-lbl{font-size:.78rem;color:#8e8e93;display:flex;align-items:center;gap:7px;}
+.rm-val{font-size:.92rem;font-weight:600;}
+.rm-hd{font-size:.8rem;color:#8e8e93;font-weight:500;margin-bottom:.4rem;}
 .gcard{margin-bottom:1.2rem;}
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
@@ -196,6 +203,7 @@ tbody tr:hover td{background:var(--s2);}
     <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza</button>
   </div>
   <div id="sync-bar-dash"></div>
+  <div id="snap-reminder"></div>
 
   <div class="glass" style="padding:1.3rem 1.4rem;margin-bottom:1.2rem">
     <div class="hero-row">
@@ -210,6 +218,8 @@ tbody tr:hover td{background:var(--s2);}
       </div>
     </div>
   </div>
+
+  <div class="glass" id="rm-card" style="padding:1.1rem 1.3rem;margin-bottom:1.2rem;display:none"></div>
 
   <div class="month-pill-row">
     <div class="glass month-pill">
@@ -929,6 +939,20 @@ function renderMov(){
 
 // ── RENDER DASHBOARD ──
 const KPI_ICONS={ent:{bg:'#30d158',fg:'#000',ic:'ti-arrow-down'},usc:{bg:'#ff453a',fg:'#fff',ic:'ti-arrow-up'},sal:{bg:'#0a84ff',fg:'#fff',ic:'ti-scale'}};
+
+// Totale (di tutti gli asset, o di un sottoinsieme filtrato) alla data "cut", ricostruito dagli snapshot.
+// Ritorna null se non esiste alcuno snapshot valido a/prima di quella data per gli asset considerati.
+function totAlDate(cut,assetFilter){
+  const assets=assetFilter?db.assets.filter(assetFilter):db.assets;
+  if(!assets.length) return assetFilter?null:0;
+  const hasAny=db.snapshots.some(s=>s.date<=cut&&assets.some(a=>a.id===s.assetId));
+  if(!hasAny) return null;
+  return assets.reduce((s,a)=>{const r=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(r.length?r[r.length-1].eur:0);},0);
+}
+function cutMeseCorrente(){
+  const now=new Date();
+  return`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+}
 function renderDash(){
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
   const tm=monthKeyOffset(dashMonthOffset);
@@ -949,12 +973,8 @@ function renderDash(){
   const heroTot=document.getElementById('hero-tot');
   const heroSub=document.getElementById('hero-sub');
   if(heroTot) heroTot.textContent=fEUR(tot);
+  const cutMese=cutMeseCorrente();
   if(heroSub){
-    function totAlDate(cut){
-      const rel=db.snapshots.filter(s=>s.date<=cut);
-      if(!rel.length) return null;
-      return db.assets.reduce((s,a)=>{const r=db.snapshots.filter(sn=>sn.assetId===a.id&&sn.date<=cut);return s+(r.length?r[r.length-1].eur:0);},0);
-    }
     function variazione(cutDate,label){
       const startTot=totAlDate(cutDate);
       if(startTot===null||startTot===0) return null;
@@ -963,7 +983,6 @@ function renderDash(){
       return{label,pct,diff};
     }
     const now=new Date();
-    const cutMese=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
     const d3=new Date(now); d3.setMonth(d3.getMonth()-3);
     const cut3m=d3.toISOString().slice(0,10);
 
@@ -992,6 +1011,48 @@ function renderDash(){
     }
   }
 
+  // ── Card "Risparmio vs Mercato": scompone la variazione da inizio mese ──
+  const rmCard=document.getElementById('rm-card');
+  if(rmCard){
+    const totStartMese=totAlDate(cutMese);
+    if(totStartMese!==null && totStartMese!==0){
+      const meseReale=thisMonth();
+      const mmReale=db.movimenti.filter(m=>m.data.startsWith(meseReale)&&m.tipo!=='trasferimento');
+      const entReale=mmReale.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
+      const uscReale=mmReale.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
+      const risparmio=entReale-uscReale;
+      const variazioneTot=tot-totStartMese;
+      const mercato=variazioneTot-risparmio;
+      const row=(lbl,val,icon)=>{
+        const cls=val>=0?'pos':'neg'; const sign=val>=0?'+':'';
+        return`<div class="rm-row"><div class="rm-lbl">${icon} ${lbl}</div><div class="rm-val ${cls}">${sign}${fEUR(val)}</div></div>`;
+      };
+      rmCard.style.display='block';
+      rmCard.innerHTML=`<div class="rm-hd">Da dove viene la variazione di questo mese</div>
+        ${row('Risparmio (entrate − uscite)',risparmio,'💶')}
+        ${row('Rendimento di mercato (investimenti/crypto)',mercato,'📈')}
+        ${row('Variazione totale patrimonio',variazioneTot,'Σ')}`;
+    } else {
+      rmCard.style.display='none';
+    }
+  }
+
+  // ── Promemoria snapshot: avvisa se manca da troppo tempo un aggiornamento valori ──
+  const remindEl=document.getElementById('snap-reminder');
+  if(remindEl){
+    if(db.snapshots.length){
+      const lastDate=db.snapshots.reduce((max,s)=>s.date>max?s.date:max,db.snapshots[0].date);
+      const days=Math.floor((new Date(today())-new Date(lastDate))/86400000);
+      if(days>=7){
+        remindEl.innerHTML=`<div class="snap-remind">📸 <span>Non aggiorni i valori degli asset da <strong>${days} giorni</strong> (ultimo: ${lastDate}). Aggiornali per avere grafici e % di variazione affidabili.</span><button class="btn btn-teal btn-sm" onclick="openSnap()">Aggiorna ora</button></div>`;
+      } else {
+        remindEl.innerHTML='';
+      }
+    } else {
+      remindEl.innerHTML='';
+    }
+  }
+
   document.getElementById('kpi-row').innerHTML=`
     <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.ent.bg}"><i class="ti ${KPI_ICONS.ent.ic}" style="color:${KPI_ICONS.ent.fg}"></i></div><span class="kpi3-lbl">Entrate${suff}</span></div><div class="kpi3-val">${fEUR(ent)}</div></div>
     <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.usc.bg}"><i class="ti ${KPI_ICONS.usc.ic}" style="color:${KPI_ICONS.usc.fg}"></i></div><span class="kpi3-lbl">Uscite${suff}</span></div><div class="kpi3-val">${fEUR(usc)}</div></div>
@@ -1013,7 +1074,14 @@ function renderDash(){
   if(legEl){
     legEl.innerHTML=grpKeys.map(k=>{
       const pct=tot?(grp[k]/tot*100):0;
-      return`<span><span class="pie-dot" style="background:${APPLE_TCOLORS[k]||'#8e8e93'}"></span>${TLABELS[k]}<span class="pct">${pct.toFixed(0)}%</span></span>`;
+      const startK=totAlDate(cutMese,a=>a.tipo===k);
+      let deltaHtml='';
+      if(startK!==null && startK!==0){
+        const dPct=(grp[k]-startK)/startK*100;
+        const cls=dPct>=0?'pos':'neg'; const sign=dPct>=0?'+':'';
+        deltaHtml=`<span class="${cls}" style="font-size:.68rem;margin-left:3px">${sign}${dPct.toFixed(1)}%</span>`;
+      }
+      return`<span><span class="pie-dot" style="background:${APPLE_TCOLORS[k]||'#8e8e93'}"></span>${TLABELS[k]}<span class="pct">${pct.toFixed(0)}%</span>${deltaHtml}</span>`;
     }).join('');
   }
   destroyC('cInOut');
