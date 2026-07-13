@@ -219,8 +219,6 @@ tbody tr:hover td{background:var(--s2);}
     </div>
   </div>
 
-  <div class="glass" id="rm-card" style="padding:1.1rem 1.3rem;margin-bottom:1.2rem;display:none"></div>
-
   <div class="month-pill-row">
     <div class="glass month-pill">
       <button class="pill-btn" id="dm-prev" onclick="chgDashMonth(1)" aria-label="Mese precedente"><i class="ti ti-chevron-left"></i></button>
@@ -953,6 +951,11 @@ function cutMeseCorrente(){
   const now=new Date();
   return`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 }
+// Data di riferimento "da inizio Patrimonio" per i delta % per categoria della torta.
+// Fine aprile 2026 = primo momento con tutti gli asset inseriti e snapshot affidabili
+// (i giorni 6-15 aprile erano "acerbi" e non vanno usati come base). È l'equivalente
+// per-categoria della baseline totale di 79.977 € usata nell'hero.
+const BASELINE_INIZIO_DATE='2026-04-30';
 function renderDash(){
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
   const tm=monthKeyOffset(dashMonthOffset);
@@ -1011,32 +1014,6 @@ function renderDash(){
     }
   }
 
-  // ── Card "Risparmio vs Mercato": scompone la variazione da inizio mese ──
-  const rmCard=document.getElementById('rm-card');
-  if(rmCard){
-    const totStartMese=totAlDate(cutMese);
-    if(totStartMese!==null && totStartMese!==0){
-      const meseReale=thisMonth();
-      const mmReale=db.movimenti.filter(m=>m.data.startsWith(meseReale)&&m.tipo!=='trasferimento');
-      const entReale=mmReale.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
-      const uscReale=mmReale.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
-      const risparmio=entReale-uscReale;
-      const variazioneTot=tot-totStartMese;
-      const mercato=variazioneTot-risparmio;
-      const row=(lbl,val,icon)=>{
-        const cls=val>=0?'pos':'neg'; const sign=val>=0?'+':'';
-        return`<div class="rm-row"><div class="rm-lbl">${icon} ${lbl}</div><div class="rm-val ${cls}">${sign}${fEUR(val)}</div></div>`;
-      };
-      rmCard.style.display='block';
-      rmCard.innerHTML=`<div class="rm-hd">Da dove viene la variazione di questo mese</div>
-        ${row('Risparmio (entrate − uscite)',risparmio,'💶')}
-        ${row('Rendimento di mercato (investimenti/crypto)',mercato,'📈')}
-        ${row('Variazione totale patrimonio',variazioneTot,'Σ')}`;
-    } else {
-      rmCard.style.display='none';
-    }
-  }
-
   // ── Promemoria snapshot: avvisa se manca da troppo tempo un aggiornamento valori ──
   const remindEl=document.getElementById('snap-reminder');
   if(remindEl){
@@ -1074,7 +1051,7 @@ function renderDash(){
   if(legEl){
     legEl.innerHTML=grpKeys.map(k=>{
       const pct=tot?(grp[k]/tot*100):0;
-      const startK=totAlDate(cutMese,a=>a.tipo===k);
+      const startK=totAlDate(BASELINE_INIZIO_DATE,a=>a.tipo===k);
       let deltaHtml='';
       if(startK!==null && startK!==0){
         const dPct=(grp[k]-startK)/startK*100;
