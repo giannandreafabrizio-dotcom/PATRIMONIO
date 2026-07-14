@@ -191,6 +191,43 @@ tbody tr:hover td{background:var(--s2);}
   .and-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
 }
 
+/* ── Asset: card raggruppate per tipo, stile Apple ── */
+.asset-grid{display:flex;flex-direction:column;gap:1rem;}
+@media(min-width:1024px){
+  .asset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:start;}
+}
+.grpcard{padding:1rem 1.2rem;}
+.grp-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:0.5px solid rgba(255,255,255,.08);}
+.grp-chip{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.grp-chip.c-liq{background:rgba(48,209,88,.16);}
+.grp-chip.c-inv{background:rgba(10,132,255,.16);}
+.grp-chip.c-cry{background:rgba(255,159,10,.16);}
+.grp-chip.c-wal{background:rgba(191,90,242,.16);}
+.grp-chip.c-alt{background:rgba(142,142,147,.16);}
+.grp-name{font-size:.92rem;font-weight:600;color:#fff;}
+.grp-meta{font-size:.72rem;color:#8e8e93;margin-top:1px;}
+.grp-tot{margin-left:auto;text-align:right;}
+.grp-tot-val{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:600;color:#fff;}
+.grp-tot-pct{font-size:.72rem;color:#8e8e93;}
+.grp-empty{font-size:.78rem;color:#636366;padding:.4rem 0;}
+.arow-wrap{position:relative;border-radius:12px;overflow:hidden;touch-action:pan-y;}
+.arow-wrap+.arow-wrap{margin-top:2px;}
+.arow-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;}
+.arow-act{width:52px;border:none;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.arow-act-edit{background:var(--text2);color:#000;}
+.arow-act-del{background:var(--red);color:#fff;}
+.arow{position:relative;background:transparent;display:flex;align-items:center;gap:.7rem;padding:.55rem .2rem;transition:transform .18s ease,background .15s;}
+.arow-wrap:not(:last-child) .arow{border-bottom:0.5px solid rgba(255,255,255,.05);}
+.arow .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.arow-main{min-width:0;flex:1;}
+.arow-name{font-size:.85rem;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.arow-cur{font-size:.7rem;color:#8e8e93;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.arow-val{flex-shrink:0;text-align:right;}
+.arow-eur{font-size:.9rem;font-weight:600;color:#fff;}
+.arow-pct{font-size:.68rem;color:#8e8e93;}
+.arow-edit-desktop{display:flex;gap:4px;flex-shrink:0;opacity:0;transition:opacity .12s;}
+.arow:hover .arow-edit-desktop{opacity:1;}
+
 /* Movimenti — righe swipeabili stile iOS Mail (solo mobile) */
 .mov-list{display:none;}
 .mov-row-wrap{position:relative;border-radius:12px;overflow:hidden;margin-bottom:7px;touch-action:pan-y;}
@@ -219,6 +256,11 @@ tbody tr:hover td{background:var(--s2);}
   .hero-row{flex-direction:column;align-items:flex-start;}
   #page-movimenti .card table{display:none;}
   #page-movimenti .mov-list{display:block;}
+  .arow-edit-desktop{display:none;}
+}
+@media(min-width:721px){
+  .arow-wrap{overflow:visible;}
+  .arow-actions{display:none;}
 }
 </style>
 </head>
@@ -315,10 +357,7 @@ tbody tr:hover td{background:var(--s2);}
       <button class="btn btn-p" onclick="openAsset()">+ Aggiungi asset</button>
     </div>
   </div>
-  <div class="card">
-    <table><thead><tr><th>Nome / Istituto</th><th>Tipo</th><th>Valuta</th><th style="text-align:right">Importo</th><th style="text-align:right">EUR</th><th>Ultimo aggiornamento</th><th>Note</th><th></th></tr></thead>
-    <tbody id="asset-tb"></tbody></table>
-  </div>
+  <div class="asset-grid" id="asset-grid"></div>
 </div>
 
 <!-- MOVIMENTI -->
@@ -988,25 +1027,90 @@ function snap(assetId,date,eur){
   db.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
-// ── RENDER ASSET ──
+// ── RENDER ASSET: card raggruppate per tipo, stile Apple ──
+const GRP_ORDER=['wallet','investimenti','crypto','liquidita','altro'];
+const GRP_ICON={wallet:'💳',investimenti:'📈',crypto:'₿',liquidita:'💰',altro:'📦'};
+const GRP_CLASS={wallet:'c-wal',investimenti:'c-inv',crypto:'c-cry',liquidita:'c-liq',altro:'c-alt'};
+const GRP_DOT={wallet:'#bf5af2',investimenti:'#0a84ff',crypto:'#ff9f0a',liquidita:'#30d158',altro:'#8e8e93'};
+
 function renderAsset(){
-  const tb=document.getElementById('asset-tb');
-  if(!db.assets.length){tb.innerHTML='<tr class="empty-row"><td colspan="8">Nessun asset. Clicca "+ Aggiungi asset" per iniziare.</td></tr>';return;}
+  const grid=document.getElementById('asset-grid');
+  if(!db.assets.length){
+    grid.innerHTML='<div class="glass grpcard"><div class="grp-empty">Nessun asset. Clicca "+ Aggiungi asset" per iniziare.</div></div>';
+    return;
+  }
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
-  tb.innerHTML=db.assets.map(a=>`
-    <tr>
-      <td><strong>${esc(a.nome)}</strong></td>
-      <td><span class="badge ${TBADGE[a.tipo]||'b-alt'}">${TLABELS[a.tipo]||a.tipo}</span></td>
-      <td style="color:var(--text2)">${a.valuta}</td>
-      <td style="text-align:right">${fNum(a.importo)}</td>
-      <td style="text-align:right"><strong>${fEUR(a.eur)}</strong><br><span style="font-size:.66rem;color:var(--text3)">${tot?((a.eur/tot)*100).toFixed(1)+'%':''}</span></td>
-      <td style="font-size:.72rem;color:var(--text3)">${a.aggiornato||a.creato||'—'}</td>
-      <td style="color:var(--text3);font-size:.75rem;max-width:140px">${esc(a.note||'—')}</td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-g btn-sm" onclick="openAsset('${a.id}')">✏</button>
-        <button class="btn btn-d btn-sm" onclick="delAsset('${a.id}')">✕</button>
-      </td>
-    </tr>`).join('');
+
+  grid.innerHTML=GRP_ORDER.filter(t=>db.assets.some(a=>a.tipo===t)).map(t=>{
+    const assets=db.assets.filter(a=>a.tipo===t).sort((a,b)=>b.eur-a.eur);
+    const grpTot=assets.reduce((s,a)=>s+a.eur,0);
+    const grpPct=tot?(grpTot/tot*100):0;
+    const rows=assets.map(a=>{
+      const pct=tot?(a.eur/tot*100):0;
+      return`<div class="arow-wrap">
+        <div class="arow-actions">
+          <button type="button" class="arow-act arow-act-edit" onclick="openAsset('${a.id}')" aria-label="Modifica">✏</button>
+          <button type="button" class="arow-act arow-act-del" onclick="delAsset('${a.id}')" aria-label="Elimina">✕</button>
+        </div>
+        <div class="arow" data-id="${a.id}">
+          <span class="dot" style="background:${GRP_DOT[t]}"></span>
+          <div class="arow-main">
+            <div class="arow-name">${esc(a.nome)}</div>
+            <div class="arow-cur">${fNum(a.importo)} ${a.valuta}</div>
+          </div>
+          <div class="arow-val">
+            <div class="arow-eur">${fEUR(a.eur)}</div>
+            <div class="arow-pct">${pct.toFixed(1)}%</div>
+          </div>
+          <div class="arow-edit-desktop">
+            <button class="btn btn-g btn-sm" onclick="openAsset('${a.id}')">✏</button>
+            <button class="btn btn-d btn-sm" onclick="delAsset('${a.id}')">✕</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div class="glass grpcard">
+      <div class="grp-hd">
+        <div class="grp-chip ${GRP_CLASS[t]}">${GRP_ICON[t]}</div>
+        <div><div class="grp-name">${TLABELS[t]}</div><div class="grp-meta">${assets.length} asset</div></div>
+        <div class="grp-tot"><div class="grp-tot-val">${fEUR(grpTot)}</div><div class="grp-tot-pct">${grpPct.toFixed(1)}% del patrimonio</div></div>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  attachAssetSwipeHandlers();
+}
+
+function attachAssetSwipeHandlers(){
+  const SWIPE_OPEN=-104;
+  let openRow=null;
+  document.querySelectorAll('#asset-grid .arow').forEach(row=>{
+    let startX=0,curX=0,dragging=false,baseX=0;
+    row.addEventListener('touchstart',e=>{
+      if(openRow && openRow!==row) closeRow(openRow);
+      startX=e.touches[0].clientX; dragging=true;
+      baseX=row.classList.contains('open')?SWIPE_OPEN:0;
+      row.style.transition='none';
+    },{passive:true});
+    row.addEventListener('touchmove',e=>{
+      if(!dragging)return;
+      curX=e.touches[0].clientX;
+      let dx=baseX+(curX-startX);
+      dx=Math.max(SWIPE_OPEN,Math.min(0,dx));
+      row.style.transform=`translateX(${dx}px)`;
+    },{passive:true});
+    row.addEventListener('touchend',()=>{
+      if(!dragging)return;
+      dragging=false;
+      row.style.transition='transform .18s ease';
+      const dx=curX-startX;
+      const shouldOpen=baseX===0?dx<-40:dx<40;
+      if(shouldOpen){ row.style.transform=`translateX(${SWIPE_OPEN}px)`; row.classList.add('open'); openRow=row; }
+      else { row.style.transform='translateX(0)'; row.classList.remove('open'); openRow=null; }
+    });
+  });
+  function closeRow(r){ r.style.transition='transform .18s ease'; r.style.transform='translateX(0)'; r.classList.remove('open'); }
 }
 
 // ── RENDER MOVIMENTI ──
