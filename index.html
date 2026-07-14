@@ -73,6 +73,31 @@ tbody tr:hover td{background:var(--s2);}
 .filters input:focus,.filters select:focus{border-color:var(--border2);}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:center;justify-content:center;}
 .overlay.open{display:flex;}
+
+/* ── Modale Movimento — stile "cubettoni" ── */
+#mo-mov .modal{border-radius:24px;}
+.mv-seg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;}
+.mv-seg-btn{padding:.85rem;border-radius:16px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.87rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .12s;}
+.mv-seg-btn.sel.ent{background:rgba(48,209,88,.15);border-color:var(--green);color:var(--green);}
+.mv-seg-btn.sel.usc{background:rgba(255,69,58,.15);border-color:var(--red);color:var(--red);}
+.mv-amount{border-radius:18px;background:var(--s2);border:1.5px solid var(--border);padding:.9rem 1.1rem;text-align:center;margin-bottom:1rem;}
+.mv-amount input{background:transparent;border:none;outline:none;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:600;text-align:center;width:100%;}
+.mv-amount input::placeholder{color:var(--text3);}
+.mv-chipgrid{display:flex;flex-wrap:wrap;gap:8px;max-height:132px;overflow-y:auto;padding:1px;}
+.mv-chip{padding:.5rem .8rem;border-radius:13px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.77rem;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.mv-chip:hover{border-color:var(--border2);color:var(--text);}
+.mv-chip.sel{background:var(--s3);border-color:#fff;color:#fff;font-weight:500;}
+.mv-datebtns{display:flex;gap:8px;align-items:center;}
+.mv-datein{flex:1;background:var(--s2);border:1.5px solid var(--border);border-radius:13px;color:var(--text);font-family:'Inter',sans-serif;font-size:.82rem;padding:.55rem .7rem;outline:none;color-scheme:dark;cursor:pointer;}
+.mv-datein:focus{border-color:var(--border2);}
+.mv-datein.sel{border-color:#fff;}
+.mv-today{flex-shrink:0;padding:.55rem 1rem;border-radius:13px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.82rem;cursor:pointer;}
+.mv-today.sel{background:var(--s3);border-color:#fff;color:#fff;font-weight:500;}
+@media(max-width:720px){
+  .overlay#mo-mov{align-items:flex-end;background:rgba(0,0,0,.55);}
+  #mo-mov .modal{width:100%;max-width:100%;border-radius:26px 26px 0 0;max-height:92vh;padding:1.1rem 1.1rem 1.4rem;}
+  #mo-mov .modal::before{content:'';display:block;width:38px;height:5px;border-radius:3px;background:#48484a;margin:-.3rem auto 1rem;}
+}
 .modal{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.6rem;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;}
 .modal h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:1.2rem;}
 .fg{margin-bottom:.85rem;}
@@ -448,27 +473,33 @@ tbody tr:hover td{background:var(--s2);}
 <div class="overlay" id="mo-mov">
   <div class="modal">
     <h3 id="mm-title">Nuovo movimento</h3>
-    <div class="fr">
-      <div class="fg"><label>Data</label><input type="date" id="m-data"></div>
-      <div class="fg"><label>Tipo</label>
-        <select id="m-tipo" onchange="updCats()">
-          <option value="entrata">↑ Entrata</option>
-          <option value="uscita">↓ Uscita</option>
-        </select>
-      </div>
+
+    <div class="mv-seg">
+      <button type="button" class="mv-seg-btn ent" onclick="setMovTipo('entrata')"><span>↑</span> Entrata</button>
+      <button type="button" class="mv-seg-btn usc" onclick="setMovTipo('uscita')"><span>↓</span> Uscita</button>
     </div>
-    <div class="fg"><label>Descrizione</label><input id="m-desc" placeholder="es. Stipendio, Spesa Esselunga…"></div>
-    <div class="fr">
-      <div class="fg"><label>Categoria</label><select id="m-cat"></select></div>
-      <div class="fg"><label>Asset collegato</label><select id="m-asset" onchange="onMovAssetChange()"><option value="">— nessuno —</option></select></div>
-    </div>
-    <div class="fg"><label>Importo EUR</label><input type="number" id="m-imp" placeholder="0.00" step="0.01" min="0"></div>
+
+    <div class="mv-amount"><input type="number" id="m-imp" placeholder="0 €" step="0.01" min="0" inputmode="decimal"></div>
+
+    <div class="fg"><label>Categoria</label><div class="mv-chipgrid" id="m-cat-chips"></div></div>
+    <div class="fg"><label>Asset collegato</label><div class="mv-chipgrid" id="m-asset-chips"></div></div>
+
     <div class="fg" id="fg-new-bal" style="display:none">
       <label>Nuovo saldo asset (opz.)</label>
       <input type="number" id="m-newbal" placeholder="Lascia vuoto = calcolo automatico" step="0.01">
       <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="m-bal-hint"></div>
     </div>
-    <div class="fg"><label>Note (opzionale)</label><input id="m-note" placeholder=""></div>
+
+    <div class="fg">
+      <label>Data</label>
+      <div class="mv-datebtns">
+        <input type="date" id="m-data" class="mv-datein">
+        <button type="button" class="mv-today" id="m-today-btn" onclick="setMovOggi()">Oggi</button>
+      </div>
+    </div>
+
+    <div class="fg"><label>Descrizione</label><input id="m-desc" placeholder="es. Stipendio, Spesa Esselunga…"></div>
+
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-mov')">Annulla</button>
       <button class="btn btn-p" onclick="saveMov()">Salva</button>
@@ -773,52 +804,82 @@ function saveSnap(){
   alert(`✓ Snapshot salvato per ${changed} asset in data ${date}.`);
 }
 
-// ── MOV MODAL ──
+// ── MOV MODAL ── (stile cubettoni: stato tenuto in variabili invece che in <select>)
+let movTipo='uscita', movCat=null, movAssetId='';
 function openMov(id){
   eMov=id||null;
   const m=id?db.movimenti.find(x=>x.id===id):null;
   document.getElementById('mm-title').textContent=m?'Modifica movimento':'Nuovo movimento';
-  document.getElementById('m-data').value=m?.data||today();
-  document.getElementById('m-tipo').value=m?.tipo||'uscita';
   document.getElementById('m-desc').value=m?.desc||'';
   document.getElementById('m-imp').value=m?.importo||'';
-  document.getElementById('m-note').value=m?.note||'';
   document.getElementById('m-newbal').value='';
-  updCats(m?.cat); updAssets(m?.assetId); onMovAssetChange();
+  movTipo=m?.tipo||'uscita';
+  movCat=m?.cat||null;
+  movAssetId=m?.assetId||'';
+  renderMovSeg();
+  renderMovCatChips();
+  renderMovAssetChips();
+  onMovAssetChange();
+  const dIn=document.getElementById('m-data');
+  dIn.value=m?.data||today();
+  syncMovTodayBtn();
   document.getElementById('mo-mov').classList.add('open');
 }
+function renderMovSeg(){
+  document.querySelectorAll('.mv-seg-btn').forEach(b=>{
+    const isEnt=b.classList.contains('ent');
+    b.classList.toggle('sel', (isEnt&&movTipo==='entrata')||(!isEnt&&movTipo==='uscita'));
+  });
+}
+function setMovTipo(t){
+  movTipo=t;
+  movCat=null;
+  renderMovSeg();
+  renderMovCatChips();
+}
+function renderMovCatChips(){
+  const cats=movTipo==='entrata'?CAT_IN:CAT_OUT;
+  if(!movCat || !cats.includes(movCat)) movCat=cats[0];
+  document.getElementById('m-cat-chips').innerHTML=cats.map(c=>
+    `<button type="button" class="mv-chip${c===movCat?' sel':''}" onclick="setMovCat('${c.replace(/'/g,"\\'")}')">${esc(c)}</button>`).join('');
+}
+function setMovCat(c){ movCat=c; renderMovCatChips(); }
+function renderMovAssetChips(){
+  const opts=[{id:'',nome:'— nessuno —'},...db.assets];
+  document.getElementById('m-asset-chips').innerHTML=opts.map(a=>
+    `<button type="button" class="mv-chip${a.id===movAssetId?' sel':''}" onclick="setMovAsset('${a.id}')">${esc(a.nome)}</button>`).join('');
+}
+function setMovAsset(id){ movAssetId=id; renderMovAssetChips(); onMovAssetChange(); }
+function setMovOggi(){ document.getElementById('m-data').value=today(); syncMovTodayBtn(); }
+function syncMovTodayBtn(){
+  const isToday=document.getElementById('m-data').value===today();
+  document.getElementById('m-today-btn').classList.toggle('sel',isToday);
+  document.getElementById('m-data').classList.toggle('sel',!isToday);
+}
+document.getElementById('m-data')?.addEventListener('change',syncMovTodayBtn);
 function onMovAssetChange(){
-  const assetId=document.getElementById('m-asset').value;
-  const a=db.assets.find(x=>x.id===assetId);
+  const a=db.assets.find(x=>x.id===movAssetId);
   const fg=document.getElementById('fg-new-bal');
   const hint=document.getElementById('m-bal-hint');
   if(a){ fg.style.display='block'; hint.textContent=`Saldo attuale: ${fEUR(a.eur)} — lascia vuoto per aggiornamento automatico`; }
   else { fg.style.display='none'; }
-}
-function updCats(sel){
-  const t=document.getElementById('m-tipo').value;
-  const cats=t==='entrata'?CAT_IN:CAT_OUT;
-  document.getElementById('m-cat').innerHTML=cats.map(c=>`<option value="${c}"${c===sel?'selected':''}>${c}</option>`).join('');
-}
-function updAssets(sel){
-  document.getElementById('m-asset').innerHTML='<option value="">— nessuno —</option>'+
-    db.assets.map(a=>`<option value="${a.id}"${a.id===sel?'selected':''}>${esc(a.nome)}</option>`).join('');
 }
 function saveMov(){
   const desc=document.getElementById('m-desc').value.trim();
   const importo=parseFloat(document.getElementById('m-imp').value)||0;
   if(!desc)return alert('Inserisci una descrizione.');
   if(!importo)return alert('Inserisci un importo.');
-  const assetId=document.getElementById('m-asset').value;
-  const tipo=document.getElementById('m-tipo').value;
-  const data=document.getElementById('m-data').value;
+  const assetId=movAssetId;
+  const tipo=movTipo;
+  const cat=movCat;
+  const data=document.getElementById('m-data').value||today();
   if(eMov){
     const old=db.movimenti.find(x=>x.id===eMov);
     if(old.assetId){ const oa=db.assets.find(x=>x.id===old.assetId); if(oa){ if(old.tipo==='entrata') oa.eur-=old.importo; else oa.eur+=old.importo; } }
-    old.data=data; old.tipo=tipo; old.desc=desc; old.cat=document.getElementById('m-cat').value;
-    old.assetId=assetId; old.importo=importo; old.note=document.getElementById('m-note').value.trim();
+    old.data=data; old.tipo=tipo; old.desc=desc; old.cat=cat;
+    old.assetId=assetId; old.importo=importo; old.note='';
   }else{
-    db.movimenti.push({id:uid(),data,tipo,desc,cat:document.getElementById('m-cat').value,assetId,importo,note:document.getElementById('m-note').value.trim()});
+    db.movimenti.push({id:uid(),data,tipo,desc,cat,assetId,importo,note:''});
   }
   if(assetId){
     const a=db.assets.find(x=>x.id===assetId);
@@ -1283,7 +1344,6 @@ function importa(e){
 // ── INIT ──
 load();
 document.getElementById('f-mese').value=thisMonth();
-updCats();
 renderDash();
 renderAsset();
 
