@@ -270,6 +270,28 @@ tbody tr:hover td{background:var(--s2);}
 .md-act:hover{background:rgba(255,255,255,.06);}
 .md-empty{grid-column:1/-1;text-align:center;color:#636366;padding:2.5rem;font-size:.82rem;}
 
+/* Impostazioni — stile Apple: card di vetro, chip icona, testo asciugato */
+#page-impostazioni .card{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;}
+#page-impostazioni .card-hd{border-bottom:0.5px solid rgba(255,255,255,.07);padding:1rem 1.25rem;}
+#page-impostazioni .card-hd h3{display:flex;align-items:center;gap:.6rem;font-size:.86rem;font-weight:600;}
+#page-impostazioni .card-bd{padding:1.1rem 1.25rem 1.25rem;}
+.set-chip{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;}
+.set-hint{font-size:.78rem;color:#8e8e93;line-height:1.6;margin-bottom:1rem;}
+.set-hint code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:5px;font-size:.73rem;color:#5ec9b8;}
+.set-stats{display:flex;flex-direction:column;gap:.55rem;margin-bottom:1rem;}
+.set-stat{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;padding:.15rem 0;}
+.set-stat .lbl{color:#8e8e93;}
+.set-stat .val{font-weight:500;color:#fff;}
+.set-stat .val.ok{color:#30d158;}
+.set-stat .val.bad{color:#ff453a;}
+.set-actions{display:flex;gap:.55rem;flex-wrap:wrap;margin-bottom:.9rem;}
+.set-legend{font-size:.71rem;color:#636366;line-height:1.7;}
+.set-legend b{color:#8e8e93;font-weight:500;}
+.set-steps{display:flex;flex-direction:column;gap:.5rem;}
+.set-step{display:flex;gap:.65rem;align-items:flex-start;font-size:.8rem;color:#c7c7cc;line-height:1.5;}
+.set-step .n{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.08);color:#8e8e93;font-size:.68rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.set-note{margin-top:.9rem;padding-top:.9rem;border-top:0.5px solid rgba(255,255,255,.07);font-size:.76rem;color:#8e8e93;line-height:1.6;}
+
 @media(max-width:720px){
   .shell{flex-direction:column;height:auto;}
   aside{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
@@ -452,53 +474,43 @@ tbody tr:hover td{background:var(--s2);}
   <div class="page-hd"><div><h2>Impostazioni</h2><p>Configurazione Google Sheets</p></div></div>
 
   <div class="card">
-    <div class="card-hd"><h3>🔗 Connessione Google Sheets</h3></div>
+    <div class="card-hd"><h3><span class="set-chip" style="background:rgba(45,212,191,.16);color:#2dd4bf">🔗</span>Connessione Google Sheets</h3></div>
     <div class="card-bd">
-      <div class="setup-box">
-        <p>Incolla qui sotto l'URL dello script Google Apps Script che hai creato. Trovi il link nella pagina di distribuzione dello script (quello che inizia con <code>https://script.google.com/macros/s/...</code>).</p>
-      </div>
+      <div class="set-hint">Incolla l'URL dello script Apps Script (inizia con <code>script.google.com/macros/s/...</code>).</div>
       <div class="fg">
         <label>URL Google Apps Script</label>
         <input id="cfg-url" placeholder="https://script.google.com/macros/s/..." style="font-size:.75rem">
       </div>
       <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-p" onclick="salvaConfig()">Salva configurazione</button>
-        <button class="btn btn-teal" onclick="testConnesione()">🔌 Testa connessione</button>
+        <button class="btn btn-p" onclick="salvaConfig()">Salva</button>
+        <button class="btn btn-teal" onclick="testConnesione()">Testa connessione</button>
         <div id="test-result" style="font-size:.77rem;color:var(--text3)"></div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hd"><h3>☁️ Stato sincronizzazione</h3></div>
+    <div class="card-hd"><h3><span class="set-chip" style="background:rgba(48,209,88,.16);color:#30d158">☁️</span>Sincronizzazione</h3></div>
     <div class="card-bd">
-      <div id="sync-status-box" style="font-size:.82rem;color:var(--text2);line-height:1.8">
-        Caricamento...
-      </div>
-      <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+      <div class="set-stats" id="sync-status-box">Caricamento...</div>
+      <div class="set-actions">
         <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza ora</button>
-        <button class="btn btn-g" onclick="pushToSheets()">⬆ Carica su Sheets</button>
-        <button class="btn btn-g" onclick="pullFromSheets()">⬇ Scarica da Sheets</button>
+        <button class="btn btn-g" onclick="pushToSheets()">⬆ Carica</button>
+        <button class="btn btn-g" onclick="pullFromSheets()">⬇ Scarica</button>
       </div>
-      <div style="margin-top:.8rem;font-size:.71rem;color:var(--text3)">
-        <strong style="color:var(--text2)">⬆ Carica:</strong> sovrascrive Google Sheets con i dati locali<br>
-        <strong style="color:var(--text2)">⬇ Scarica:</strong> sovrascrive i dati locali con Google Sheets<br>
-        <strong style="color:var(--text2)">↺ Sincronizza:</strong> carica automaticamente ogni modifica
-      </div>
+      <div class="set-legend"><b>Carica</b> sovrascrive Sheets · <b>Scarica</b> sovrascrive i dati locali · <b>Sincronizza</b> aggiorna a ogni modifica</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hd"><h3>📱 Come usare su iPhone</h3></div>
+    <div class="card-hd"><h3><span class="set-chip" style="background:rgba(56,145,255,.16);color:#3891ff">📱</span>Come usare su iPhone</h3></div>
     <div class="card-bd">
-      <div class="setup-box">
-        <p>1. Manda questo file HTML a te stesso via email o AirDrop<br>
-        2. Su iPhone, apri il file con <strong>Safari</strong><br>
-        3. Tocca il tasto <strong>Condividi</strong> (rettangolo con freccia su)<br>
-        4. Seleziona <strong>"Aggiungi alla schermata Home"</strong><br>
-        5. Diventa un'icona come una vera app!<br><br>
-        I dati si sincronizzano tramite Google Sheets — quello che inserisci sul PC appare sull'iPhone e viceversa.</p>
+      <div class="set-steps">
+        <div class="set-step"><span class="n">1</span>Manda il file HTML via email o AirDrop</div>
+        <div class="set-step"><span class="n">2</span>Aprilo su iPhone con <strong>Safari</strong></div>
+        <div class="set-step"><span class="n">3</span>Tocca <strong>Condividi</strong> → <strong>Aggiungi alla schermata Home</strong></div>
       </div>
+      <div class="set-note">I dati si sincronizzano tramite Google Sheets tra PC e iPhone.</div>
     </div>
   </div>
 </div>
@@ -651,10 +663,10 @@ function updateSettingsStatus(){
   const url = getScriptUrl();
   const timeStr = lastSync ? lastSync.toLocaleTimeString('it-IT') : '—';
   box.innerHTML = `
-    <div>URL Script: <span style="color:${url?'var(--green)':'var(--red)'};">${url ? '✓ Configurato' : '✗ Non configurato'}</span></div>
-    <div>Stato: <span style="color:${syncOk?'var(--green)':'var(--red)'};">${syncOk ? '✓ Connesso a Google Sheets' : '✗ Dati salvati solo in locale'}</span></div>
-    <div>Ultima sincronizzazione: <span style="color:var(--text3)">${timeStr}</span></div>
-    <div>Record in memoria: <span style="color:var(--text3)">${db.assets.length} asset, ${db.movimenti.length} movimenti, ${db.snapshots.length} snapshot</span></div>`;
+    <div class="set-stat"><span class="lbl">Script</span><span class="val ${url?'ok':'bad'}">${url ? '✓ Configurato' : '✗ Non configurato'}</span></div>
+    <div class="set-stat"><span class="lbl">Google Sheets</span><span class="val ${syncOk?'ok':'bad'}">${syncOk ? '✓ Connesso' : '✗ Solo locale'}</span></div>
+    <div class="set-stat"><span class="lbl">Ultimo sync</span><span class="val">${timeStr}</span></div>
+    <div class="set-stat"><span class="lbl">Record</span><span class="val">${db.assets.length} asset · ${db.movimenti.length} mov · ${db.snapshots.length} snap</span></div>`;
 }
 
 // ── GOOGLE SHEETS API ──
