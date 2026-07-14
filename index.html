@@ -212,7 +212,8 @@ tbody tr:hover td{background:var(--s2);}
 .grp-empty{font-size:.78rem;color:#636366;padding:.4rem 0;}
 .arow-wrap{position:relative;border-radius:12px;overflow:hidden;touch-action:pan-y;}
 .arow-wrap+.arow-wrap{margin-top:2px;}
-.arow-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;}
+.arow-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;opacity:0;pointer-events:none;transition:opacity .12s;}
+.arow-wrap.swiping .arow-actions,.arow-wrap.open .arow-actions{opacity:1;pointer-events:auto;}
 .arow-act{width:52px;border:none;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
 .arow-act-edit{background:var(--text2);color:#000;}
 .arow-act-del{background:var(--red);color:#fff;}
@@ -1084,13 +1085,15 @@ function renderAsset(){
 
 function attachAssetSwipeHandlers(){
   const SWIPE_OPEN=-104;
-  let openRow=null;
+  let openWrap=null;
   document.querySelectorAll('#asset-grid .arow').forEach(row=>{
+    const wrap=row.closest('.arow-wrap');
     let startX=0,curX=0,dragging=false,baseX=0;
     row.addEventListener('touchstart',e=>{
-      if(openRow && openRow!==row) closeRow(openRow);
+      if(openWrap && openWrap!==wrap) closeWrap(openWrap);
       startX=e.touches[0].clientX; dragging=true;
-      baseX=row.classList.contains('open')?SWIPE_OPEN:0;
+      baseX=wrap.classList.contains('open')?SWIPE_OPEN:0;
+      wrap.classList.add('swiping');
       row.style.transition='none';
     },{passive:true});
     row.addEventListener('touchmove',e=>{
@@ -1103,14 +1106,15 @@ function attachAssetSwipeHandlers(){
     row.addEventListener('touchend',()=>{
       if(!dragging)return;
       dragging=false;
+      wrap.classList.remove('swiping');
       row.style.transition='transform .18s ease';
       const dx=curX-startX;
       const shouldOpen=baseX===0?dx<-40:dx<40;
-      if(shouldOpen){ row.style.transform=`translateX(${SWIPE_OPEN}px)`; row.classList.add('open'); openRow=row; }
-      else { row.style.transform='translateX(0)'; row.classList.remove('open'); openRow=null; }
+      if(shouldOpen){ row.style.transform=`translateX(${SWIPE_OPEN}px)`; wrap.classList.add('open'); openWrap=wrap; }
+      else { row.style.transform='translateX(0)'; wrap.classList.remove('open'); openWrap=null; }
     });
   });
-  function closeRow(r){ r.style.transition='transform .18s ease'; r.style.transform='translateX(0)'; r.classList.remove('open'); }
+  function closeWrap(w){ const r=w.querySelector('.arow'); r.style.transition='transform .18s ease'; r.style.transform='translateX(0)'; w.classList.remove('open'); }
 }
 
 // ── RENDER MOVIMENTI ──
