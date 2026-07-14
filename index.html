@@ -156,6 +156,16 @@ tbody tr:hover td{background:var(--s2);}
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
 
+/* Andamento: due grafici affiancati */
+.and-charts-row{display:flex;flex-direction:column;gap:1.2rem;margin-bottom:1.2rem;}
+.and-charts-row .card{margin-bottom:0;}
+/* ▼▼▼ CAMBIA QUESTO NUMERO PER RENDERE I GRAFICI PIÙ ALTI/BASSI ▼▼▼ */
+.and-chart-wrap{position:relative;width:100%;height:320px;}
+/* ▲▲▲ es. 260px = più compatti, 400px = più grandi ▲▲▲ */
+@media(min-width:1024px){
+  .and-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
+}
+
 @media(max-width:720px){
   .shell{flex-direction:column;height:auto;}
   aside{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
@@ -292,26 +302,35 @@ tbody tr:hover td{background:var(--s2);}
 <div class="page" id="page-andamento">
   <div class="page-hd"><div><h2>Andamento nel tempo</h2><p>Storico snapshot patrimonio e asset</p></div></div>
   <div class="kpi-row" id="and-kpi-row"></div>
-  <div class="card">
-    <div class="card-hd">
-      <h3>Performance del patrimonio</h3>
-      <div class="chart-tabs" id="and-tabs">
-        <button class="ct active" onclick="setAndTab('tot',this)">Patrimonio totale</button>
-        <button class="ct" onclick="setAndTab('tipo',this)">Per tipo asset</button>
-        <button class="ct" onclick="setAndTab('asset',this)">Per singolo asset</button>
-      </div>
-    </div>
-    <div class="card-bd">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:.7rem">
-        <div class="period-row">
-          <button class="pb active" onclick="setPer(3,this)">3M</button>
-          <button class="pb" onclick="setPer(6,this)">6M</button>
-          <button class="pb" onclick="setPer(12,this)">1A</button>
-          <button class="pb" onclick="setPer(0,this)">Tutto</button>
+  <div class="and-charts-row">
+    <div class="card">
+      <div class="card-hd">
+        <h3>Performance del patrimonio</h3>
+        <div class="chart-tabs" id="and-tabs">
+          <button class="ct active" onclick="setAndTab('tot',this)">Patrimonio totale</button>
+          <button class="ct" onclick="setAndTab('tipo',this)">Per tipo asset</button>
+          <button class="ct" onclick="setAndTab('asset',this)">Per singolo asset</button>
         </div>
       </div>
-      <div class="at-wrap" id="at-wrap" style="display:none"></div>
-      <canvas id="cMain" height="220"></canvas>
+      <div class="card-bd">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:.7rem">
+          <div class="period-row">
+            <button class="pb active" onclick="setPer(3,this)">3M</button>
+            <button class="pb" onclick="setPer(6,this)">6M</button>
+            <button class="pb" onclick="setPer(12,this)">1A</button>
+            <button class="pb" onclick="setPer(0,this)">Tutto</button>
+          </div>
+        </div>
+        <div class="at-wrap" id="at-wrap" style="display:none"></div>
+        <div class="and-chart-wrap"><canvas id="cMain"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><h3>Variazione mensile del patrimonio</h3></div>
+      <div class="card-bd">
+        <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Segue lo stesso periodo selezionato a fianco.</p>
+        <div class="and-chart-wrap"><canvas id="cDelta"></canvas></div>
+      </div>
     </div>
   </div>
   <div class="tip">💡 <strong>Come funziona:</strong> usa <strong>📸 Aggiorna valori</strong> nella sezione Asset ogni settimana per registrare lo snapshot. I grafici mostrano l'evoluzione storica.</div>
@@ -1133,7 +1152,7 @@ function valAt(assetId,d){
   const rel=db.snapshots.filter(s=>s.assetId===assetId&&s.date<=d);
   return rel.length?rel[rel.length-1].eur:null;
 }
-function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:true,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
+function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:false,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:10},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
 
 // ── KPI CARDS ANDAMENTO ──
 function renderAndKpi(dates){
@@ -1196,6 +1215,43 @@ function renderAnd(){
     });
     charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0)});
   }
+
+  renderDelta();
+}
+
+// ── NUOVO GRAFICO: variazione mese su mese del patrimonio totale ──
+function renderDelta(){
+  destroyC('cDelta');
+  const cvs=document.getElementById('cDelta');
+  if(!cvs) return;
+  if(!db.snapshots.length || !db.assets.length){
+    charts['cDelta']=new Chart(cvs,{type:'bar',data:{labels:[],datasets:[]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    return;
+  }
+  // Elenco mesi, dal primo snapshot fino al mese corrente
+  const first=db.snapshots.reduce((m,s)=>s.date<m?s.date:m,db.snapshots[0].date).slice(0,7);
+  const now=new Date();
+  const cur=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const months=[];
+  let [y,mo]=first.split('-').map(Number);
+  const [cy,cm]=cur.split('-').map(Number);
+  while(y<cy || (y===cy && mo<=cm)){ months.push(`${y}-${String(mo).padStart(2,'0')}`); mo++; if(mo>12){mo=1;y++;} }
+  const endOfMonth=mk=>{const [yy,mm]=mk.split('-').map(Number);const last=new Date(yy,mm,0).getDate();return `${mk}-${String(last).padStart(2,'0')}`;};
+  // Totale a fine mese (ricostruito dagli snapshot: asset non ancora esistente = 0)
+  const totByMonth=months.map(mk=>db.assets.reduce((s,a)=>{const v=valAt(a.id,endOfMonth(mk));return v!==null?s+v:s;},0));
+  // Delta dal 2° mese in poi (il 1° serve solo come base di partenza → niente barra "acerba")
+  let labels=[], deltas=[];
+  for(let i=1;i<months.length;i++){ labels.push(monthLabelIt(months[i])); deltas.push(totByMonth[i]-totByMonth[i-1]); }
+  // Stessa finestra del selettore periodo (period in mesi, 0 = tutto)
+  if(period && labels.length>period){ labels=labels.slice(-period); deltas=deltas.slice(-period); }
+  const bg=deltas.map(d=>d>=0?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)');
+  const bd=deltas.map(d=>d>=0?'#4ade80':'#f87171');
+  charts['cDelta']=new Chart(cvs,{type:'bar',
+    data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:4,barPercentage:.6,categoryPercentage:.7}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${fEUR(c.parsed.y)}`}}},
+      scales:{x:{ticks:{color:'#555',font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:'#555',font:{size:10},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}}});
 }
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
 
