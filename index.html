@@ -191,6 +191,22 @@ tbody tr:hover td{background:var(--s2);}
   .and-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
 }
 
+/* Movimenti — righe swipeabili stile iOS Mail (solo mobile) */
+.mov-list{display:none;}
+.mov-row-wrap{position:relative;border-radius:12px;overflow:hidden;margin-bottom:7px;touch-action:pan-y;}
+.mov-row-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;}
+.mov-act{width:56px;border:none;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;}
+.mov-act-edit{background:var(--text2);color:#000;}
+.mov-act-del{background:var(--red);color:#fff;}
+.mov-row{position:relative;background:var(--s1);padding:.75rem .85rem;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:transform .18s ease;}
+.mov-row.trasf{background:#0e2320;border-left:2px solid var(--teal);}
+.mov-row-main{min-width:0;flex:1;}
+.mov-row-desc{color:var(--text);font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mov-row-meta{color:var(--text3);font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.mov-row.trasf .mov-row-meta{color:var(--teal);}
+.mov-row-amt{font-size:.95rem;font-weight:600;flex-shrink:0;}
+.mov-hint{text-align:center;color:var(--text3);font-size:.7rem;margin-top:2px;}
+
 @media(max-width:720px){
   .shell{flex-direction:column;height:auto;}
   aside{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
@@ -201,6 +217,8 @@ tbody tr:hover td{background:var(--s2);}
   .charts-2{grid-template-columns:1fr;}
   .aside-foot{display:none;}
   .hero-row{flex-direction:column;align-items:flex-start;}
+  #page-movimenti .card table{display:none;}
+  #page-movimenti .mov-list{display:block;}
 }
 </style>
 </head>
@@ -320,7 +338,9 @@ tbody tr:hover td{background:var(--s2);}
   <div class="card">
     <table><thead><tr><th>Data</th><th>Descrizione</th><th>Tipo</th><th>Categoria</th><th>Asset</th><th style="text-align:right">EUR</th><th></th></tr></thead>
     <tbody id="mov-tb"></tbody></table>
+    <div class="mov-list" id="mov-list"></div>
   </div>
+  <div class="mov-hint" id="mov-hint" style="display:none">← scorri una riga per modificare o eliminare</div>
 </div>
 
 <!-- ANDAMENTO -->
@@ -1023,6 +1043,69 @@ function renderMov(){
       </td>
     </tr>`;
   }).join('');
+
+  renderMovList(rows);
+}
+
+// ── VISTA MOBILE: righe swipeabili stile iOS Mail ──
+function renderMovList(rows){
+  const list=document.getElementById('mov-list');
+  const hint=document.getElementById('mov-hint');
+  if(!list)return;
+  if(!rows.length){ list.innerHTML=''; if(hint)hint.style.display='none'; return; }
+  if(hint)hint.style.display='block';
+  list.innerHTML=rows.map(m=>{
+    const ast=db.assets.find(a=>a.id===m.assetId);
+    const isTrasf=m.tipo==='trasferimento';
+    const amtClass=isTrasf?(m.trasfDir==='in'?'pos':'neg'):(m.tipo==='entrata'?'pos':'neg');
+    const amtSign=isTrasf?(m.trasfDir==='in'?'+':'-'):(m.tipo==='entrata'?'+':'-');
+    const meta=isTrasf?`${m.trasfDir==='in'?'⇄ Trasf. in':'⇄ Trasf. out'} · ${ast?esc(ast.nome):'—'}`:`${esc(m.cat)} · ${ast?esc(ast.nome):'—'}`;
+    return`<div class="mov-row-wrap">
+      <div class="mov-row-actions">
+        ${!isTrasf?`<button type="button" class="mov-act mov-act-edit" onclick="openMov('${m.id}')" aria-label="Modifica">✏</button>`:''}
+        <button type="button" class="mov-act mov-act-del" onclick="delMov('${m.id}')" aria-label="Elimina">✕</button>
+      </div>
+      <div class="mov-row${isTrasf?' trasf':''}" data-id="${m.id}">
+        <div class="mov-row-main">
+          <div class="mov-row-desc">${esc(m.desc)}</div>
+          <div class="mov-row-meta">${meta}</div>
+        </div>
+        <div class="mov-row-amt ${amtClass}">${amtSign}${fEUR(m.importo)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipeHandlers();
+}
+
+function attachSwipeHandlers(){
+  const SWIPE_OPEN=-112;
+  let openRow=null;
+  document.querySelectorAll('#mov-list .mov-row').forEach(row=>{
+    let startX=0,curX=0,dragging=false,baseX=0;
+    row.addEventListener('touchstart',e=>{
+      if(openRow && openRow!==row) closeRow(openRow);
+      startX=e.touches[0].clientX; dragging=true;
+      baseX=row.classList.contains('open')?SWIPE_OPEN:0;
+      row.style.transition='none';
+    },{passive:true});
+    row.addEventListener('touchmove',e=>{
+      if(!dragging)return;
+      curX=e.touches[0].clientX;
+      let dx=baseX+(curX-startX);
+      dx=Math.max(SWIPE_OPEN,Math.min(0,dx));
+      row.style.transform=`translateX(${dx}px)`;
+    },{passive:true});
+    row.addEventListener('touchend',()=>{
+      if(!dragging)return;
+      dragging=false;
+      row.style.transition='transform .18s ease';
+      const dx=curX-startX;
+      const shouldOpen=baseX===0?dx<-40:dx<40;
+      if(shouldOpen){ row.style.transform=`translateX(${SWIPE_OPEN}px)`; row.classList.add('open'); openRow=row; }
+      else { row.style.transform='translateX(0)'; row.classList.remove('open'); openRow=null; }
+    });
+  });
+  function closeRow(r){ r.style.transition='transform .18s ease'; r.style.transform='translateX(0)'; r.classList.remove('open'); }
 }
 
 // ── RENDER DASHBOARD ──
