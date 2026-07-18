@@ -190,6 +190,14 @@ tbody tr:hover td{background:var(--s2);}
 .msw-pane.empty{opacity:0;pointer-events:none;}
 .msw-lbl{font-size:.72rem;color:#8e8e93;font-weight:500;margin-bottom:.55rem;text-align:center;letter-spacing:.2px;}
 .msw-blank{min-height:130px;}
+/* ── Grafici lunghi scorrevoli orizzontalmente ── */
+.hscroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;overscroll-behavior-x:contain;}
+.hscroll::-webkit-scrollbar{height:5px;}
+.hscroll::-webkit-scrollbar-track{background:transparent;}
+.hscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
+.hscroll-in{height:100%;position:relative;}
+.hscroll-hint{font-size:.68rem;color:#636366;text-align:center;margin-top:.4rem;}
 .swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.4rem 0 1rem;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
 
@@ -407,7 +415,7 @@ tbody tr:hover td{background:var(--s2);}
     </div>
     <div class="glass gcard">
       <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
-      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cHist" height="200"></canvas></div></div>
+      <div class="gcard-bd"><div class="hscroll" id="wrapHist" style="height:230px"><div class="hscroll-in"><canvas id="cHist"></canvas></div></div><div class="hscroll-hint">scorri per vedere tutti i mesi</div></div>
     </div>
   </div>
 </div>
@@ -471,14 +479,14 @@ tbody tr:hover td{background:var(--s2);}
           </div>
         </div>
         <div class="at-wrap" id="at-wrap" style="display:none"></div>
-        <div class="and-chart-wrap"><canvas id="cMain"></canvas></div>
+        <div class="hscroll" id="wrapMain" style="height:300px"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
     <div class="card">
       <div class="card-hd"><h3>Variazione mensile del patrimonio</h3></div>
       <div class="card-bd">
         <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Segue lo stesso periodo selezionato a fianco.</p>
-        <div class="and-chart-wrap"><canvas id="cDelta"></canvas></div>
+        <div class="hscroll" id="wrapDelta" style="height:260px"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
   </div>
@@ -1488,6 +1496,63 @@ function attachSwipeHandlers(){
   function closeRow(r){ r.style.transition='transform .18s ease'; r.style.transform='translateX(0)'; r.classList.remove('open'); }
 }
 
+// ══ UTILITY GRAFICI LUNGHI + LINEA ELEGANTE ══
+
+// Dimensiona il canvas interno in base al numero di punti: sotto una certa
+// soglia riempie il contenitore, oltre diventa più largo e si scorre.
+function sizeScroll(wrapId,nPunti,pxPunto,minPx){
+  const wrap=document.getElementById(wrapId);
+  if(!wrap) return null;
+  const inner=wrap.firstElementChild;
+  const disp=Math.max(wrap.clientWidth||300,(nPunti||1)*pxPunto,minPx||0);
+  inner.style.width=disp+'px';
+  return wrap;
+}
+// Porta la vista sul presente (estremità destra) dopo il disegno
+function scrollToNow(wrapId){
+  const wrap=document.getElementById(wrapId);
+  if(!wrap) return;
+  requestAnimationFrame(()=>{ wrap.scrollLeft=wrap.scrollWidth; });
+}
+// Gradiente verticale sotto la linea
+function gradFill(hex,alphaTop){
+  return ctx=>{
+    const{chart}=ctx; const{ctx:c,chartArea:area}=chart;
+    if(!area) return hex+'22';
+    const g=c.createLinearGradient(0,area.top,0,area.bottom);
+    g.addColorStop(0,hex+(alphaTop||'44'));
+    g.addColorStop(1,hex+'00');
+    return g;
+  };
+}
+// Stile linea: niente punti fissi (compaiono al tocco), curva monotona
+// — morbida ma senza le "gobbe" false che tension:.4 inventa tra due valori.
+const LINE_STYLE={
+  borderWidth:2.5,
+  pointRadius:0,
+  pointHoverRadius:5,
+  pointHoverBorderWidth:2,
+  pointHoverBorderColor:'#000',
+  pointHitRadius:14,
+  cubicInterpolationMode:'monotone',
+  tension:0,
+  borderJoinStyle:'round',
+  borderCapStyle:'round'
+};
+
+// ── COPERTURA SNAPSHOT ──
+// Bug corretto: prima un asset senza snapshot a una certa data veniva contato 0,
+// quindi le date iniziali (quando non tutti gli asset erano ancora tracciati)
+// mostravano un patrimonio artificialmente basso → finti crolli nei grafici.
+// Ora la serie storica parte dalla prima data in cui TUTTI gli asset hanno copertura.
+function coverageStart(){
+  const primi=db.assets
+    .map(a=>{const s=db.snapshots.filter(sn=>sn.assetId===a.id).map(sn=>sn.date).sort();return s.length?s[0]:null;})
+    .filter(Boolean);
+  if(!primi.length) return null;
+  return primi.reduce((mx,d)=>d>mx?d:mx,primi[0]);   // la più tardiva delle "prime volte"
+}
+
 // ── RENDER DASHBOARD ──
 const KPI_ICONS={ent:{bg:'#30d158',fg:'#000',ic:'ti-arrow-down'},usc:{bg:'#ff453a',fg:'#fff',ic:'ti-arrow-up'},sal:{bg:'#0a84ff',fg:'#fff',ic:'ti-scale'}};
 
@@ -1607,30 +1672,43 @@ function renderDash(){
 // ── STORICO ULTIMI 6 MESI (entrate / uscite / saldo) ──
 function renderHist(){
   destroyC('cHist');
-  const monthKeys=[]; for(let i=5;i>=0;i--) monthKeys.push(monthKeyOffset(dashMonthOffset+i));
+  const cvs=document.getElementById('cHist');
+  if(!cvs) return;
+
+  // Tutti i mesi con movimenti, dal primo fino al mese corrente: un unico grafico lungo
+  const mesi=[...new Set(db.movimenti.map(m=>m.data.slice(0,7)))].sort();
+  const monthKeys=[];
+  if(mesi.length){
+    let [y,mo]=mesi[0].split('-').map(Number);
+    const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+    while(y<cy||(y===cy&&mo<=cm)){ monthKeys.push(y+'-'+String(mo).padStart(2,'0')); mo++; if(mo>12){mo=1;y++;} }
+  }
   const labels=monthKeys.map(monthLabelIt);
-  const entArr=[], uscArr=[], saldoArr=[];
+  const entArr=[],uscArr=[],saldoArr=[];
   monthKeys.forEach(mk=>{
     const mmk=db.movimenti.filter(m=>m.data.startsWith(mk)&&m.tipo!=='trasferimento');
     const e=mmk.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
     const u=mmk.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
     entArr.push(e); uscArr.push(u); saldoArr.push(e-u);
   });
-  const cvs=document.getElementById('cHist');
-  if(!cvs)return;
+
+  sizeScroll('wrapHist',monthKeys.length,88);
   charts['cHist']=new Chart(cvs,{
     data:{labels,datasets:[
-      {type:'bar',label:'Entrate',data:entArr,backgroundColor:'rgba(74,222,128,.35)',borderColor:'#4ade80',borderWidth:1.5,borderRadius:4,order:2,barPercentage:.6,categoryPercentage:.7},
-      {type:'bar',label:'Uscite',data:uscArr,backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1.5,borderRadius:4,order:2,barPercentage:.6,categoryPercentage:.7},
-      {type:'line',label:'Saldo netto',data:saldoArr,borderColor:'#60a5fa',borderWidth:2,pointRadius:3,pointBackgroundColor:'#60a5fa',fill:false,tension:.3,order:1}
+      {type:'bar',label:'Entrate',data:entArr,backgroundColor:'rgba(74,222,128,.35)',borderColor:'#4ade80',borderWidth:1.5,borderRadius:4,order:3,barPercentage:.6,categoryPercentage:.7},
+      {type:'bar',label:'Uscite',data:uscArr,backgroundColor:'rgba(248,113,113,.35)',borderColor:'#f87171',borderWidth:1.5,borderRadius:4,order:3,barPercentage:.6,categoryPercentage:.7},
+      Object.assign({type:'line',label:'Saldo netto',data:saldoArr,borderColor:'#60a5fa',pointHoverBackgroundColor:'#60a5fa',fill:false,order:1},LINE_STYLE)
     ]},
     options:{
-      maintainAspectRatio:false,
+      maintainAspectRatio:false,responsive:true,
+      animation:{duration:280},
+      interaction:{mode:'index',intersect:false},
       plugins:{legend:{position:'top',align:'end',labels:{color:'#a0a0a0',font:{size:12},boxWidth:10}},
-        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y<0?'-':''}${fEUR(Math.abs(c.parsed.y))}`}}},
-      scales:{x:{ticks:{color:'#555',font:{size:11}},grid:{display:false}},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y<0?'-':'')+fEUR(Math.abs(c.parsed.y))}}},
+      scales:{x:{ticks:{color:'#555',font:{size:11},autoSkip:false},grid:{display:false}},
         y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}
     }});
+  scrollToNow('wrapHist');
 }
 
 // ── ANDAMENTO: tab + periodo ──
@@ -1652,7 +1730,13 @@ function valAt(assetId,d){
   const rel=db.snapshots.filter(s=>s.assetId===assetId&&s.date<=d);
   return rel.length?rel[rel.length-1].eur:null;
 }
-function lineOpts(leg=false){return{responsive:true,interaction:{mode:'index',intersect:false},maintainAspectRatio:false,plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:12},boxWidth:10}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fEUR(c.parsed.y)}`}}},scales:{x:{ticks:{color:'#555',font:{size:12},maxTicksLimit:8},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}};}
+function lineOpts(leg=false){return{responsive:true,maintainAspectRatio:false,
+  animation:{duration:300},
+  interaction:{mode:'index',intersect:false},
+  plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:12},boxWidth:10,usePointStyle:true,pointStyle:'line'}},
+    tooltip:{callbacks:{label:c=>c.dataset.label+': '+fEUR(c.parsed.y)}}},
+  scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:20},grid:{display:false}},
+    y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}};}
 
 // ── KPI CARDS ANDAMENTO ──
 function renderAndKpi(dates){
@@ -1685,16 +1769,23 @@ function renderAnd(){
   document.getElementById('at-wrap').style.display=(andTab==='asset')?'flex':'none';
 
   const snaps=getFilteredSnaps();
-  const dates=[...new Set(snaps.map(s=>s.date))].sort();
+  let dates=[...new Set(snaps.map(s=>s.date))].sort();
+
+  // Fix: scarta le date in cui non tutti gli asset hanno ancora uno snapshot,
+  // altrimenti quelli mancanti valgono 0 e la linea mostra crolli inesistenti.
+  const cov=coverageStart();
+  if(cov && (andTab==='tot'||andTab==='tipo')) dates=dates.filter(d=>d>=cov);
 
   renderAndKpi(dates);
 
   destroyC('cMain');
   const ctx=document.getElementById('cMain');
+  sizeScroll('wrapMain',dates.length,dates.length>14?26:0);
 
   if(andTab==='tot'){
     const totVals=dates.map(d=>db.assets.reduce((sum,a)=>{const v=valAt(a.id,d);return v!==null?sum+v:sum;},0));
-    const ds={label:'Patrimonio',data:totVals,borderColor:'#fff',backgroundColor:'rgba(255,255,255,.08)',borderWidth:2,pointRadius:3,pointBackgroundColor:'#fff',fill:true,tension:.4};
+    const ds=Object.assign({label:'Patrimonio',data:totVals,borderColor:'#fff',
+      backgroundColor:gradFill('#ffffff','3a'),pointHoverBackgroundColor:'#fff',fill:true},LINE_STYLE);
     charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[ds]},options:lineOpts(false)});
   } else if(andTab==='tipo'){
     const order=['liquidita','investimenti','crypto','wallet','altro'];
@@ -1702,7 +1793,8 @@ function renderAnd(){
     const dsArr=typesPresent.map(t=>{
       const assetsOfType=db.assets.filter(a=>a.tipo===t);
       const data=dates.map(d=>assetsOfType.reduce((s,a)=>{const v=valAt(a.id,d);return v!==null?s+v:s;},0));
-      return{label:TLABELS[t],data,borderColor:TCOLORS[t],backgroundColor:TCOLORS[t]+'33',borderWidth:2,pointRadius:2,fill:true,tension:.4};
+      return Object.assign({label:TLABELS[t],data,borderColor:TCOLORS[t],
+        backgroundColor:gradFill(TCOLORS[t],'33'),pointHoverBackgroundColor:TCOLORS[t],fill:true},LINE_STYLE);
     });
     charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(true)});
   } else {
@@ -1711,10 +1803,12 @@ function renderAnd(){
       const idx=db.assets.indexOf(a);
       const col=ACOLORS[idx%ACOLORS.length];
       const data=dates.map(d=>valAt(a.id,d));
-      return{label:a.nome,data,borderColor:col,backgroundColor:col+'22',borderWidth:2,pointRadius:2.5,pointBackgroundColor:col,fill:false,tension:.3,spanGaps:true};
+      return Object.assign({label:a.nome,data,borderColor:col,backgroundColor:'transparent',
+        pointHoverBackgroundColor:col,fill:false,spanGaps:true},LINE_STYLE);
     });
     charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0)});
   }
+  scrollToNow('wrapMain');
 
   renderDelta();
 }
@@ -1729,7 +1823,10 @@ function renderDelta(){
     return;
   }
   // Elenco mesi, dal primo snapshot fino al mese corrente
-  const first=db.snapshots.reduce((m,s)=>s.date<m?s.date:m,db.snapshots[0].date).slice(0,7);
+  // Parte dal primo mese con copertura completa: prima i totali sono parziali
+  // e produrrebbero una variazione fittizia enorme al primo mese "pieno".
+  const cov=coverageStart();
+  const first=(cov||db.snapshots.reduce((m,s)=>s.date<m?s.date:m,db.snapshots[0].date)).slice(0,7);
   const now=new Date();
   const cur=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const months=[];
@@ -1746,12 +1843,15 @@ function renderDelta(){
   if(period && labels.length>period){ labels=labels.slice(-period); deltas=deltas.slice(-period); }
   const bg=deltas.map(d=>d>=0?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)');
   const bd=deltas.map(d=>d>=0?'#4ade80':'#f87171');
+  sizeScroll('wrapDelta',labels.length,80);
   charts['cDelta']=new Chart(cvs,{type:'bar',
-    data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:4,barPercentage:.6,categoryPercentage:.7}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{display:false},
+    data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:6,barPercentage:.62,categoryPercentage:.72}]},
+    options:{maintainAspectRatio:false,responsive:true,animation:{duration:300},
+      plugins:{legend:{display:false},
       tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${fEUR(c.parsed.y)}`}}},
-      scales:{x:{ticks:{color:'#555',font:{size:12}},grid:{display:false}},
-        y:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}}});
+      scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0,autoSkip:false},grid:{display:false}},
+        y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
+  scrollToNow('wrapDelta');
 }
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
 
