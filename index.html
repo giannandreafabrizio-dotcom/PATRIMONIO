@@ -181,9 +181,11 @@ tbody tr:hover td{background:var(--s2);}
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
 
 /* ── Carosello mensile: ogni blocco scorre in modo indipendente ── */
-.msw{overflow:hidden;touch-action:pan-y;cursor:grab;}
+.msw{overflow:hidden;touch-action:pan-y;cursor:grab;position:relative;isolation:isolate;transform:translateZ(0);}
 .msw:active{cursor:grabbing;}
-.msw-track{display:flex;width:300%;will-change:transform;transform:translateX(-33.3333%);}
+.msw-track{display:flex;width:300%;transform:translateX(-33.3333%) translateZ(0);backface-visibility:hidden;}
+.msw-track.dragging{will-change:transform;}
+.msw.no-blur{background:rgba(28,28,30,.92) !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
 .msw-pane{flex:0 0 33.3333%;width:33.3333%;min-width:0;padding:0 1px;}
 .msw-pane.empty{opacity:0;pointer-events:none;}
 .msw-lbl{font-size:.72rem;color:#8e8e93;font-weight:500;margin-bottom:.55rem;text-align:center;letter-spacing:.2px;}
@@ -838,45 +840,45 @@ function paintSwiper(st){
     st.buildPane(p,monthKeyOffset(off));
   });
   st.track.style.transition='none';
-  st.track.style.transform='translateX(-33.3333%)';
+  st.track.style.transform='translate3d(-33.3333%,0,0)';
   void st.track.offsetWidth;
 }
 
 function bindSwiper(st){
   const t=st.track;
-  let x0=0,y0=0,dx=0,w=0,axis=null,drag=false,lastX=0,lastT=0,vel=0,pid=null;
-  const put=px=>{ t.style.transform='translateX(calc(-33.3333% + '+px+'px))'; };
+  let x0=0,y0=0,dx=0,w=0,axis=null,drag=false,lastX=0,lastT=0,vel=0,tid=null;
+  const put=px=>{ t.style.transform='translate3d(calc(-33.3333% + '+px+'px),0,0)'; };
 
-  st.view.addEventListener('pointerdown',e=>{
-    if(st.busy||e.button) return;
-    w=st.view.offsetWidth; x0=lastX=e.clientX; y0=e.clientY;
-    lastT=performance.now(); vel=0; dx=0; axis=null; drag=true; pid=e.pointerId;
+  const start=(x,y,id)=>{
+    if(st.busy) return;
+    w=st.view.offsetWidth; x0=lastX=x; y0=y;
+    lastT=performance.now(); vel=0; dx=0; axis=null; drag=true; tid=id;
     t.style.transition='none';
-  });
-
-  st.view.addEventListener('pointermove',e=>{
-    if(!drag||e.pointerId!==pid) return;
-    const ddx=e.clientX-x0, ddy=e.clientY-y0;
+  };
+  const move=(x,y)=>{
+    if(!drag) return false;
+    const ddx=x-x0, ddy=y-y0;
     if(axis===null){
-      if(Math.abs(ddx)<4&&Math.abs(ddy)<4) return;
+      if(Math.abs(ddx)<4&&Math.abs(ddy)<4) return false;
       axis=Math.abs(ddx)>Math.abs(ddy)?'x':'y';
-      if(axis==='x'&&st.view.setPointerCapture) try{st.view.setPointerCapture(pid);}catch(_){}
+      if(axis==='x'){ t.classList.add('dragging'); st.view.classList.add('no-blur'); }
     }
-    if(axis!=='x') return;
+    if(axis!=='x') return false;
     const now=performance.now();
-    if(now>lastT){ vel=(e.clientX-lastX)/(now-lastT); lastX=e.clientX; lastT=now; }
-    dx=(st.offset===0&&ddx<0)?ddx*0.3:ddx;   // resistenza elastica oltre il mese corrente
+    if(now>lastT){ vel=(x-lastX)/(now-lastT); lastX=x; lastT=now; }
+    dx=(st.offset===0&&ddx<0)?ddx*0.3:ddx;
     put(dx);
-  });
-
-  const release=()=>{
+    return true;   // il chiamante può preventDefault
+  };
+  const end=()=>{
     if(!drag) return;
-    drag=false;
+    drag=false; tid=null;
+    t.classList.remove('dragging'); st.view.classList.remove('no-blur');
     const soglia=Math.min(55,w*0.13);
     let dir=0;
     if(axis==='x'&&(Math.abs(dx)>soglia||Math.abs(vel)>0.35)) dir=dx>0?1:-1;
     if(dir===-1&&st.offset===0) dir=0;
-    t.style.transition='transform .34s cubic-bezier(.2,.75,.3,1)';
+    t.style.transition='transform .32s cubic-bezier(.22,.68,.32,1)';
     if(!dir){ put(0); return; }
     st.busy=true;
     put(dir*w);
@@ -889,11 +891,34 @@ function bindSwiper(st){
       st.busy=false;
     };
     t.addEventListener('transitionend',finish);
-    setTimeout(finish,420);
+    setTimeout(finish,400);
   };
-  st.view.addEventListener('pointerup',release);
-  st.view.addEventListener('pointercancel',release);
-  st.view.addEventListener('pointerleave',e=>{ if(drag&&axis!=='x') release(); });
+
+  // ── Touch (iOS/Android): più affidabile dei Pointer Events su Safari ──
+  st.view.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1) return;
+    const tt=e.touches[0];
+    start(tt.clientX,tt.clientY,tt.identifier);
+  },{passive:true});
+
+  st.view.addEventListener('touchmove',e=>{
+    const tt=[...e.touches].find(x=>x.identifier===tid);
+    if(!tt) return;
+    if(move(tt.clientX,tt.clientY) && axis==='x') e.preventDefault();
+  },{passive:false});
+
+  st.view.addEventListener('touchend',end,{passive:true});
+  st.view.addEventListener('touchcancel',end,{passive:true});
+
+  // ── Mouse (desktop) ──
+  st.view.addEventListener('mousedown',e=>{
+    if(e.button) return;
+    start(e.clientX,e.clientY,'mouse');
+    const mm=ev=>move(ev.clientX,ev.clientY);
+    const mu=()=>{ end(); document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
 }
 
 // Riporta tutti i riquadri sul mese scelto dal navigatore a pillola
