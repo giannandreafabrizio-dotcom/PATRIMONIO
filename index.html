@@ -179,6 +179,12 @@ tbody tr:hover td{background:var(--s2);}
   .chart-wrap{height:165px;}
 }
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
+
+/* ── Swipe orizzontale per cambiare mese (Dashboard) ── */
+.month-swipe{touch-action:pan-y;will-change:transform;}
+.month-swipe.settling{transition:transform .22s cubic-bezier(.22,.61,.36,1),opacity .22s ease;}
+.swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.5rem 0 1rem;}
+@media(min-width:721px){.swipe-hint{display:none;}}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
 
 /* Andamento: due grafici affiancati */
@@ -380,14 +386,16 @@ tbody tr:hover td{background:var(--s2);}
     </div>
   </div>
 
-  <div class="kpi3-row" id="kpi-row"></div>
+  <div class="kpi3-row month-swipe" id="kpi-row"></div>
+
+  <div class="swipe-hint">‹ scorri per cambiare mese ›</div>
 
   <div class="dash-charts-row">
-    <div class="glass gcard">
+    <div class="glass gcard month-swipe">
       <div class="gcard-hd" id="cInOut-title">Entrate vs Uscite</div>
       <div class="gcard-bd"><div class="chart-wrap"><canvas id="cInOut" height="200"></canvas></div></div>
     </div>
-    <div class="glass gcard">
+    <div class="glass gcard month-swipe">
       <div class="gcard-hd" id="cCat-title">Uscite per categoria</div>
       <div class="gcard-bd"><div class="chart-wrap"><canvas id="cCat" height="175"></canvas></div></div>
     </div>
@@ -785,8 +793,68 @@ function monthLabelIt(key){
   return `${MESI_IT[m-1]} ${y}`;
 }
 function chgDashMonth(delta){
+  const prev=dashMonthOffset;
   dashMonthOffset=Math.max(0,dashMonthOffset+delta);
-  renderDash();
+  if(dashMonthOffset!==prev) renderDash();
+}
+
+// ── SWIPE ORIZZONTALE PER CAMBIARE MESE ──
+// Attivo su: KPI cards, grafico Entrate vs Uscite, grafico Uscite per categoria.
+// Scorri verso destra = mese precedente · verso sinistra = mese successivo.
+// Lo scroll verticale della pagina resta libero: il gesto si "aggancia" all'asse X
+// solo se il movimento orizzontale è nettamente prevalente.
+function attachMonthSwipe(){
+  document.querySelectorAll('.month-swipe').forEach(el=>{
+    if(el.dataset.swipeOn) return;
+    el.dataset.swipeOn='1';
+    let x0=0,y0=0,dx=0,drag=false,axis=null;
+
+    el.addEventListener('touchstart',e=>{
+      if(e.touches.length!==1) return;
+      x0=e.touches[0].clientX; y0=e.touches[0].clientY;
+      dx=0; drag=true; axis=null;
+      el.classList.remove('settling');
+      el.style.transform=''; el.style.opacity='';
+    },{passive:true});
+
+    el.addEventListener('touchmove',e=>{
+      if(!drag) return;
+      const ddx=e.touches[0].clientX-x0, ddy=e.touches[0].clientY-y0;
+      if(axis===null){
+        if(Math.abs(ddx)<6 && Math.abs(ddy)<6) return;
+        axis=Math.abs(ddx)>Math.abs(ddy)*1.3?'x':'y';
+      }
+      if(axis!=='x') return;
+      dx=ddx;
+      // resistenza elastica se si prova ad andare oltre il mese corrente
+      const vis=(dashMonthOffset===0 && dx<0)?dx*0.28:dx;
+      el.style.transform=`translateX(${vis}px)`;
+      el.style.opacity=String(Math.max(.55,1-Math.abs(vis)/460));
+    },{passive:true});
+
+    const end=()=>{
+      if(!drag) return;
+      drag=false;
+      const soglia=Math.min(70,(el.offsetWidth||320)*0.18);
+      el.classList.add('settling');
+      el.style.transform=''; el.style.opacity='';
+      if(axis==='x' && Math.abs(dx)>soglia) chgDashMonth(dx>0?1:-1);
+      setTimeout(()=>el.classList.remove('settling'),240);
+    };
+    el.addEventListener('touchend',end);
+    el.addEventListener('touchcancel',end);
+
+    // Desktop: swipe orizzontale su trackpad (o Shift + rotellina)
+    let wheelLock=false;
+    el.addEventListener('wheel',e=>{
+      const h=e.shiftKey?e.deltaY:e.deltaX;
+      if(!e.shiftKey && Math.abs(e.deltaX)<Math.abs(e.deltaY)) return;
+      if(Math.abs(h)<18 || wheelLock) return;
+      e.preventDefault();
+      wheelLock=true; setTimeout(()=>{wheelLock=false;},420);
+      chgDashMonth(h>0?-1:1);
+    },{passive:false});
+  });
 }
 
 
@@ -1630,6 +1698,7 @@ load();
 document.getElementById('f-mese').value=thisMonth();
 renderDash();
 renderAsset();
+attachMonthSwipe();
 
 // Carica URL salvato nelle impostazioni
 const savedUrl = getScriptUrl();
