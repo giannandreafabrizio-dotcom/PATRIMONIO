@@ -180,11 +180,15 @@ tbody tr:hover td{background:var(--s2);}
 }
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
 
-/* ── Swipe orizzontale per cambiare mese (Dashboard) ── */
-.month-swipe{touch-action:pan-y;will-change:transform;}
-.month-swipe.settling{transition:transform .22s cubic-bezier(.22,.61,.36,1),opacity .22s ease;}
-.swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.5rem 0 1rem;}
-@media(min-width:721px){.swipe-hint{display:none;}}
+/* ── Carosello mensile: ogni blocco scorre in modo indipendente ── */
+.msw{overflow:hidden;touch-action:pan-y;cursor:grab;}
+.msw:active{cursor:grabbing;}
+.msw-track{display:flex;width:300%;will-change:transform;transform:translateX(-33.3333%);}
+.msw-pane{flex:0 0 33.3333%;width:33.3333%;min-width:0;padding:0 1px;}
+.msw-pane.empty{opacity:0;pointer-events:none;}
+.msw-lbl{font-size:.72rem;color:#8e8e93;font-weight:500;margin-bottom:.55rem;text-align:center;letter-spacing:.2px;}
+.msw-blank{min-height:130px;}
+.swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.4rem 0 1rem;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
 
 /* Andamento: due grafici affiancati */
@@ -386,18 +390,18 @@ tbody tr:hover td{background:var(--s2);}
     </div>
   </div>
 
-  <div class="kpi3-row month-swipe" id="kpi-row"></div>
+  <div class="msw" id="sw-kpi"></div>
 
-  <div class="swipe-hint">‹ scorri per cambiare mese ›</div>
+  <div class="swipe-hint">‹ scorri ogni riquadro per cambiarne il mese ›</div>
 
   <div class="dash-charts-row">
-    <div class="glass gcard month-swipe">
-      <div class="gcard-hd" id="cInOut-title">Entrate vs Uscite</div>
-      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cInOut" height="200"></canvas></div></div>
+    <div class="glass gcard">
+      <div class="gcard-hd">Entrate vs Uscite</div>
+      <div class="gcard-bd"><div class="msw" id="sw-inout"></div></div>
     </div>
-    <div class="glass gcard month-swipe">
-      <div class="gcard-hd" id="cCat-title">Uscite per categoria</div>
-      <div class="gcard-bd"><div class="chart-wrap"><canvas id="cCat" height="175"></canvas></div></div>
+    <div class="glass gcard">
+      <div class="gcard-hd">Uscite per categoria</div>
+      <div class="gcard-bd"><div class="msw" id="sw-cat"></div></div>
     </div>
     <div class="glass gcard">
       <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
@@ -798,65 +802,147 @@ function chgDashMonth(delta){
   if(dashMonthOffset!==prev) renderDash();
 }
 
-// ── SWIPE ORIZZONTALE PER CAMBIARE MESE ──
-// Attivo su: KPI cards, grafico Entrate vs Uscite, grafico Uscite per categoria.
-// Scorri verso destra = mese precedente · verso sinistra = mese successivo.
-// Lo scroll verticale della pagina resta libero: il gesto si "aggancia" all'asse X
-// solo se il movimento orizzontale è nettamente prevalente.
-function attachMonthSwipe(){
-  document.querySelectorAll('.month-swipe').forEach(el=>{
-    if(el.dataset.swipeOn) return;
-    el.dataset.swipeOn='1';
-    let x0=0,y0=0,dx=0,drag=false,axis=null;
+// ══ CAROSELLO MENSILE ══
+// Ogni riquadro (KPI, Entrate vs Uscite, Uscite per categoria) ha il proprio mese
+// e il proprio gesto, indipendente dagli altri. Tre pannelli affiancati
+// (mese precedente | mese mostrato | mese successivo): il dito trascina il nastro
+// in tempo reale — nessun ricalcolo durante il gesto, quindi il movimento resta fluido.
+const SWIPERS={};
 
-    el.addEventListener('touchstart',e=>{
-      if(e.touches.length!==1) return;
-      x0=e.touches[0].clientX; y0=e.touches[0].clientY;
-      dx=0; drag=true; axis=null;
-      el.classList.remove('settling');
-      el.style.transform=''; el.style.opacity='';
-    },{passive:true});
-
-    el.addEventListener('touchmove',e=>{
-      if(!drag) return;
-      const ddx=e.touches[0].clientX-x0, ddy=e.touches[0].clientY-y0;
-      if(axis===null){
-        if(Math.abs(ddx)<6 && Math.abs(ddy)<6) return;
-        axis=Math.abs(ddx)>Math.abs(ddy)*1.3?'x':'y';
-      }
-      if(axis!=='x') return;
-      dx=ddx;
-      // resistenza elastica se si prova ad andare oltre il mese corrente
-      const vis=(dashMonthOffset===0 && dx<0)?dx*0.28:dx;
-      el.style.transform=`translateX(${vis}px)`;
-      el.style.opacity=String(Math.max(.55,1-Math.abs(vis)/460));
-    },{passive:true});
-
-    const end=()=>{
-      if(!drag) return;
-      drag=false;
-      const soglia=Math.min(70,(el.offsetWidth||320)*0.18);
-      el.classList.add('settling');
-      el.style.transform=''; el.style.opacity='';
-      if(axis==='x' && Math.abs(dx)>soglia) chgDashMonth(dx>0?1:-1);
-      setTimeout(()=>el.classList.remove('settling'),240);
-    };
-    el.addEventListener('touchend',end);
-    el.addEventListener('touchcancel',end);
-
-    // Desktop: swipe orizzontale su trackpad (o Shift + rotellina)
-    let wheelLock=false;
-    el.addEventListener('wheel',e=>{
-      const h=e.shiftKey?e.deltaY:e.deltaX;
-      if(!e.shiftKey && Math.abs(e.deltaX)<Math.abs(e.deltaY)) return;
-      if(Math.abs(h)<18 || wheelLock) return;
-      e.preventDefault();
-      wheelLock=true; setTimeout(()=>{wheelLock=false;},420);
-      chgDashMonth(h>0?-1:1);
-    },{passive:false});
-  });
+function monthAgg(mk){
+  const mm=db.movimenti.filter(m=>m.data.startsWith(mk)&&m.tipo!=='trasferimento');
+  const ent=mm.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
+  const usc=mm.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
+  return{mm,ent,usc,saldo:ent-usc};
 }
 
+function makeSwiper(id,buildPane){
+  const view=document.getElementById(id);
+  if(!view) return null;
+  view.innerHTML='<div class="msw-track"><div class="msw-pane"></div><div class="msw-pane"></div><div class="msw-pane"></div></div>';
+  const st={view,track:view.firstElementChild,panes:[],offset:0,buildPane,busy:false};
+  st.panes=[...st.track.children];
+  SWIPERS[id]=st;
+  bindSwiper(st);
+  paintSwiper(st);
+  return st;
+}
+
+// Ridisegna i tre pannelli attorno al mese corrente del riquadro
+function paintSwiper(st){
+  st.panes.forEach((p,i)=>{
+    const off=st.offset+(1-i);           // 0 = precedente, 1 = centro, 2 = successivo
+    if(p._chart){ p._chart.destroy(); p._chart=null; }
+    if(off<0){ p.classList.add('empty'); p.innerHTML='<div class="msw-blank"></div>'; return; }
+    p.classList.remove('empty');
+    st.buildPane(p,monthKeyOffset(off));
+  });
+  st.track.style.transition='none';
+  st.track.style.transform='translateX(-33.3333%)';
+  void st.track.offsetWidth;
+}
+
+function bindSwiper(st){
+  const t=st.track;
+  let x0=0,y0=0,dx=0,w=0,axis=null,drag=false,lastX=0,lastT=0,vel=0,pid=null;
+  const put=px=>{ t.style.transform='translateX(calc(-33.3333% + '+px+'px))'; };
+
+  st.view.addEventListener('pointerdown',e=>{
+    if(st.busy||e.button) return;
+    w=st.view.offsetWidth; x0=lastX=e.clientX; y0=e.clientY;
+    lastT=performance.now(); vel=0; dx=0; axis=null; drag=true; pid=e.pointerId;
+    t.style.transition='none';
+  });
+
+  st.view.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==pid) return;
+    const ddx=e.clientX-x0, ddy=e.clientY-y0;
+    if(axis===null){
+      if(Math.abs(ddx)<4&&Math.abs(ddy)<4) return;
+      axis=Math.abs(ddx)>Math.abs(ddy)?'x':'y';
+      if(axis==='x'&&st.view.setPointerCapture) try{st.view.setPointerCapture(pid);}catch(_){}
+    }
+    if(axis!=='x') return;
+    const now=performance.now();
+    if(now>lastT){ vel=(e.clientX-lastX)/(now-lastT); lastX=e.clientX; lastT=now; }
+    dx=(st.offset===0&&ddx<0)?ddx*0.3:ddx;   // resistenza elastica oltre il mese corrente
+    put(dx);
+  });
+
+  const release=()=>{
+    if(!drag) return;
+    drag=false;
+    const soglia=Math.min(55,w*0.13);
+    let dir=0;
+    if(axis==='x'&&(Math.abs(dx)>soglia||Math.abs(vel)>0.35)) dir=dx>0?1:-1;
+    if(dir===-1&&st.offset===0) dir=0;
+    t.style.transition='transform .34s cubic-bezier(.2,.75,.3,1)';
+    if(!dir){ put(0); return; }
+    st.busy=true;
+    put(dir*w);
+    let done=false;
+    const finish=()=>{
+      if(done) return; done=true;
+      t.removeEventListener('transitionend',finish);
+      st.offset=Math.max(0,st.offset+dir);
+      paintSwiper(st);
+      st.busy=false;
+    };
+    t.addEventListener('transitionend',finish);
+    setTimeout(finish,420);
+  };
+  st.view.addEventListener('pointerup',release);
+  st.view.addEventListener('pointercancel',release);
+  st.view.addEventListener('pointerleave',e=>{ if(drag&&axis!=='x') release(); });
+}
+
+// Riporta tutti i riquadri sul mese scelto dal navigatore a pillola
+function syncSwipers(off){
+  Object.values(SWIPERS).forEach(st=>{ st.offset=off; paintSwiper(st); });
+}
+
+// ── Contenuto dei pannelli ──
+function paneKpi(p,mk){
+  const{ent,usc,saldo}=monthAgg(mk);
+  p.innerHTML='<div class="msw-lbl">'+monthLabelIt(mk)+'</div><div class="kpi3-row" style="margin-bottom:0">'+
+    kpiCard('ent','Entrate',fEUR(ent))+
+    kpiCard('usc','Uscite',fEUR(usc))+
+    kpiCard('sal','Saldo netto',(saldo>=0?'+':'')+fEUR(saldo))+'</div>';
+}
+function kpiCard(k,lbl,val){
+  const c=KPI_ICONS[k];
+  return '<div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:'+c.bg+'">'+
+    '<i class="ti '+c.ic+'" style="color:'+c.fg+'"></i></div><span class="kpi3-lbl">'+lbl+'</span></div>'+
+    '<div class="kpi3-val">'+val+'</div></div>';
+}
+
+function paneInOut(p,mk){
+  const{ent,usc}=monthAgg(mk);
+  p.innerHTML='<div class="msw-lbl">'+monthLabelIt(mk)+'</div><div class="chart-wrap"><canvas></canvas></div>';
+  p._chart=new Chart(p.querySelector('canvas'),{type:'bar',
+    data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:1.5,borderRadius:5,barPercentage:.45,categoryPercentage:.6}]},
+    options:{maintainAspectRatio:false,animation:{duration:260},plugins:{legend:{display:false}},
+      scales:{y:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},
+        x:{ticks:{color:'#a0a0a0',font:{size:12}},grid:{display:false}}}}});
+}
+
+function paneCat(p,mk){
+  const{mm}=monthAgg(mk);
+  const cd={};mm.filter(m=>m.tipo==='uscita').forEach(m=>{cd[m.cat]=(cd[m.cat]||0)+m.importo;});
+  const ce=Object.entries(cd).sort((a,b)=>b[1]-a[1]);
+  p.innerHTML='<div class="msw-lbl">'+monthLabelIt(mk)+'</div><div class="chart-wrap"><canvas></canvas></div>';
+  p._chart=new Chart(p.querySelector('canvas'),{type:'bar',
+    data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:1.5,borderRadius:4,barPercentage:.5,categoryPercentage:.65}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,animation:{duration:260},plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},
+        y:{ticks:{color:'#a0a0a0',font:{size:12}},grid:{display:false}}}}});
+}
+
+function initSwipers(){
+  makeSwiper('sw-kpi',paneKpi);
+  makeSwiper('sw-inout',paneInOut);
+  makeSwiper('sw-cat',paneCat);
+}
 
 function saveLocal(){ localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
 
@@ -1408,11 +1494,6 @@ function renderDash(){
   if(dmLabel) dmLabel.textContent=monthLabelIt(tm);
   if(dmNext){ dmNext.disabled=isCurrent; }
 
-  const mm=db.movimenti.filter(m=>m.data.startsWith(tm)&&m.tipo!=='trasferimento');
-  const ent=mm.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+m.importo,0);
-  const usc=mm.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+m.importo,0);
-  const saldo=ent-usc;
-  const suff=isCurrent?' mese':` — ${monthLabelIt(tm)}`;
 
   // Hero: patrimonio totale + 4 confronti (mese / 3 mesi / anno / da inizio app)
   const heroTot=document.getElementById('hero-tot');
@@ -1472,15 +1553,7 @@ function renderDash(){
     }
   }
 
-  document.getElementById('kpi-row').innerHTML=`
-    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.ent.bg}"><i class="ti ${KPI_ICONS.ent.ic}" style="color:${KPI_ICONS.ent.fg}"></i></div><span class="kpi3-lbl">Entrate${suff}</span></div><div class="kpi3-val">${fEUR(ent)}</div></div>
-    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.usc.bg}"><i class="ti ${KPI_ICONS.usc.ic}" style="color:${KPI_ICONS.usc.fg}"></i></div><span class="kpi3-lbl">Uscite${suff}</span></div><div class="kpi3-val">${fEUR(usc)}</div></div>
-    <div class="glass kpi3"><div class="kpi3-hd"><div class="kpi3-icon" style="background:${KPI_ICONS.sal.bg}"><i class="ti ${KPI_ICONS.sal.ic}" style="color:${KPI_ICONS.sal.fg}"></i></div><span class="kpi3-lbl">Saldo netto${suff}</span></div><div class="kpi3-val">${saldo>=0?'+':''}${fEUR(saldo)}</div></div>`;
-
-  const cInOutTitle=document.getElementById('cInOut-title');
-  const cCatTitle=document.getElementById('cCat-title');
-  if(cInOutTitle) cInOutTitle.textContent=`Entrate vs Uscite — ${isCurrent?'mese corrente':monthLabelIt(tm)}`;
-  if(cCatTitle) cCatTitle.textContent=`Uscite per categoria — ${isCurrent?'mese corrente':monthLabelIt(tm)}`;
+  syncSwipers(dashMonthOffset);
 
   destroyC('cAlloc');
   const grp={};db.assets.forEach(a=>{grp[a.tipo]=(grp[a.tipo]||0)+a.eur;});
@@ -1503,17 +1576,6 @@ function renderDash(){
       return`<span><span class="pie-dot" style="background:${APPLE_TCOLORS[k]||'#8e8e93'}"></span>${TLABELS[k]}<span class="pct">${pct.toFixed(0)}%</span>${deltaHtml}</span>`;
     }).join('');
   }
-  destroyC('cInOut');
-  charts['cInOut']=new Chart(document.getElementById('cInOut'),{type:'bar',
-    data:{labels:['Entrate','Uscite'],datasets:[{data:[ent,usc],backgroundColor:['rgba(74,222,128,.15)','rgba(248,113,113,.15)'],borderColor:['#4ade80','#f87171'],borderWidth:1.5,borderRadius:5,barPercentage:.45,categoryPercentage:.6}]},
-    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},x:{ticks:{color:'#a0a0a0',font:{size:12}},grid:{display:false}}}}});
-  destroyC('cCat');
-  const cd={};mm.filter(m=>m.tipo==='uscita').forEach(m=>{cd[m.cat]=(cd[m.cat]||0)+m.importo;});
-  const ce=Object.entries(cd).sort((a,b)=>b[1]-a[1]);
-  charts['cCat']=new Chart(document.getElementById('cCat'),{type:'bar',
-    data:{labels:ce.map(c=>c[0]),datasets:[{data:ce.map(c=>c[1]),backgroundColor:'rgba(96,165,250,.15)',borderColor:'#60a5fa',borderWidth:1.5,borderRadius:4,barPercentage:.5,categoryPercentage:.65}]},
-    options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:12},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#a0a0a0',font:{size:12}},grid:{display:false}}}}});
-
   renderHist();
 }
 
@@ -1696,9 +1758,9 @@ function importa(e){
 // ── INIT ──
 load();
 document.getElementById('f-mese').value=thisMonth();
+initSwipers();
 renderDash();
 renderAsset();
-attachMonthSwipe();
 
 // Carica URL salvato nelle impostazioni
 const savedUrl = getScriptUrl();
