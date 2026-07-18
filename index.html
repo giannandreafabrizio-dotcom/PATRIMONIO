@@ -199,7 +199,8 @@ tbody tr:hover td{background:var(--s2);}
 .hscroll-in{height:100%;position:relative;}
 /* Asse Y fisso: resta visibile mentre il grafico scorre sotto */
 .hchart{position:relative;width:100%;}
-.hchart>.yfix{position:absolute;left:0;top:0;width:64px;height:100%;z-index:2;pointer-events:none;}
+.hchart>.yfix{position:absolute;left:0;top:0;width:64px;height:100%;z-index:2;pointer-events:none;overflow:hidden;}
+.hchart>.yfix>canvas{display:block;}
 .hchart>.hscroll{height:100%;margin-left:64px;}
 .hscroll-hint{font-size:.68rem;color:#636366;text-align:center;margin-top:.4rem;}
 .swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.4rem 0 1rem;}
@@ -419,7 +420,7 @@ tbody tr:hover td{background:var(--s2);}
     </div>
     <div class="glass gcard">
       <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
-      <div class="gcard-bd"><div class="hchart" style="height:230px"><canvas class="yfix" id="axHist"></canvas><div class="hscroll" id="wrapHist"><div class="hscroll-in"><canvas id="cHist"></canvas></div></div></div><div class="hscroll-hint">scorri per vedere tutti i mesi</div></div>
+      <div class="gcard-bd"><div class="hchart" style="height:230px"><div class="yfix"><canvas id="axHist"></canvas></div><div class="hscroll" id="wrapHist"><div class="hscroll-in"><canvas id="cHist"></canvas></div></div></div><div class="hscroll-hint">scorri per vedere tutti i mesi</div></div>
     </div>
   </div>
 </div>
@@ -483,14 +484,14 @@ tbody tr:hover td{background:var(--s2);}
           </div>
         </div>
         <div class="at-wrap" id="at-wrap" style="display:none"></div>
-        <div class="hchart" style="height:300px"><canvas class="yfix" id="axMain"></canvas><div class="hscroll" id="wrapMain"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+        <div class="hchart" style="height:300px"><div class="yfix"><canvas id="axMain"></canvas></div><div class="hscroll" id="wrapMain"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
     <div class="card">
       <div class="card-hd"><h3>Variazione mensile del patrimonio</h3></div>
       <div class="card-bd">
         <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Storia completa: scorri lateralmente per navigare tutti i mesi.</p>
-        <div class="hchart" style="height:260px"><canvas class="yfix" id="axDelta"></canvas><div class="hscroll" id="wrapDelta"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+        <div class="hchart" style="height:260px"><div class="yfix"><canvas id="axDelta"></canvas></div><div class="hscroll" id="wrapDelta"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
   </div>
@@ -1935,6 +1936,18 @@ document.getElementById('f-mese').value=thisMonth();
 initSwipers();
 renderDash();
 renderAsset();
+
+// L'asse Y fisso è allineato all'area del grafico: se la finestra cambia
+// dimensione (o ruoti il telefono) va ridisegnato per restare a registro.
+let _rsz;
+window.addEventListener('resize',()=>{
+  clearTimeout(_rsz);
+  _rsz=setTimeout(()=>{
+    const att=id=>document.getElementById(id)?.classList.contains('active');
+    if(att('page-dashboard')) renderHist();
+    if(att('page-andamento')) renderAnd();
+  },250);
+});
 
 // Carica URL salvato nelle impostazioni
 const savedUrl = getScriptUrl();
