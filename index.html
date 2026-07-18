@@ -197,6 +197,10 @@ tbody tr:hover td{background:var(--s2);}
 .hscroll::-webkit-scrollbar-track{background:transparent;}
 .hscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
 .hscroll-in{height:100%;position:relative;}
+/* Asse Y fisso: resta visibile mentre il grafico scorre sotto */
+.hchart{position:relative;width:100%;}
+.hchart>.yfix{position:absolute;left:0;top:0;width:64px;height:100%;z-index:2;pointer-events:none;}
+.hchart>.hscroll{height:100%;margin-left:64px;}
 .hscroll-hint{font-size:.68rem;color:#636366;text-align:center;margin-top:.4rem;}
 .swipe-hint{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.7rem;color:#636366;margin:-.4rem 0 1rem;}
 .gcard-bd{padding:1rem 1.1rem 1.1rem;}
@@ -415,7 +419,7 @@ tbody tr:hover td{background:var(--s2);}
     </div>
     <div class="glass gcard">
       <div class="gcard-hd">Storico entrate / uscite / saldo — ultimi 6 mesi</div>
-      <div class="gcard-bd"><div class="hscroll" id="wrapHist" style="height:230px"><div class="hscroll-in"><canvas id="cHist"></canvas></div></div><div class="hscroll-hint">scorri per vedere tutti i mesi</div></div>
+      <div class="gcard-bd"><div class="hchart" style="height:230px"><canvas class="yfix" id="axHist"></canvas><div class="hscroll" id="wrapHist"><div class="hscroll-in"><canvas id="cHist"></canvas></div></div></div><div class="hscroll-hint">scorri per vedere tutti i mesi</div></div>
     </div>
   </div>
 </div>
@@ -479,14 +483,14 @@ tbody tr:hover td{background:var(--s2);}
           </div>
         </div>
         <div class="at-wrap" id="at-wrap" style="display:none"></div>
-        <div class="hscroll" id="wrapMain" style="height:300px"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+        <div class="hchart" style="height:300px"><canvas class="yfix" id="axMain"></canvas><div class="hscroll" id="wrapMain"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
     <div class="card">
       <div class="card-hd"><h3>Variazione mensile del patrimonio</h3></div>
       <div class="card-bd">
         <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Storia completa: scorri lateralmente per navigare tutti i mesi.</p>
-        <div class="hscroll" id="wrapDelta" style="height:260px"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+        <div class="hchart" style="height:260px"><canvas class="yfix" id="axDelta"></canvas><div class="hscroll" id="wrapDelta"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
   </div>
@@ -1507,7 +1511,7 @@ function sizeScroll(wrapId,nPunti,pxPunto,minPx){
   const disp=Math.max(wrap.clientWidth||300,(nPunti||1)*pxPunto,minPx||0);
   inner.style.width=disp+'px';
   // L'invito a scorrere ha senso solo se c'è davvero eccedenza
-  const hint=wrap.nextElementSibling;
+  const hint=(wrap.closest('.hchart')||wrap).nextElementSibling;
   if(hint&&hint.classList.contains('hscroll-hint'))
     hint.style.display=(disp>(wrap.clientWidth||0)+4)?'block':'none';
   return wrap;
@@ -1543,6 +1547,34 @@ const LINE_STYLE={
   borderJoinStyle:'round',
   borderCapStyle:'round'
 };
+
+// Intervallo Y con margine: evita che minimo e massimo restino incollati
+// ai bordi, cosa che fa sembrare un catastrofico crollo una variazione minima.
+function yRange(vals,padPct){
+  const ok=vals.flat().filter(v=>v!==null&&v!==undefined&&!isNaN(v));
+  if(!ok.length) return{min:undefined,max:undefined};
+  let mn=Math.min(...ok), mx=Math.max(...ok);
+  if(mn===mx){ const d=Math.abs(mn||1)*.05; return{min:mn-d,max:mx+d}; }
+  const pad=(mx-mn)*(padPct===undefined?.22:padPct);
+  return{min:mn-pad,max:mx+pad};
+}
+// Ridisegna l'asse Y fisso allineandolo esattamente all'area del grafico
+// principale (che scorre): stessa scala, stesso ingombro sopra e sotto.
+function syncYAxis(axId,mainChart,min,max){
+  const cvs=document.getElementById(axId);
+  if(!cvs||!mainChart||!mainChart.chartArea) return;
+  const ca=mainChart.chartArea, H=mainChart.height;
+  destroyC(axId);
+  charts[axId]=new Chart(cvs,{type:'line',
+    data:{labels:[''],datasets:[{data:[null]}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      layout:{padding:{top:ca.top,bottom:Math.max(0,H-ca.bottom),left:0,right:3}},
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{x:{display:false},
+        y:{position:'right',min,max,
+          ticks:{color:'#555',font:{size:11},padding:4,callback:v=>fEUR(v)},
+          grid:{display:false},border:{display:false}}}}});
+}
 
 // ── COPERTURA SNAPSHOT ──
 // Bug corretto: prima un asset senza snapshot a una certa data veniva contato 0,
@@ -1696,6 +1728,10 @@ function renderHist(){
     entArr.push(e); uscArr.push(u); saldoArr.push(e-u);
   });
 
+  // Flussi mensili: la scala include sempre lo zero, così le altezze delle barre
+  // restano confrontabili fra loro senza esagerazioni ottiche.
+  const hAll=[...entArr,...uscArr,...saldoArr,0];
+  const hy=yRange(hAll,.12); hy.min=Math.min(hy.min,0);
   sizeScroll('wrapHist',monthKeys.length,88);
   charts['cHist']=new Chart(cvs,{
     data:{labels,datasets:[
@@ -1710,8 +1746,9 @@ function renderHist(){
       plugins:{legend:{position:'top',align:'end',labels:{color:'#a0a0a0',font:{size:12},boxWidth:10}},
         tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y<0?'-':'')+fEUR(Math.abs(c.parsed.y))}}},
       scales:{x:{ticks:{color:'#555',font:{size:11},autoSkip:false},grid:{display:false}},
-        y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a'}}}
+        y:{min:hy.min,max:hy.max,ticks:{display:false},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}
     }});
+  syncYAxis('axHist',charts['cHist'],hy.min,hy.max);
   scrollToNow('wrapHist');
 }
 
@@ -1734,13 +1771,13 @@ function valAt(assetId,d){
   const rel=db.snapshots.filter(s=>s.assetId===assetId&&s.date<=d);
   return rel.length?rel[rel.length-1].eur:null;
 }
-function lineOpts(leg=false){return{responsive:true,maintainAspectRatio:false,
+function lineOpts(leg=false,yr){return{responsive:true,maintainAspectRatio:false,
   animation:{duration:300},
   interaction:{mode:'index',intersect:false},
   plugins:{legend:{display:leg,labels:{color:'#a0a0a0',font:{size:12},boxWidth:10,usePointStyle:true,pointStyle:'line'}},
     tooltip:{callbacks:{label:c=>c.dataset.label+': '+fEUR(c.parsed.y)}}},
   scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0,autoSkip:true,maxTicksLimit:20},grid:{display:false}},
-    y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}};}
+    y:{min:yr&&yr.min,max:yr&&yr.max,ticks:{display:false},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}};}
 
 // ── KPI CARDS ANDAMENTO ──
 function renderAndKpi(dates){
@@ -1790,7 +1827,9 @@ function renderAnd(){
     const totVals=dates.map(d=>db.assets.reduce((sum,a)=>{const v=valAt(a.id,d);return v!==null?sum+v:sum;},0));
     const ds=Object.assign({label:'Patrimonio',data:totVals,borderColor:'#fff',
       backgroundColor:gradFill('#ffffff','3a'),pointHoverBackgroundColor:'#fff',fill:true},LINE_STYLE);
-    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[ds]},options:lineOpts(false)});
+    const yr=yRange(totVals);
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[ds]},options:lineOpts(false,yr)});
+    syncYAxis('axMain',charts['cMain'],yr.min,yr.max);
   } else if(andTab==='tipo'){
     const order=['liquidita','investimenti','crypto','wallet','altro'];
     const typesPresent=order.filter(t=>db.assets.some(a=>a.tipo===t));
@@ -1800,7 +1839,9 @@ function renderAnd(){
       return Object.assign({label:TLABELS[t],data,borderColor:TCOLORS[t],
         backgroundColor:gradFill(TCOLORS[t],'33'),pointHoverBackgroundColor:TCOLORS[t],fill:true},LINE_STYLE);
     });
-    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(true)});
+    const yr=yRange(dsArr.map(x=>x.data));
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(true,yr)});
+    syncYAxis('axMain',charts['cMain'],yr.min,yr.max);
   } else {
     const filtAssets=db.assets.filter(a=>toggles[a.id]);
     const dsArr=filtAssets.map(a=>{
@@ -1810,7 +1851,9 @@ function renderAnd(){
       return Object.assign({label:a.nome,data,borderColor:col,backgroundColor:'transparent',
         pointHoverBackgroundColor:col,fill:false,spanGaps:true},LINE_STYLE);
     });
-    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0)});
+    const yr=yRange(dsArr.map(x=>x.data));
+    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0,yr)});
+    syncYAxis('axMain',charts['cMain'],yr.min,yr.max);
   }
   scrollToNow('wrapMain');
 
@@ -1847,6 +1890,7 @@ function renderDelta(){
   // non segue il selettore periodo del grafico a fianco.
   const bg=deltas.map(d=>d>=0?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)');
   const bd=deltas.map(d=>d>=0?'#4ade80':'#f87171');
+  const dy=yRange([...deltas,0],.15); dy.min=Math.min(dy.min,0); dy.max=Math.max(dy.max,0);
   sizeScroll('wrapDelta',labels.length,92);
   charts['cDelta']=new Chart(cvs,{type:'bar',
     data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:6,barPercentage:.62,categoryPercentage:.72,maxBarThickness:64}]},
@@ -1854,7 +1898,8 @@ function renderDelta(){
       plugins:{legend:{display:false},
       tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${fEUR(c.parsed.y)}`}}},
       scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0,autoSkip:false},grid:{display:false}},
-        y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
+        y:{min:dy.min,max:dy.max,ticks:{display:false},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
+  syncYAxis('axDelta',charts['cDelta'],dy.min,dy.max);
   scrollToNow('wrapDelta');
 }
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
