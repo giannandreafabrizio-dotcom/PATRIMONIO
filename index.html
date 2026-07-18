@@ -485,7 +485,7 @@ tbody tr:hover td{background:var(--s2);}
     <div class="card">
       <div class="card-hd"><h3>Variazione mensile del patrimonio</h3></div>
       <div class="card-bd">
-        <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Segue lo stesso periodo selezionato a fianco.</p>
+        <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Di quanto è salito o sceso il patrimonio totale ogni mese (risparmio + rendimento di mercato insieme). Storia completa: scorri lateralmente per navigare tutti i mesi.</p>
         <div class="hscroll" id="wrapDelta" style="height:260px"><div class="hscroll-in"><canvas id="cDelta"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
       </div>
     </div>
@@ -1506,6 +1506,10 @@ function sizeScroll(wrapId,nPunti,pxPunto,minPx){
   const inner=wrap.firstElementChild;
   const disp=Math.max(wrap.clientWidth||300,(nPunti||1)*pxPunto,minPx||0);
   inner.style.width=disp+'px';
+  // L'invito a scorrere ha senso solo se c'è davvero eccedenza
+  const hint=wrap.nextElementSibling;
+  if(hint&&hint.classList.contains('hscroll-hint'))
+    hint.style.display=(disp>(wrap.clientWidth||0)+4)?'block':'none';
   return wrap;
 }
 // Porta la vista sul presente (estremità destra) dopo il disegno
@@ -1839,13 +1843,13 @@ function renderDelta(){
   // Delta dal 2° mese in poi (il 1° serve solo come base di partenza → niente barra "acerba")
   let labels=[], deltas=[];
   for(let i=1;i<months.length;i++){ labels.push(monthLabelIt(months[i])); deltas.push(totByMonth[i]-totByMonth[i-1]); }
-  // Stessa finestra del selettore periodo (period in mesi, 0 = tutto)
-  if(period && labels.length>period){ labels=labels.slice(-period); deltas=deltas.slice(-period); }
+  // Mostra sempre la storia completa: è un grafico lungo scorrevole,
+  // non segue il selettore periodo del grafico a fianco.
   const bg=deltas.map(d=>d>=0?'rgba(74,222,128,.35)':'rgba(248,113,113,.35)');
   const bd=deltas.map(d=>d>=0?'#4ade80':'#f87171');
-  sizeScroll('wrapDelta',labels.length,80);
+  sizeScroll('wrapDelta',labels.length,92);
   charts['cDelta']=new Chart(cvs,{type:'bar',
-    data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:6,barPercentage:.62,categoryPercentage:.72}]},
+    data:{labels,datasets:[{label:'Variazione',data:deltas,backgroundColor:bg,borderColor:bd,borderWidth:1.5,borderRadius:6,barPercentage:.62,categoryPercentage:.72,maxBarThickness:64}]},
     options:{maintainAspectRatio:false,responsive:true,animation:{duration:300},
       plugins:{legend:{display:false},
       tooltip:{callbacks:{label:c=>`${c.parsed.y>=0?'+':''}${fEUR(c.parsed.y)}`}}},
