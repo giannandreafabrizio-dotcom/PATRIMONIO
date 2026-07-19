@@ -290,6 +290,42 @@ tbody tr:hover td{background:var(--s2);}
 .md-act:hover{background:rgba(255,255,255,.06);}
 .md-empty{grid-column:1/-1;text-align:center;color:#636366;padding:2.5rem;font-size:.82rem;}
 
+/* ── Assistente AI — chat in vetro, coerente con lo stile Apple ── */
+.ai-quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.ai-qbtn{padding:.55rem .9rem;border-radius:14px;border:0.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#d1d1d6;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:6px;}
+.ai-qbtn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.ai-qbtn:disabled{opacity:.4;cursor:default;}
+.ai-chatcard{display:flex;flex-direction:column;overflow:hidden;}
+.ai-msgs{height:430px;overflow-y:auto;padding:1.1rem;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;}
+.ai-msg{max-width:88%;padding:.7rem .95rem;border-radius:16px;font-size:.84rem;line-height:1.55;overflow-wrap:break-word;}
+.ai-msg.user{align-self:flex-end;background:rgba(10,132,255,.22);border:0.5px solid rgba(10,132,255,.35);color:#fff;border-bottom-right-radius:5px;white-space:pre-wrap;}
+.ai-msg.bot{align-self:flex-start;background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.09);color:#e8e8ed;border-bottom-left-radius:5px;}
+.ai-msg.bot h4{font-size:.84rem;margin:.55rem 0 .2rem;color:#fff;}
+.ai-msg.bot ul{margin:.3rem 0 .3rem 1.15rem;padding:0;}
+.ai-msg.bot li{margin-bottom:.22rem;}
+.ai-msg.bot p{margin:.35rem 0;}
+.ai-msg.bot p:first-child,.ai-msg.bot h4:first-child{margin-top:0;}
+.ai-msg.bot strong{color:#fff;}
+.ai-msg.err{background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.3);color:#ffb3ad;white-space:pre-wrap;}
+.ai-src{margin-top:.55rem;padding-top:.55rem;border-top:0.5px solid rgba(255,255,255,.1);font-size:.7rem;color:#8e8e93;}
+.ai-src a{color:#6db3ff;text-decoration:none;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ai-meta{font-size:.62rem;color:#636366;margin-top:.45rem;}
+.ai-typing{display:flex;gap:4px;padding:.75rem 1rem;align-self:flex-start;border-radius:16px;border-bottom-left-radius:5px;}
+.ai-typing span{width:7px;height:7px;border-radius:50%;background:#8e8e93;animation:aidot 1.2s infinite;}
+.ai-typing span:nth-child(2){animation-delay:.18s;}
+.ai-typing span:nth-child(3){animation-delay:.36s;}
+@keyframes aidot{0%,60%,100%{opacity:.25;transform:translateY(0);}30%{opacity:1;transform:translateY(-3px);}}
+.ai-inrow{display:flex;gap:8px;padding:.8rem;border-top:0.5px solid rgba(255,255,255,.08);align-items:flex-end;}
+.ai-in{flex:1;background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.1);border-radius:16px;color:#fff;font-family:'Inter',sans-serif;font-size:.85rem;padding:.6rem .85rem;outline:none;resize:none;max-height:110px;line-height:1.4;}
+.ai-in:focus{border-color:rgba(255,255,255,.25);}
+.ai-in::placeholder{color:#636366;}
+.ai-send{width:38px;height:38px;border-radius:50%;border:none;background:#0a84ff;color:#fff;font-size:1.05rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity .12s;}
+.ai-send:disabled{opacity:.35;cursor:default;}
+.ai-webtog{display:inline-flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;font-size:.72rem;color:#8e8e93;cursor:pointer;user-select:none;padding:.5rem .65rem;border-radius:12px;border:0.5px solid rgba(255,255,255,.1);background:transparent;flex-shrink:0;transition:all .12s;}
+.ai-webtog.on{color:#5ec9b8;border-color:rgba(94,201,184,.45);background:rgba(94,201,184,.1);}
+.ai-disc{font-size:.68rem;color:#636366;line-height:1.5;margin-top:.8rem;text-align:center;padding:0 .5rem;}
+@media(max-width:720px){.ai-msgs{height:52vh;min-height:260px;}.ai-msg{max-width:94%;}}
+
 /* Impostazioni — stile Apple: card di vetro, chip icona, testo asciugato */
 #page-impostazioni .card{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;}
 #page-impostazioni .card-hd{border-bottom:0.5px solid rgba(255,255,255,.07);padding:1rem 1.25rem;}
@@ -350,6 +386,9 @@ tbody tr:hover td{background:var(--s2);}
     </button>
     <button class="nav-item" onclick="goTo('andamento',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Andamento
+    </button>
+    <button class="nav-item" onclick="goTo('ai',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>AI
     </button>
     <button class="nav-item" onclick="goTo('impostazioni',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Impostazioni
@@ -491,6 +530,31 @@ tbody tr:hover td{background:var(--s2);}
     </div>
   </div>
   <div class="tip">💡 <strong>Come funziona:</strong> usa <strong>📸 Aggiorna valori</strong> nella sezione Asset ogni settimana per registrare lo snapshot. I grafici mostrano l'evoluzione storica.</div>
+</div>
+
+<!-- AI -->
+<div class="page" id="page-ai">
+  <div class="page-hd">
+    <div><h2>Assistente AI</h2><p>Analisi e supporto decisionale sul patrimonio</p></div>
+    <button class="btn btn-g btn-sm" onclick="aiNuovaChat()">✚ Nuova chat</button>
+  </div>
+  <div id="ai-warn"></div>
+  <div class="ai-quick">
+    <button class="ai-qbtn" onclick="aiQuick('checkup')">📊 Check-up completo</button>
+    <button class="ai-qbtn" onclick="aiQuick('rischio')">🛡️ Analisi del rischio</button>
+    <button class="ai-qbtn" onclick="aiQuick('spese')">💸 Spese sotto la lente</button>
+    <button class="ai-qbtn" onclick="aiQuick('crescita')">🎯 Piano di crescita</button>
+    <button class="ai-qbtn" onclick="aiQuick('mercati')">🌍 Mercati oggi</button>
+  </div>
+  <div class="glass ai-chatcard">
+    <div class="ai-msgs" id="ai-msgs"></div>
+    <div class="ai-inrow">
+      <button type="button" class="ai-webtog" id="ai-webtog" onclick="aiToggleWeb()" title="Consente all'assistente di cercare dati di mercato aggiornati sul web (con fonti citate)">🌐 Web</button>
+      <textarea class="ai-in" id="ai-in" rows="1" placeholder="Chiedi qualcosa sul tuo patrimonio…"></textarea>
+      <button class="ai-send" id="ai-send" onclick="aiSend()" aria-label="Invia">↑</button>
+    </div>
+  </div>
+  <div class="ai-disc">L'assistente fornisce analisi informative ed educative basate sui tuoi dati e su fonti pubbliche — non è consulenza finanziaria personalizzata. Le decisioni restano tue.</div>
 </div>
 
 <!-- IMPOSTAZIONI -->
@@ -1018,6 +1082,7 @@ function goTo(name,btn){
   if(name==='asset') renderAsset();
   if(name==='movimenti') renderMov();
   if(name==='andamento') renderAnd();
+  if(name==='ai') renderAiPage();
   if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
 }
 
@@ -1859,6 +1924,230 @@ function renderDelta(){
   scrollToNow('wrapDelta');
 }
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
+
+// ══ ASSISTENTE AI ═══════════════════════════════════════════════════
+// Le chiamate all'API Anthropic passano dallo STESSO Google Apps Script
+// già usato per la sync con Sheets: la chiave API vive solo nelle Script
+// Properties dello script, mai in questo file pubblico su GitHub Pages.
+// Istruzioni di installazione: file AI_AppsScript_AGGIUNTA.gs.
+const AI_MODEL='claude-sonnet-5';
+const AI_MAX_TOKENS=1800;
+const AI_MAX_HISTORY=12;   // turni massimi rimandati al modello (controllo costi)
+let aiHistory=[];          // {role:'user'|'assistant', content:string}
+let aiBusy=false, aiWeb=false, aiInit=false;
+
+const AI_SYSTEM=`Sei l'assistente finanziario personale integrato in "Patrimonio", l'app con cui Fabrizio gestisce asset, movimenti e andamento patrimoniale.
+
+OBIETTIVO DICHIARATO DELL'UTENTE: far crescere il patrimonio nel minor tempo e col minor rischio possibile. Perseguilo con onestà intellettuale: massimizza il rendimento corretto per il rischio sui suoi numeri reali, senza mai promettere ciò che i dati storici non supportano.
+
+DATI: a ogni richiesta ricevi lo snapshot JSON aggiornato del patrimonio reale (asset, allocazione, entrate/uscite mensili, uscite per categoria, storico di fine mese). Ancora ogni analisi a questi numeri, citandoli esplicitamente in euro e percentuali.
+
+REGOLE VINCOLANTI
+1. Evidenze, non opinioni: usa statistiche finanziarie consolidate (rendimenti storici di lungo periodo per classe di asset, diversificazione, interesse composto, drawdown storici, inflazione). Distingui sempre tra dato documentato e stima.
+2. Solo fonti affidabili: se usi la ricerca web privilegia fonti primarie e istituzionali (BCE, Banca d'Italia, ISTAT, Eurostat, MEF, Borsa Italiana, siti ufficiali di emittenti e gestori, testate finanziarie primarie). Ignora forum, blog promozionali e siti di segnali di trading. Cita sempre le fonti dei dati di mercato attuali; se un dato aggiornato non è reperibile, dichiaralo invece di stimarlo.
+3. Rischio sempre esplicito: ogni ipotesi di crescita deve dichiarare rischio, volatilità attesa e orizzonte temporale. Non esiste crescita rapida a rischio zero: se richiesta, spiega con onestà il trade-off rischio/rendimento invece di assecondare.
+4. Niente ordini operativi secchi: mai "vendi ora" o "compra X". Presenta opzioni con pro, contro e numeri; la decisione resta all'utente.
+5. Niente previsioni certe sui mercati: ragiona per scenari e intervalli.
+6. Quantifica sul suo caso concreto: proiezioni calcolate sui suoi dati (tasso di risparmio mensile effettivo, mesi di spese coperti dalla liquidità, concentrazione per asset).
+7. Formato: risposta diretta all'inizio, poi i dettagli. Testo leggibile su iPhone: paragrafi brevi, elenchi puntati solo quando servono, niente tabelle larghe.
+
+AREE DI COMPETENZA: allocazione e diversificazione; concentrazione del rischio; fondo di emergenza; tasso di risparmio e sua evoluzione; spese anomale o in crescita; costi e fiscalità degli investimenti in Italia (solo principi generali: per casi specifici rimanda a un commercialista); contesto macro e di mercato.
+
+CONTESTO UTENTE: Italia, valuta EUR. Reddito da lavoro dipendente (Vigili del Fuoco) più attività da nutrizionista. Usa l'app soprattutto da iPhone.
+
+LIMITI: non sei un consulente finanziario abilitato; le tue sono analisi informative ed educative. Ricordalo quando davvero rilevante, senza ripeterlo a ogni messaggio.
+
+Rispondi sempre in italiano.`;
+
+const AI_QUICK={
+  checkup:"Fai un check-up completo del mio patrimonio: punti di forza, punti deboli e le 3 cose più importanti su cui lavorare, con i numeri.",
+  rischio:"Analizza i rischi del mio patrimonio: concentrazione per asset e per classe, esposizione alla volatilità, e quanti mesi di uscite medie copre la mia liquidità (fondo di emergenza).",
+  spese:"Analizza le mie uscite degli ultimi mesi: trend, categorie in crescita, anomalie e dove posso ottimizzare in modo realistico.",
+  crescita:"Costruisci sul mio caso concreto un piano di crescita del patrimonio a 1, 3 e 5 anni: scenari prudente, bilanciato e dinamico basati sul mio tasso di risparmio reale, con rischi espliciti per ciascuno.",
+  mercati:"Cerca sul web il contesto di mercato attuale rilevante per la mia allocazione (azionario, tassi BCE, inflazione Italia, crypto) e spiegami cosa significa per il mio patrimonio, citando le fonti."
+};
+
+// Snapshot compatto dei dati reali, inviato al modello a ogni richiesta
+function aiBuildContext(){
+  const tot=db.assets.reduce((s,a)=>s+a.eur,0);
+  const alloc={}; db.assets.forEach(a=>{alloc[a.tipo]=(alloc[a.tipo]||0)+a.eur;});
+  const mesi=[];
+  for(let i=5;i>=0;i--){
+    const mk=monthKeyOffset(i);
+    const agg=monthAgg(mk);
+    mesi.push({mese:mk,entrate:Math.round(agg.ent),uscite:Math.round(agg.usc),saldo:Math.round(agg.saldo)});
+  }
+  const cutCat=monthKeyOffset(2);
+  const catTot={};
+  db.movimenti.filter(m=>m.tipo==='uscita'&&m.data.slice(0,7)>=cutCat).forEach(m=>{catTot[m.cat]=(catTot[m.cat]||0)+m.importo;});
+  const speseCat=Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(([c,v])=>({categoria:c,eur:Math.round(v)}));
+  const cov=coverageStart();
+  const trend=[];
+  if(cov){
+    let [y,mo]=cov.slice(0,7).split('-').map(Number);
+    const [cy,cm]=thisMonth().split('-').map(Number);
+    while(y<cy||(y===cy&&mo<=cm)){
+      const key=y+'-'+String(mo).padStart(2,'0');
+      const lastDay=new Date(y,mo,0).getDate();
+      const cut=key+'-'+String(lastDay).padStart(2,'0');
+      const v=db.assets.reduce((s,a)=>{const x=valAt(a.id,cut);return x!==null?s+x:s;},0);
+      trend.push({mese:key,patrimonio_eur:Math.round(v)});
+      mo++; if(mo>12){mo=1;y++;}
+    }
+  }
+  return{
+    data_oggi:today(),
+    patrimonio_totale_eur:Math.round(tot),
+    allocazione:Object.entries(alloc).map(([t,v])=>({tipo:t,eur:Math.round(v),pct:tot?+(v/tot*100).toFixed(1):0})),
+    asset:db.assets.map(a=>({nome:a.nome,tipo:a.tipo,valuta:a.valuta,eur:Math.round(a.eur),pct:tot?+(a.eur/tot*100).toFixed(1):0})),
+    ultimi_6_mesi:mesi,
+    uscite_per_categoria_ultimi_3_mesi:speseCat,
+    trend_patrimonio_fine_mese:trend,
+    baseline_inizio_apr2026_eur:79977
+  };
+}
+
+function renderAiPage(){
+  aiRenderWarn();
+  if(!aiInit){
+    aiInit=true;
+    const inp=document.getElementById('ai-in');
+    inp.addEventListener('input',function(){aiAutoGrow(inp);});
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth>720){e.preventDefault();aiSend();}
+    });
+    if(!aiHistory.length) aiWelcome();
+  }
+}
+function aiWelcome(){
+  const tot=db.assets.reduce((s,a)=>s+a.eur,0);
+  aiAddBubble('bot','Ciao Fabrizio 👋 Ho davanti i tuoi dati aggiornati: **'+fEUR(tot)+'** su '+db.assets.length+' asset. Usa i pulsanti rapidi qui sopra o chiedimi qualsiasi cosa sul tuo patrimonio. Attiva 🌐 Web quando vuoi che verifichi dati di mercato aggiornati con fonti citate.');
+}
+function aiRenderWarn(){
+  const w=document.getElementById('ai-warn');
+  if(!w) return;
+  if(!getScriptUrl()){
+    w.innerHTML='<div class="snap-remind">🔑 <span>Per usare l\'assistente configura prima l\'URL dello script in <strong>Impostazioni</strong> e aggiungi la chiave API nelle Script Properties dello script (vedi AI_AppsScript_AGGIUNTA.gs).</span></div>';
+  }else{ w.innerHTML=''; }
+}
+function aiNuovaChat(){
+  if(aiBusy) return;
+  aiHistory=[];
+  document.getElementById('ai-msgs').innerHTML='';
+  aiWelcome();
+}
+function aiToggleWeb(){
+  aiWeb=!aiWeb;
+  document.getElementById('ai-webtog').classList.toggle('on',aiWeb);
+}
+function aiAutoGrow(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function aiSetBusy(b){
+  const s=document.getElementById('ai-send'); if(s) s.disabled=b;
+  document.querySelectorAll('.ai-qbtn').forEach(x=>x.disabled=b);
+}
+function aiQuick(k){
+  if(aiBusy) return;
+  aiAsk(AI_QUICK[k], k==='mercati'?true:aiWeb);
+}
+function aiSend(){
+  if(aiBusy) return;
+  const inp=document.getElementById('ai-in');
+  const txt=inp.value.trim();
+  if(!txt) return;
+  inp.value=''; aiAutoGrow(inp);
+  aiAsk(txt, aiWeb);
+}
+
+async function aiAsk(text,useWeb){
+  const url=getScriptUrl();
+  if(!url){ aiRenderWarn(); return; }
+  aiBusy=true; aiSetBusy(true);
+  aiHistory.push({role:'user',content:text});
+  aiAddBubble('user',text);
+  aiShowTyping(true);
+  try{
+    const payload={
+      action:'ai',
+      model:AI_MODEL,
+      max_tokens:AI_MAX_TOKENS,
+      system:AI_SYSTEM+'\n\nDATI ATTUALI DEL PATRIMONIO (JSON):\n'+JSON.stringify(aiBuildContext()),
+      messages:aiHistory.slice(-AI_MAX_HISTORY).map(m=>({role:m.role,content:m.content}))
+    };
+    if(useWeb) payload.tools=[{type:'web_search_20250305',name:'web_search',max_uses:4}];
+    // Content-Type text/plain: evita il preflight CORS che Apps Script non gestisce,
+    // così (a differenza della sync no-cors) la risposta si può leggere.
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+    const parts=(data.content||[]).filter(b=>b.type==='text');
+    const out=parts.map(b=>b.text).join('\n').trim();
+    if(!out) throw new Error('Risposta vuota dal modello.');
+    const fonti=[]; const visti={};
+    parts.forEach(b=>(b.citations||[]).forEach(c=>{
+      if(c.url&&!visti[c.url]){visti[c.url]=1;fonti.push({url:c.url,title:c.title||c.url});}
+    }));
+    aiHistory.push({role:'assistant',content:out});
+    aiShowTyping(false);
+    aiAddBubble('bot',out,fonti,data.usage);
+  }catch(err){
+    aiShowTyping(false);
+    aiHistory.pop();  // rimuove il turno fallito: si può riprovare senza sporcare la storia
+    aiAddBubble('err','⚠️ '+(err&&err.message?err.message:'Errore di rete')+'\nControlla che lo script Apps Script sia aggiornato con la parte AI e che la chiave API sia nelle Script Properties.');
+  }
+  aiBusy=false; aiSetBusy(false);
+}
+
+function aiShowTyping(on){
+  const box=document.getElementById('ai-msgs');
+  let t=document.getElementById('ai-typing');
+  if(on){
+    if(!t){ t=document.createElement('div'); t.id='ai-typing'; t.className='ai-typing glass'; t.innerHTML='<span></span><span></span><span></span>'; box.appendChild(t); }
+    box.scrollTop=box.scrollHeight;
+  }else if(t){ t.remove(); }
+}
+
+// Mini-renderer: grassetti, titoli ### e liste dal testo del modello (già escapato)
+function aiMd(t){
+  let h=esc(t);
+  h=h.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/^#{1,4}\s*(.+)$/gm,'<h4>$1</h4>');
+  const lines=h.split('\n'); let out=''; let inUl=false;
+  for(const ln of lines){
+    const m=ln.match(/^\s*[-•]\s+(.*)/);
+    const n=ln.match(/^\s*(\d+)[\.\)]\s+(.*)/);
+    if(m){ if(!inUl){out+='<ul>';inUl=true;} out+='<li>'+m[1]+'</li>'; }
+    else if(n){ if(!inUl){out+='<ul>';inUl=true;} out+='<li><strong>'+n[1]+'.</strong> '+n[2]+'</li>'; }
+    else{
+      if(inUl){out+='</ul>';inUl=false;}
+      if(ln.indexOf('<h4>')===0){ out+=ln; }
+      else if(ln.trim()){ out+='<p>'+ln+'</p>'; }
+    }
+  }
+  if(inUl) out+='</ul>';
+  return out;
+}
+
+function aiAddBubble(kind,text,fonti,usage){
+  const box=document.getElementById('ai-msgs');
+  if(!box) return;
+  const d=document.createElement('div');
+  if(kind==='user'){ d.className='ai-msg user'; d.textContent=text; }
+  else if(kind==='err'){ d.className='ai-msg bot err'; d.textContent=text; }
+  else{
+    d.className='ai-msg bot';
+    let html=aiMd(text);
+    if(fonti&&fonti.length){
+      html+='<div class="ai-src"><strong>Fonti</strong>'+fonti.slice(0,6).map(f=>'<a href="'+esc(f.url)+'" target="_blank" rel="noopener">'+esc(f.title)+'</a>').join('')+'</div>';
+    }
+    if(usage){
+      const tk=(usage.input_tokens||0)+(usage.output_tokens||0);
+      if(tk) html+='<div class="ai-meta">'+tk.toLocaleString('it-IT')+' token</div>';
+    }
+    d.innerHTML=html;
+  }
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+}
 
 // ── EXPORT / IMPORT ──
 function esporta(){
