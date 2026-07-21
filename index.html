@@ -1995,11 +1995,11 @@ function renderRend(){
   const rows=[];
   let totPlus=0,totBase=0;
   db.assets.forEach(a=>{
+    // Solo investimenti e crypto: su conti/wallet le correzioni manuali di saldo
+    // e i giroconti producono finti "rendimenti" enormi (verificato coi dati reali).
+    // Il conto deposito va tenuto come tipo "investimenti" per comparire qui.
+    if(a.tipo!=='investimenti'&&a.tipo!=='crypto') return;
     const r=rendAsset(a,REND_START,oggi);
-    const core=a.tipo==='investimenti'||a.tipo==='crypto';
-    // liquidità/wallet compaiono solo se hanno rendimento reale (es. interessi
-    // del conto deposito arrivati via snapshot o cedole accreditate)
-    if(!core&&Math.abs(r.plus)<1) return;
     rows.push({a,r});
     totPlus+=r.plus; totBase+=r.base;
   });
@@ -2021,7 +2021,7 @@ function renderRend(){
       <div class="rend-val"><div class="rend-eur ${cls(r.plus)}">${sgn(r.plus)}${fEUR(r.plus)}</div>
         <div class="rend-pct">${r.pct!==null?sgn(r.pct)+r.pct.toFixed(1)+'%':'—'}</div></div>
     </div>`).join('')+
-    `<div class="rend-note">Il capitale versato è ricostruito da trasferimenti e movimenti collegati all'asset; cedole, dividendi e interessi accreditati contano come rendimento. Correzioni manuali di saldo possono comparire qui come rendimento.</div>`;
+    `<div class="rend-note">Solo investimenti e crypto. Il capitale è ricostruito da trasferimenti e movimenti collegati all'asset; cedole, dividendi e interessi accreditati contano come rendimento.</div>`;
 
   // ── Grafico plusvalenza cumulata dal 30/04/2026 ──
   const cvs=document.getElementById('cRend');
