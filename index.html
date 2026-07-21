@@ -211,6 +211,20 @@ tbody tr:hover td{background:var(--s2);}
   .and-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
 }
 
+/* ── Rendimento per asset (Andamento) ── */
+.rend-tot{display:flex;justify-content:space-between;align-items:baseline;gap:.7rem;padding:.15rem .2rem .75rem;border-bottom:1px solid var(--border);margin-bottom:.35rem;flex-wrap:wrap;}
+.rend-tot-lbl{font-size:.72rem;color:var(--text3);}
+.rend-tot-val{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:600;}
+.rend-row{display:flex;align-items:center;gap:.7rem;padding:.55rem .2rem;border-bottom:1px solid var(--border);}
+.rend-row:last-child{border-bottom:none;}
+.rend-main{flex:1;min-width:0;}
+.rend-name{font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rend-sub{font-size:.68rem;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rend-val{text-align:right;flex-shrink:0;}
+.rend-eur{font-size:.88rem;font-weight:600;}
+.rend-pct{font-size:.68rem;color:var(--text3);}
+.rend-note{font-size:.68rem;color:var(--text3);line-height:1.5;margin-top:.7rem;padding-top:.6rem;border-top:1px solid var(--border);}
+
 /* ── Asset: card raggruppate per tipo, stile Apple ── */
 .asset-grid{display:flex;flex-direction:column;gap:1rem;}
 @media(min-width:1024px){
@@ -529,6 +543,21 @@ tbody tr:hover td{background:var(--s2);}
       </div>
     </div>
   </div>
+
+  <!-- Rendimenti: plusvalenze reali al netto dei versamenti -->
+  <div class="and-charts-row">
+    <div class="card">
+      <div class="card-hd"><h3>Rendimento per asset</h3><span style="font-size:.68rem;color:var(--text3)">dal 30/04/2026 · plusvalenza = valore − capitale versato</span></div>
+      <div class="card-bd" id="rend-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><h3>Plusvalenza nel tempo</h3><span style="font-size:.68rem;color:var(--text3)">solo rendimento di mercato, al netto dei versamenti</span></div>
+      <div class="card-bd">
+        <div class="hscroll" id="wrapRend" style="height:300px"><div class="hscroll-in"><canvas id="cRend"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+      </div>
+    </div>
+  </div>
+
   <div class="tip">💡 <strong>Come funziona:</strong> usa <strong>📸 Aggiorna valori</strong> nella sezione Asset ogni settimana per registrare lo snapshot. I grafici mostrano l'evoluzione storica.</div>
 </div>
 
@@ -1881,6 +1910,7 @@ function renderAnd(){
   scrollToNow('wrapMain');
 
   renderDelta();
+  renderRend();
 }
 
 // ── NUOVO GRAFICO: variazione mese su mese del patrimonio totale ──
@@ -1923,6 +1953,97 @@ function renderDelta(){
         y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
   scrollToNow('wrapDelta');
 }
+
+// ══ RENDIMENTI / PLUSVALENZE ══════════════════════════════════════════
+// Plusvalenza di un asset = variazione di valore NON spiegata dai flussi di
+// capitale (trasferimenti e movimenti collegati all'asset). Gli acquisti
+// registrati come Trasferimento (regola dal 13/07/2026) sono capitale versato,
+// non rendimento. Le entrate nelle categorie REND_INCOME_CATS (cedole,
+// dividendi, interessi accreditati) NON contano come capitale versato: se
+// accreditate sull'asset stesso (es. interessi del conto deposito) restano
+// quindi dentro la plusvalenza, com'è giusto.
+// ⚠️ Limite noto: acquisti storici registrati come snapshot diretto invece che
+// come Trasferimento vengono letti come rendimento e lo gonfiano — se un numero
+// sembra troppo alto, controllare i movimenti di quell'asset.
+const REND_START='2026-04-30';   // baseline: stessa data delle altre baseline dell'app (primi dati affidabili)
+const REND_INCOME_CATS=['Dividendi / Cedole','Rendita'];
+
+// Capitale netto versato sull'asset nell'intervallo (from, to]
+function rendFlows(assetId,from,to){
+  let cap=0;
+  db.movimenti.forEach(m=>{
+    if(m.assetId!==assetId||m.data<=from||m.data>to) return;
+    if(m.tipo==='trasferimento') cap+=m.trasfDir==='in'?m.importo:-m.importo;
+    else if(m.tipo==='entrata'){ if(!REND_INCOME_CATS.includes(m.cat)) cap+=m.importo; }
+    else if(m.tipo==='uscita') cap-=m.importo;
+  });
+  return cap;
+}
+function rendAsset(a,from,to){
+  const v0r=valAt(a.id,from); const v0=v0r!==null?v0r:0;
+  const v1r=valAt(a.id,to);   const v1=v1r!==null?v1r:0;
+  const cap=rendFlows(a.id,from,to);
+  const plus=v1-v0-cap;
+  const base=v0+Math.max(cap,0);   // capitale di riferimento per la %
+  return{plus,base,v0,v1,cap,pct:base>0?plus/base*100:null};
+}
+
+function renderRend(){
+  const list=document.getElementById('rend-list');
+  if(!list) return;
+  const oggi=today();
+  const rows=[];
+  let totPlus=0,totBase=0;
+  db.assets.forEach(a=>{
+    const r=rendAsset(a,REND_START,oggi);
+    const core=a.tipo==='investimenti'||a.tipo==='crypto';
+    // liquidità/wallet compaiono solo se hanno rendimento reale (es. interessi
+    // del conto deposito arrivati via snapshot o cedole accreditate)
+    if(!core&&Math.abs(r.plus)<1) return;
+    rows.push({a,r});
+    totPlus+=r.plus; totBase+=r.base;
+  });
+  destroyC('cRend');
+  if(!rows.length){
+    list.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Nessun rendimento da mostrare: servono investimenti o crypto con snapshot successivi al 30/04/2026.</div>';
+    return;
+  }
+  rows.sort((x,y)=>y.r.plus-x.r.plus);
+  const totPct=totBase>0?totPlus/totBase*100:null;
+  const cls=v=>v>=0?'pos':'neg'; const sgn=v=>v>=0?'+':'';
+  list.innerHTML=
+    `<div class="rend-tot"><span class="rend-tot-lbl">Plusvalenza totale dal 30/04/2026</span>
+      <span class="rend-tot-val ${cls(totPlus)}">${sgn(totPlus)}${fEUR(totPlus)}${totPct!==null?' <span style="font-size:.75rem">('+sgn(totPct)+totPct.toFixed(1)+'%)</span>':''}</span></div>`+
+    rows.map(({a,r})=>`<div class="rend-row">
+      <span class="dot" style="background:${GRP_DOT[a.tipo]||'#8e8e93'}"></span>
+      <div class="rend-main"><div class="rend-name">${esc(a.nome)}</div>
+        <div class="rend-sub">capitale ${fEUR(r.base)} → oggi ${fEUR(r.v1)}</div></div>
+      <div class="rend-val"><div class="rend-eur ${cls(r.plus)}">${sgn(r.plus)}${fEUR(r.plus)}</div>
+        <div class="rend-pct">${r.pct!==null?sgn(r.pct)+r.pct.toFixed(1)+'%':'—'}</div></div>
+    </div>`).join('')+
+    `<div class="rend-note">Il capitale versato è ricostruito da trasferimenti e movimenti collegati all'asset; cedole, dividendi e interessi accreditati contano come rendimento. Correzioni manuali di saldo possono comparire qui come rendimento.</div>`;
+
+  // ── Grafico plusvalenza cumulata dal 30/04/2026 ──
+  const cvs=document.getElementById('cRend');
+  if(!cvs) return;
+  const ids=new Set(rows.map(x=>x.a.id));
+  const dates=[...new Set(db.snapshots.filter(s=>ids.has(s.assetId)&&s.date>=REND_START).map(s=>s.date))].sort();
+  if(!dates.length) return;
+  const series=[];
+  ['investimenti','crypto'].forEach(t=>{
+    const assets=rows.filter(x=>x.a.tipo===t).map(x=>x.a);
+    if(assets.length) series.push({label:TLABELS[t],col:TCOLORS[t],assets});
+  });
+  const other=rows.filter(x=>x.a.tipo!=='investimenti'&&x.a.tipo!=='crypto').map(x=>x.a);
+  if(other.length) series.push({label:'Interessi / altro',col:'#2dd4bf',assets:other});
+  const dsArr=series.map(s=>Object.assign({label:s.label,
+    data:dates.map(d=>s.assets.reduce((sum,a)=>sum+rendAsset(a,REND_START,d).plus,0)),
+    borderColor:s.col,backgroundColor:gradFill(s.col,'33'),pointHoverBackgroundColor:s.col,fill:true},LINE_STYLE));
+  sizeScroll('wrapRend',dates.length,dates.length>14?26:0);
+  charts['cRend']=new Chart(cvs,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(dsArr.length>1)});
+  scrollToNow('wrapRend');
+}
+
 function tog(id){toggles[id]=!toggles[id];renderAnd();}
 
 // ══ ASSISTENTE AI ═══════════════════════════════════════════════════
