@@ -1931,8 +1931,8 @@ function tog(id){toggles[id]=!toggles[id];renderAnd();}
 // Properties dello script, mai in questo file pubblico su GitHub Pages.
 // Istruzioni di installazione: file AI_AppsScript_AGGIUNTA.gs.
 const AI_MODEL='claude-sonnet-5';
-const AI_MAX_TOKENS=1800;
-const AI_MAX_HISTORY=12;   // turni massimi rimandati al modello (controllo costi)
+const AI_MAX_TOKENS=4000;  // alzato da 1800: le risposte lunghe non vengono più tagliate a metà. NB: alza anche il tetto in Codice.gs (aiHandle_, da 3000 a >=4096) e RIPUBBLICA lo script.
+const AI_MAX_HISTORY=10;   // turni massimi rimandati al modello (controllo costi); ridotto da 12 per lasciare più spazio alla risposta
 let aiHistory=[];          // {role:'user'|'assistant', content:string}
 let aiBusy=false, aiWeb=false, aiInit=false;
 
@@ -2077,18 +2077,32 @@ async function aiAsk(text,useWeb){
     // Content-Type text/plain: evita il preflight CORS che Apps Script non gestisce,
     // così (a differenza della sync no-cors) la risposta si può leggere.
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    const data=await resp.json();
-    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+    // Leggo prima il testo grezzo: se lo script restituisce HTML/errore invece di JSON
+    // (es. script non ripubblicato, permessi mancanti, timeout) lo mostro chiaramente
+    // invece di un generico crash su resp.json().
+    const raw=await resp.text();
+    let data;
+    try{ data=JSON.parse(raw); }
+    catch(_){ throw new Error('Lo script non ha restituito JSON valido (HTTP '+resp.status+'). '+(raw?('Inizio risposta: '+raw.slice(0,200)):'(risposta vuota)')+' — controlla di aver RIPUBBLICATO lo script dopo l\'ultima modifica (Gestisci deployment → Nuova versione).'); }
+    if(data.error) throw new Error((data.error.message||JSON.stringify(data.error))+(data.error.type?' ['+data.error.type+']':''));
     const parts=(data.content||[]).filter(b=>b.type==='text');
     const out=parts.map(b=>b.text).join('\n').trim();
-    if(!out) throw new Error('Risposta vuota dal modello.');
+    const stop=data.stop_reason||'';
+    if(!out){
+      // Niente testo: spiego il motivo reale dallo stop_reason, invece del generico "vuota".
+      if(stop==='refusal') throw new Error('Il modello ha declinato di rispondere a questa richiesta specifica (stop_reason: refusal). Prova a riformularla in modo più generale/educativo — es. "quali principi seguire e quali strumenti esistono" invece di "dimmi cosa comprare".');
+      if(stop==='max_tokens') throw new Error('Risposta interrotta subito per limite di token (stop_reason: max_tokens). Apri una "✚ Nuova chat" per alleggerire il contesto, oppure fai una domanda più breve.');
+      throw new Error('Il modello non ha restituito testo utilizzabile (stop_reason: '+(stop||'sconosciuto')+').');
+    }
     const fonti=[]; const visti={};
     parts.forEach(b=>(b.citations||[]).forEach(c=>{
       if(c.url&&!visti[c.url]){visti[c.url]=1;fonti.push({url:c.url,title:c.title||c.url});}
     }));
-    aiHistory.push({role:'assistant',content:out});
+    aiHistory.push({role:'assistant',content:out});   // in storia salvo solo il testo pulito
     aiShowTyping(false);
-    aiAddBubble('bot',out,fonti,data.usage);
+    let display=out;
+    if(stop==='max_tokens') display+='\n\n⚠️ Risposta interrotta per limite di lunghezza — scrivi "continua" per avere il resto.';
+    aiAddBubble('bot',display,fonti,data.usage);
   }catch(err){
     aiShowTyping(false);
     aiHistory.pop();  // rimuove il turno fallito: si può riprovare senza sporcare la storia
