@@ -144,6 +144,7 @@ tbody tr:hover td{background:var(--s2);}
 .hero-val{font-family:-apple-system,'SF Pro Display','Inter',sans-serif;font-size:2.1rem;color:#fff;font-weight:600;letter-spacing:-.5px;margin-bottom:2px;}
 .hero-sub{font-size:.82rem;font-weight:500;}
 .hero-sub.pos{color:#30d158;}.hero-sub.neg{color:#ff453a;}
+.hero-upd{font-size:.7rem;color:#8e8e93;margin-top:8px;}
 .pie-block{display:flex;align-items:center;gap:16px;}
 .pie-wrap{position:relative;width:150px;height:150px;flex-shrink:0;}
 .pie-legend{display:flex;flex-direction:column;gap:8px;}
@@ -437,6 +438,7 @@ tbody tr:hover td{background:var(--s2);}
         <div class="hero-lbl">Patrimonio totale</div>
         <div class="hero-val" id="hero-tot">€ 0</div>
         <div class="hero-sub" id="hero-sub">—</div>
+        <div class="hero-upd" id="hero-upd"></div>
       </div>
       <div class="pie-block">
         <div class="pie-wrap"><canvas id="cAlloc"></canvas></div>
@@ -906,6 +908,26 @@ function chgDashMonth(delta){
   if(dashMonthOffset!==prev) renderDash();
 }
 
+// ── HELPER DATA ── formatta una data ISO (YYYY-MM-DD) in italiano breve, es. "21/07"
+function fmtDataBreve(d){
+  if(!d) return '';
+  const [y,m,dd]=d.split('-');
+  return `${dd}/${m}`;
+}
+// Ultimo snapshot (data più recente) tra un sottoinsieme di asset. Ritorna null se nessuno.
+function ultimoSnapshotData(assetIds){
+  const ids=new Set(assetIds);
+  let max=null;
+  db.snapshots.forEach(s=>{ if(ids.has(s.assetId) && (max===null||s.date>max)) max=s.date; });
+  return max;
+}
+// Ultimo snapshot per un singolo asset. Ritorna null se non ne ha.
+function ultimoSnapshotAsset(assetId){
+  const rel=db.snapshots.filter(s=>s.assetId===assetId);
+  if(!rel.length) return null;
+  return rel.reduce((mx,s)=>s.date>mx?s.date:mx,rel[0].date);
+}
+
 // ══ CAROSELLO MENSILE ══
 // Ogni riquadro (KPI, Entrate vs Uscite, Uscite per categoria) ha il proprio mese
 // e il proprio gesto, indipendente dagli altri. Tre pannelli affiancati
@@ -1372,6 +1394,13 @@ function renderAsset(){
     const grpPct=tot?(grpTot/tot*100):0;
     const rows=assets.map(a=>{
       const pct=tot?(a.eur/tot*100):0;
+      // Data ultimo snapshot in piccolo, solo per investimenti/crypto (unici tipi che vanno
+      // snapshottati a mano — vedi idea 3, 22/07/2026). Riusa lo stesso stile di arow-cur.
+      let updHtml='';
+      if(t==='investimenti'||t==='crypto'){
+        const ud=ultimoSnapshotAsset(a.id);
+        if(ud) updHtml=` · agg. ${fmtDataBreve(ud)}`;
+      }
       return`<div class="arow-wrap">
         <div class="arow-actions">
           <button type="button" class="arow-act arow-act-edit" onclick="openAsset('${a.id}')" aria-label="Modifica">✏</button>
@@ -1381,7 +1410,7 @@ function renderAsset(){
           <span class="dot" style="background:${GRP_DOT[t]}"></span>
           <div class="arow-main">
             <div class="arow-name">${esc(a.nome)}</div>
-            <div class="arow-cur">${fNum(a.importo)} ${a.valuta}</div>
+            <div class="arow-cur">${fNum(a.importo)} ${a.valuta}${updHtml}</div>
           </div>
           <div class="arow-val">
             <div class="arow-eur">${fEUR(a.eur)}</div>
@@ -1720,6 +1749,17 @@ function renderDash(){
     } else {
       heroSub.innerHTML=`<div class="hero-sub">${db.assets.length} asset registrati</div>`;
     }
+  }
+
+  // ── Dicitura "Valori aggiornati al X" (idea 3, 22/07/2026) ──
+  // Solo investimenti e crypto: sono gli unici tipi che richiedono uno snapshot manuale
+  // (liquidità/wallet si aggiornano da soli coi Movimenti, quindi includerli farebbe
+  // sembrare i dati "vecchi" anche quando in realtà sono già corretti in automatico).
+  const heroUpd=document.getElementById('hero-upd');
+  if(heroUpd){
+    const idsInvCry=db.assets.filter(a=>a.tipo==='investimenti'||a.tipo==='crypto').map(a=>a.id);
+    const ud=idsInvCry.length?ultimoSnapshotData(idsInvCry):null;
+    heroUpd.textContent=ud?`Valori investimenti/crypto aggiornati al ${ud.split('-').reverse().join('/')}`:'';
   }
 
   // ── Promemoria snapshot: avvisa se manca da troppo tempo un aggiornamento valori ──
