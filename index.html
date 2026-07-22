@@ -383,6 +383,48 @@ tbody tr:hover td{background:var(--s2);}
   .arow-wrap{overflow:visible;}
   .arow-actions{display:none;}
 }
+/* ── SCADENZE ── */
+.scad-summary{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;}
+.scad-sum-chip{display:flex;align-items:center;gap:.5rem;padding:.55rem .9rem;border-radius:14px;background:var(--s1);border:1px solid var(--border);font-size:.8rem;color:var(--text2);}
+.scad-sum-chip b{color:var(--text);font-weight:600;}
+.scad-filters{display:flex;gap:.5rem;margin-bottom:1rem;}
+.scad-fbtn{padding:.4rem .9rem;border-radius:13px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:all .12s;}
+.scad-fbtn.sel{background:var(--s3);border-color:#fff;color:#fff;font-weight:500;}
+.scad-list{display:flex;flex-direction:column;gap:.7rem;}
+.scad-row{display:flex;align-items:center;gap:.9rem;padding:.9rem 1rem;background:var(--s1);border:1px solid var(--border);border-radius:14px;transition:border-color .12s;}
+.scad-row:hover{border-color:var(--border2);}
+.scad-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 4px rgba(255,255,255,.03);}
+.scad-dot.verde{background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.5),0 0 0 4px rgba(74,222,128,.08);}
+.scad-dot.giallo{background:var(--yellow);box-shadow:0 0 8px rgba(250,204,21,.5),0 0 0 4px rgba(250,204,21,.08);}
+.scad-dot.rosso{background:var(--red);box-shadow:0 0 8px rgba(248,113,113,.55),0 0 0 4px rgba(248,113,113,.1);}
+.scad-dot.grigio{background:#555;}
+.scad-main{flex:1;min-width:0;}
+.scad-nome{font-size:.92rem;font-weight:500;color:var(--text);}
+.scad-meta{font-size:.72rem;color:var(--text3);margin-top:2px;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
+.scad-state{font-weight:600;}
+.scad-state.verde{color:var(--green);}.scad-state.giallo{color:var(--yellow);}.scad-state.rosso{color:var(--red);}.scad-state.grigio{color:var(--text2);}
+.scad-imp{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;color:var(--text);white-space:nowrap;}
+.scad-actions{display:flex;gap:.4rem;align-items:center;flex-shrink:0;}
+.scad-pay{padding:.45rem .8rem;border-radius:11px;border:1.5px solid var(--green);background:rgba(74,222,128,.12);color:var(--green);font-family:'Inter',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;}
+.scad-pay:hover{background:rgba(74,222,128,.22);}
+.scad-pay.done{border-color:var(--border);background:var(--s2);color:var(--text3);cursor:default;}
+.scad-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:.3rem;border-radius:8px;}
+.scad-edit:hover{color:var(--text);background:var(--s2);}
+.scad-empty{text-align:center;color:var(--text3);font-size:.85rem;padding:2.5rem 1rem;}
+/* widget dashboard */
+.dscad{display:block;width:100%;text-align:left;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1.2rem;cursor:pointer;transition:border-color .12s;}
+.dscad:hover{border-color:var(--border2);}
+.dscad-hd{display:flex;justify-content:space-between;align-items:center;gap:.6rem;}
+.dscad-ttl{font-size:.8rem;color:var(--text2);font-weight:500;}
+.dscad-badges{display:flex;gap:.5rem;}
+.dscad-badge{display:flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;}
+.dscad-next{font-size:.78rem;color:var(--text3);margin-top:.4rem;}
+.dscad-next b{color:var(--text);font-weight:600;}
+@media(max-width:640px){
+  .scad-row{padding:.8rem .85rem;gap:.7rem;}
+  .scad-imp{font-size:.85rem;}
+  .scad-pay{padding:.4rem .6rem;font-size:.72rem;}
+}
 </style>
 </head>
 <body>
@@ -398,6 +440,9 @@ tbody tr:hover td{background:var(--s2);}
     </button>
     <button class="nav-item" onclick="goTo('movimenti',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Movimenti
+    </button>
+    <button class="nav-item" onclick="goTo('scadenze',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>Scadenze
     </button>
     <button class="nav-item" onclick="goTo('andamento',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Andamento
@@ -431,6 +476,7 @@ tbody tr:hover td{background:var(--s2);}
   </div>
   <div id="sync-bar-dash"></div>
   <div id="snap-reminder"></div>
+  <div id="dash-scad"></div>
 
   <div class="glass" style="padding:1.3rem 1.4rem;margin-bottom:1.2rem">
     <div class="hero-row">
@@ -509,6 +555,20 @@ tbody tr:hover td{background:var(--s2);}
     <div class="mov-list" id="mov-list"></div>
   </div>
   <div class="mov-hint" id="mov-hint" style="display:none">← scorri una riga per modificare o eliminare</div>
+</div>
+
+<!-- SCADENZE -->
+<div class="page" id="page-scadenze">
+  <div class="page-hd">
+    <div><h2>Scadenze</h2><p>Spese fisse e ricorrenti — segna cosa hai già pagato</p></div>
+    <button class="btn btn-p" onclick="openScad()">+ Aggiungi</button>
+  </div>
+  <div class="scad-summary" id="scad-summary"></div>
+  <div class="scad-filters">
+    <button class="scad-fbtn sel" id="sf-tutte" onclick="setScadFiltro('tutte',this)">Tutte</button>
+    <button class="scad-fbtn" id="sf-dapagare" onclick="setScadFiltro('dapagare',this)">Da pagare</button>
+  </div>
+  <div class="scad-list" id="scad-list"></div>
 </div>
 
 <!-- ANDAMENTO -->
@@ -747,6 +807,59 @@ tbody tr:hover td{background:var(--s2);}
   </div>
 </div>
 
+<!-- MODAL SCADENZA (aggiungi/modifica) -->
+<div class="overlay" id="mo-scad">
+  <div class="modal">
+    <h3 id="ms-title">Nuova scadenza</h3>
+
+    <div class="fg"><label>Nome</label><input id="s-nome" placeholder="es. Bollo moto, Assicurazione auto, 730…"></div>
+
+    <div class="fg"><label>Cadenza</label><div class="mv-chipgrid" id="s-cad-chips"></div></div>
+
+    <div class="fg"><label>Importo</label>
+      <div class="mv-seg" style="margin-bottom:.6rem">
+        <button type="button" class="mv-seg-btn" id="s-tipo-fisso" onclick="setScadTipo('fisso')">€ Fisso</button>
+        <button type="button" class="mv-seg-btn" id="s-tipo-var" onclick="setScadTipo('variabile')">~ Variabile</button>
+      </div>
+      <input type="number" id="s-imp" placeholder="0 €" step="0.01" min="0" inputmode="decimal">
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="s-imp-hint"></div>
+    </div>
+
+    <div class="fg"><label id="s-ancora-lbl">Prossima scadenza</label>
+      <input type="date" id="s-ancora">
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem">Da qui in poi calcolo automaticamente le scadenze successive in base alla cadenza.</div>
+    </div>
+
+    <div class="fg"><label>Categoria (per il movimento di spesa)</label><div class="mv-chipgrid" id="s-cat-chips"></div></div>
+    <div class="fg"><label>Conto di default (opzionale)</label><div class="mv-chipgrid" id="s-asset-chips"></div></div>
+
+    <div id="s-undo-wrap" style="display:none;margin-top:.4rem">
+      <button class="btn btn-g" style="color:var(--orange);border-color:#3a2a12;width:100%" onclick="annullaUltimoPagamento()">↩ Annulla ultimo pagamento registrato</button>
+    </div>
+
+    <div class="mf">
+      <button class="btn btn-g" id="s-del" style="margin-right:auto;color:var(--red);border-color:#3a1212;display:none" onclick="delScad()">Elimina</button>
+      <button class="btn btn-g" onclick="closeM('mo-scad')">Annulla</button>
+      <button class="btn btn-p" onclick="saveScad()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFERMA PAGAMENTO -->
+<div class="overlay" id="mo-pay">
+  <div class="modal">
+    <h3 id="mp-title">Segna come pagato</h3>
+    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1rem" id="mp-sub"></p>
+    <div class="fg"><label>Importo pagato</label><input type="number" id="p-imp" step="0.01" min="0" inputmode="decimal"></div>
+    <div class="fg"><label>Conto da cui è uscito</label><div class="mv-chipgrid" id="p-asset-chips"></div></div>
+    <div class="fg"><label>Data pagamento</label><input type="date" id="p-data"></div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-pay')">Annulla</button>
+      <button class="btn btn-p" onclick="confermaPagamento()">✓ Conferma e registra spesa</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── CONFIG ──
 const CFG_KEY = 'pat_config';
@@ -822,6 +935,7 @@ async function pullFromSheets(){
     if(data && data.assets){
       db = data;
       if(!db.snapshots) db.snapshots = [];
+      if(!db.scadenze) db.scadenze = [];
       saveLocal();
       renderAll();
       setSyncStatus(true, 'OK');
@@ -885,7 +999,7 @@ const TCOLORS = {liquidita:'#4ade80',investimenti:'#60a5fa',crypto:'#fb923c',wal
 const ACOLORS = ['#60a5fa','#4ade80','#fb923c','#c084fc','#facc15','#f87171','#34d399','#a78bfa','#38bdf8','#e879f9'];
 
 // ── STATE ──
-let db = {assets:[],movimenti:[],snapshots:[]};
+let db = {assets:[],movimenti:[],snapshots:[],scadenze:[]};
 let eAsset=null, eMov=null;
 let period=3;
 let toggles={};
@@ -1107,6 +1221,7 @@ function load(){
     if(!r) r = localStorage.getItem('pat3');
     if(r) db = JSON.parse(r);
     if(!db.snapshots) db.snapshots = [];
+    if(!db.scadenze) db.scadenze = [];
   }catch(e){}
 }
 
@@ -1133,6 +1248,7 @@ function goTo(name,btn){
   if(name==='dashboard') renderDash();
   if(name==='asset') renderAsset();
   if(name==='movimenti') renderMov();
+  if(name==='scadenze') renderScad();
   if(name==='andamento') renderAnd();
   if(name==='ai') renderAiPage();
   if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
@@ -1802,6 +1918,7 @@ function renderDash(){
     }).join('');
   }
   renderHist();
+  try{ renderDashScad(); }catch(e){}
 }
 
 // ── STORICO ULTIMI 6 MESI (entrate / uscite / saldo) ──
@@ -2341,13 +2458,289 @@ function importa(e){
       const data=JSON.parse(ev.target.result);
       if(!data.assets||!data.movimenti)return alert('File non valido.');
       if(!confirm('Vuoi caricare questo backup? I dati attuali verranno sostituiti.'))return;
-      db=data; if(!db.snapshots)db.snapshots=[];
+      db=data; if(!db.snapshots)db.snapshots=[]; if(!db.scadenze)db.scadenze=[];
       save(); renderAll();
       alert('Dati importati correttamente!');
     }catch(err){alert('Errore nel file.');}
   };
   r.readAsText(file);
   e.target.value='';
+}
+
+// ══════════════════════════════════════════════════════════
+// ── SCADENZE (spese fisse e ricorrenti + stato pagamento) ──
+// ══════════════════════════════════════════════════════════
+const CADENZE=[
+  {key:'mensile',label:'Mensile',mesi:1},
+  {key:'bimestrale',label:'Bimestrale',mesi:2},
+  {key:'trimestrale',label:'Trimestrale',mesi:3},
+  {key:'semestrale',label:'Semestrale',mesi:6},
+  {key:'annuale',label:'Annuale',mesi:12},
+  {key:'una-tantum',label:'Una tantum',mesi:0},
+];
+const SCAD_GRACE=30; // giorni entro cui una scadenza è "in scadenza" (giallo)
+let eScad=null, scadCadenza='annuale', scadTipo='fisso', scadCat='', scadAssetId='', scadFiltro='tutte';
+let payScadId=null, payDueISO=null, payAssetId='';
+
+function cadMesi(k){ const c=CADENZE.find(x=>x.key===k); return c?c.mesi:12; }
+function cadLabel(k){ const c=CADENZE.find(x=>x.key===k); return c?c.label:k; }
+function daysBetween(aISO,bISO){ const a=new Date(aISO+'T00:00:00'), b=new Date(bISO+'T00:00:00'); return Math.round((b-a)/86400000); }
+function addMonthsISO(iso,n){
+  const [y,m,d]=iso.split('-').map(Number);
+  const base=new Date(y,m-1,1); base.setMonth(base.getMonth()+n);
+  const dim=new Date(base.getFullYear(),base.getMonth()+1,0).getDate();
+  const dd=Math.min(d,dim), mm=base.getMonth()+1;
+  return `${base.getFullYear()}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+}
+function fImp(n){ return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
+function fScadDate(iso){ if(!iso)return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+
+// Genera le occorrenze (date di scadenza ISO) di una scadenza dentro una finestra temporale
+function occorrenzeScad(s,fromISO,toISO){
+  if(!s.ancora) return [];
+  const mesi=cadMesi(s.cadenza);
+  if(mesi===0) return [s.ancora]; // una tantum
+  // Solo in avanti dalla data ancora: la scadenza "nasce" con l'ancora,
+  // così non inventiamo occorrenze (e falsi "scaduti") prima che esistesse.
+  const occ=[]; let d=s.ancora, g=0;
+  while(d<=toISO && g<1200){ if(d>=fromISO) occ.push(d); d=addMonthsISO(d,mesi); g++; }
+  return occ;
+}
+function paidSetScad(s){ return new Set((s.pagamenti||[]).map(p=>p.ciclo)); }
+
+// Calcola lo stato "a pallino" di una scadenza
+function statoScad(s){
+  const t=today();
+  const occ=occorrenzeScad(s, addMonthsISO(t,-14), addMonthsISO(t,14));
+  if(!occ.length) return {stato:'grigio',refDate:s.ancora||null,giorni:null,prossima:s.ancora||null};
+  const paid=paidSetScad(s);
+  const past=occ.filter(d=>d<=t), fut=occ.filter(d=>d>t);
+  const lastPast=past.length?past[past.length-1]:null;
+  const nextFut=fut.length?fut[0]:null;
+  const missed=past.find(d=>!paid.has(d));
+  if(missed) return {stato:'rosso',refDate:missed,giorni:daysBetween(t,missed),prossima:nextFut};
+  if(nextFut){
+    if(paid.has(nextFut)) return {stato:'verde',refDate:nextFut,giorni:daysBetween(t,nextFut),prossima:nextFut};
+    const gd=daysBetween(t,nextFut);
+    if(gd<=SCAD_GRACE) return {stato:'giallo',refDate:nextFut,giorni:gd,prossima:nextFut};
+    if(lastPast) return {stato:'verde',refDate:nextFut,giorni:gd,prossima:nextFut}; // in regola, prossima lontana
+    return {stato:'grigio',refDate:nextFut,giorni:gd,prossima:nextFut};
+  }
+  if(lastPast && paid.has(lastPast)) return {stato:'verde',refDate:lastPast,giorni:null,prossima:null};
+  return {stato:'grigio',refDate:lastPast,giorni:null,prossima:null};
+}
+// L'occorrenza che un "Segna pagato" andrebbe a saldare
+function occorrenzaDaPagare(s){ const st=statoScad(s); return st.refDate; }
+
+const SCAD_ORDER={rosso:0,giallo:1,grigio:2,verde:3};
+function metaScad(s,st){
+  const cad=cadLabel(s.cadenza);
+  if(st.stato==='rosso'){ const gg=Math.abs(st.giorni); return `<span class="scad-state rosso">Scaduta il ${fScadDate(st.refDate)}${gg?` · ${gg}g fa`:''}</span> · ${cad}`; }
+  if(st.stato==='giallo') return `<span class="scad-state giallo">In scadenza il ${fScadDate(st.refDate)}</span> · tra ${st.giorni}g · ${cad}`;
+  if(st.stato==='verde')  return `<span class="scad-state verde">✓ In regola</span>${st.prossima?` · prossima ${fScadDate(st.prossima)}`:''} · ${cad}`;
+  return `<span class="scad-state grigio">Prossima ${fScadDate(st.refDate)}</span> · ${cad}`;
+}
+
+function renderScad(){
+  const list=document.getElementById('scad-list'); if(!list) return;
+  const arr=(db.scadenze||[]).map(s=>({s,st:statoScad(s)}));
+  // riepilogo
+  const nR=arr.filter(x=>x.st.stato==='rosso').length;
+  const nG=arr.filter(x=>x.st.stato==='giallo').length;
+  const nOk=arr.filter(x=>x.st.stato==='verde').length;
+  const sum=document.getElementById('scad-summary');
+  if(sum){
+    sum.innerHTML = arr.length? `
+      <div class="scad-sum-chip"><span class="scad-dot rosso"></span><b>${nR}</b> scadute</div>
+      <div class="scad-sum-chip"><span class="scad-dot giallo"></span><b>${nG}</b> in scadenza</div>
+      <div class="scad-sum-chip"><span class="scad-dot verde"></span><b>${nOk}</b> in regola</div>` : '';
+  }
+  // ordinamento + filtro
+  let vis=arr.slice().sort((a,b)=>{
+    const o=SCAD_ORDER[a.st.stato]-SCAD_ORDER[b.st.stato]; if(o) return o;
+    return (a.st.refDate||'9999')<(b.st.refDate||'9999')?-1:1;
+  });
+  if(scadFiltro==='dapagare') vis=vis.filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo');
+  if(!arr.length){ list.innerHTML=`<div class="scad-empty">Nessuna scadenza registrata.<br>Aggiungi bollo, assicurazioni, bollette, rate, tasse fisse o il 730 con “+ Aggiungi”.</div>`; return; }
+  if(!vis.length){ list.innerHTML=`<div class="scad-empty">Tutto in regola: nessuna scadenza da pagare al momento. 🎉</div>`; return; }
+  list.innerHTML=vis.map(({s,st})=>{
+    const imp = (s.importo? (s.importoTipo==='variabile'?'~':'')+fImp(s.importo) : (s.importoTipo==='variabile'?'variabile':'—'));
+    const payBtn = st.stato==='verde'
+      ? `<span class="scad-pay done">✓ Pagato</span>`
+      : `<button class="scad-pay" onclick="segnaPagato('${s.id}')">Segna pagato</button>`;
+    return `<div class="scad-row">
+      <span class="scad-dot ${st.stato}"></span>
+      <div class="scad-main">
+        <div class="scad-nome">${esc(s.nome)}</div>
+        <div class="scad-meta">${metaScad(s,st)}</div>
+      </div>
+      <div class="scad-imp">${imp}</div>
+      <div class="scad-actions">${payBtn}<button class="scad-edit" onclick="openScad('${s.id}')" aria-label="Modifica">✎</button></div>
+    </div>`;
+  }).join('');
+}
+
+function setScadFiltro(f,btn){
+  scadFiltro=f;
+  document.querySelectorAll('.scad-fbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderScad();
+}
+
+// ── Widget Dashboard ──
+function apriScadenze(){ const b=document.querySelector(".nav-item[onclick*=\"'scadenze'\"]"); if(b) goTo('scadenze',b); }
+function renderDashScad(){
+  const el=document.getElementById('dash-scad'); if(!el) return;
+  const arr=(db.scadenze||[]).map(s=>({s,st:statoScad(s)}));
+  if(!arr.length){ el.innerHTML=''; return; }
+  const nR=arr.filter(x=>x.st.stato==='rosso').length;
+  const nG=arr.filter(x=>x.st.stato==='giallo').length;
+  // prossima cosa da fare: prima le rosse, poi gialle, poi la scadenza futura più vicina
+  const urg=arr.filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo')
+    .sort((a,b)=>(a.st.refDate||'9999')<(b.st.refDate||'9999')?-1:1);
+  const nextInfo=arr.filter(x=>x.st.prossima).sort((a,b)=>a.st.prossima<b.st.prossima?-1:1)[0];
+  let line='';
+  if(urg.length){ const u=urg[0]; line=`<b>${esc(u.s.nome)}</b> — ${u.st.stato==='rosso'?'scaduta il':'scade il'} ${fScadDate(u.st.refDate)}`; }
+  else if(nextInfo){ line=`Prossima: <b>${esc(nextInfo.s.nome)}</b> — ${fScadDate(nextInfo.st.prossima)}`; }
+  else line='Tutto in regola 🎉';
+  const badges=[];
+  if(nR) badges.push(`<span class="dscad-badge" style="color:var(--red)"><span class="scad-dot rosso"></span>${nR}</span>`);
+  if(nG) badges.push(`<span class="dscad-badge" style="color:var(--yellow)"><span class="scad-dot giallo"></span>${nG}</span>`);
+  if(!nR&&!nG) badges.push(`<span class="dscad-badge" style="color:var(--green)"><span class="scad-dot verde"></span>ok</span>`);
+  el.innerHTML=`<button class="dscad" onclick="apriScadenze()">
+    <div class="dscad-hd"><span class="dscad-ttl">📅 Scadenze</span><span class="dscad-badges">${badges.join('')}</span></div>
+    <div class="dscad-next">${line}</div>
+  </button>`;
+}
+
+// ── Modale aggiungi/modifica ──
+function openScad(id){
+  eScad=id||null;
+  const s=id?db.scadenze.find(x=>x.id===id):null;
+  document.getElementById('ms-title').textContent = s?'Modifica scadenza':'Nuova scadenza';
+  document.getElementById('s-del').style.display = s?'inline-flex':'none';
+  document.getElementById('s-undo-wrap').style.display = (s&&(s.pagamenti||[]).length)?'block':'none';
+  document.getElementById('s-nome').value = s?.nome||'';
+  document.getElementById('s-imp').value = s?.importo||'';
+  document.getElementById('s-ancora').value = s?.ancora||today();
+  scadCadenza = s?.cadenza||'annuale';
+  scadTipo = s?.importoTipo||'fisso';
+  scadCat = s?.cat||'';
+  scadAssetId = s?.assetIdDefault||'';
+  renderScadCadChips(); renderScadTipoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
+  document.getElementById('mo-scad').classList.add('open');
+}
+function renderScadCadChips(){
+  document.getElementById('s-cad-chips').innerHTML=CADENZE.map(c=>
+    `<button type="button" class="mv-chip${c.key===scadCadenza?' sel':''}" onclick="setScadCadenza('${c.key}')">${esc(c.label)}</button>`).join('');
+}
+function setScadCadenza(k){ scadCadenza=k; renderScadCadChips(); updateScadLabels(); }
+function renderScadTipoSeg(){
+  document.getElementById('s-tipo-fisso').classList.toggle('sel',scadTipo==='fisso');
+  document.getElementById('s-tipo-fisso').classList.toggle('ent',scadTipo==='fisso');
+  document.getElementById('s-tipo-var').classList.toggle('sel',scadTipo==='variabile');
+  document.getElementById('s-tipo-var').classList.toggle('ent',scadTipo==='variabile');
+}
+function setScadTipo(t){ scadTipo=t; renderScadTipoSeg(); updateScadLabels(); }
+function updateScadLabels(){
+  const lbl=document.getElementById('s-ancora-lbl');
+  if(scadCadenza==='una-tantum') lbl.textContent='Data della scadenza';
+  else if(scadCadenza==='annuale') lbl.textContent='Data della scadenza (di quest’anno)';
+  else if(scadCadenza==='mensile') lbl.textContent='Prossima scadenza (imposta il giorno del mese)';
+  else lbl.textContent='Prossima scadenza';
+  document.getElementById('s-imp-hint').textContent = scadTipo==='variabile'
+    ? 'Importo stimato: alla conferma del pagamento inserirai quello reale.' : '';
+}
+function renderScadCatChips(){
+  const opts=['',...CAT_OUT];
+  document.getElementById('s-cat-chips').innerHTML=opts.map(c=>
+    `<button type="button" class="mv-chip${c===scadCat?' sel':''}" onclick="setScadCat('${(c||'').replace(/'/g,"\\'")}')">${c?esc(c):'— nessuna —'}</button>`).join('');
+}
+function setScadCat(c){ scadCat=c; renderScadCatChips(); }
+function renderScadAssetChips(){
+  const opts=[{id:'',nome:'— nessuno —'},...db.assets];
+  document.getElementById('s-asset-chips').innerHTML=opts.map(a=>
+    `<button type="button" class="mv-chip${a.id===scadAssetId?' sel':''}" onclick="setScadAsset('${a.id}')">${esc(a.nome)}</button>`).join('');
+}
+function setScadAsset(id){ scadAssetId=id; renderScadAssetChips(); }
+function saveScad(){
+  const nome=document.getElementById('s-nome').value.trim();
+  if(!nome) return alert('Inserisci un nome.');
+  const ancora=document.getElementById('s-ancora').value;
+  if(!ancora) return alert('Imposta la data della prossima scadenza.');
+  const importo=parseFloat(document.getElementById('s-imp').value)||0;
+  if(eScad){
+    const s=db.scadenze.find(x=>x.id===eScad);
+    s.nome=nome; s.cadenza=scadCadenza; s.importoTipo=scadTipo; s.importo=importo;
+    s.ancora=ancora; s.cat=scadCat; s.assetIdDefault=scadAssetId;
+  }else{
+    db.scadenze.push({id:uid(),nome,cadenza:scadCadenza,importoTipo:scadTipo,importo,
+      ancora,cat:scadCat,assetIdDefault:scadAssetId,creato:today(),pagamenti:[]});
+  }
+  save(); closeM('mo-scad'); renderScad(); renderDash();
+}
+function delScad(){
+  if(!eScad) return;
+  if(!confirm('Eliminare questa scadenza? I movimenti di spesa già registrati NON verranno toccati.')) return;
+  db.scadenze=db.scadenze.filter(x=>x.id!==eScad);
+  save(); closeM('mo-scad'); renderScad(); renderDash();
+}
+function annullaUltimoPagamento(){
+  if(!eScad) return;
+  const s=db.scadenze.find(x=>x.id===eScad); if(!s||!(s.pagamenti||[]).length) return;
+  if(!confirm('Annullare l’ultimo pagamento? Verrà rimosso anche il movimento di spesa collegato e il saldo del conto ripristinato.')) return;
+  const last=s.pagamenti.pop();
+  if(last && last.movimentoId){
+    const m=db.movimenti.find(x=>x.id===last.movimentoId);
+    if(m){
+      if(m.assetId){ const a=db.assets.find(x=>x.id===m.assetId); if(a){ a.eur+=m.importo; a.aggiornato=today(); snap(a.id,today(),a.eur); } }
+      db.movimenti=db.movimenti.filter(x=>x.id!==m.id);
+    }
+  }
+  save();
+  document.getElementById('s-undo-wrap').style.display=(s.pagamenti.length)?'block':'none';
+  renderScad(); renderDash();
+}
+
+// ── Segna pagato (crea sempre il movimento di uscita) ──
+function registraPagamento(s,dueISO,importo,assetId,dataPag){
+  const mov={id:uid(),data:dataPag,tipo:'uscita',desc:s.nome,cat:s.cat||'Varie / Altro',assetId:assetId||'',importo,note:''};
+  db.movimenti.push(mov);
+  if(assetId){ const a=db.assets.find(x=>x.id===assetId); if(a){ a.eur-=importo; a.aggiornato=dataPag; snap(a.id,dataPag,a.eur); } }
+  (s.pagamenti=s.pagamenti||[]).push({ciclo:dueISO,data:dataPag,importo,movimentoId:mov.id});
+  save();
+}
+function segnaPagato(id){
+  const s=db.scadenze.find(x=>x.id===id); if(!s) return;
+  const due=occorrenzaDaPagare(s); if(!due) return;
+  // Caso pulito: importo fisso noto + conto di default → un solo tap
+  if(s.importoTipo==='fisso' && s.importo>0 && s.assetIdDefault){
+    registraPagamento(s,due,s.importo,s.assetIdDefault,today());
+    renderScad(); renderDash();
+    return;
+  }
+  // Altrimenti (variabile o senza conto) → mini conferma
+  payScadId=id; payDueISO=due; payAssetId=s.assetIdDefault||'';
+  document.getElementById('mp-title').textContent='Segna pagato — '+s.nome;
+  document.getElementById('mp-sub').textContent='Scadenza del '+fScadDate(due)+' · verrà creato un movimento di uscita nella categoria “'+(s.cat||'Varie / Altro')+'”.';
+  document.getElementById('p-imp').value=s.importo||'';
+  document.getElementById('p-data').value=today();
+  renderPayAssetChips();
+  document.getElementById('mo-pay').classList.add('open');
+}
+function renderPayAssetChips(){
+  const opts=[{id:'',nome:'— nessuno —'},...db.assets];
+  document.getElementById('p-asset-chips').innerHTML=opts.map(a=>
+    `<button type="button" class="mv-chip${a.id===payAssetId?' sel':''}" onclick="setPayAsset('${a.id}')">${esc(a.nome)}</button>`).join('');
+}
+function setPayAsset(id){ payAssetId=id; renderPayAssetChips(); }
+function confermaPagamento(){
+  const s=db.scadenze.find(x=>x.id===payScadId); if(!s) return;
+  const importo=parseFloat(document.getElementById('p-imp').value)||0;
+  if(!importo) return alert('Inserisci l’importo pagato.');
+  const dataPag=document.getElementById('p-data').value||today();
+  registraPagamento(s,payDueISO,importo,payAssetId,dataPag);
+  closeM('mo-pay'); renderScad(); renderDash();
 }
 
 // ── INIT ──
