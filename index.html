@@ -187,11 +187,41 @@ tbody tr:hover td{background:var(--s2);}
 .dash-charts-row .gcard{margin-bottom:1.2rem;}
 .chart-wrap{position:relative;width:100%;height:190px;}
 @media (min-width:1024px){
-  .dash-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;align-items:start;}
+  .dash-charts-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem;align-items:start;}
   .dash-charts-row .gcard{margin-bottom:0;}
   .chart-wrap{height:165px;}
 }
 .gcard-hd{padding:.9rem 1.1rem 0;font-size:.8rem;color:#8e8e93;font-weight:500;}
+
+/* ══ Dashboard in una schermata (04/08/2026) ══
+   Obiettivo: far entrare tutto senza toccare l'altezza dei grafici (restano 165px
+   su desktop e 230px lo storico). Si recupera spazio solo da margini, padding e
+   dall'intestazione di pagina, che era ridondante — la voce "Dashboard" è già
+   evidenziata nel menu laterale. Tutte le regole sono limitate a #page-dashboard,
+   così Asset / Movimenti / Andamento / Impostazioni restano esattamente com'erano. */
+.dash-topbar{display:flex;justify-content:flex-end;margin-bottom:.4rem;}
+.hero-card{padding:.9rem 1.2rem;margin-bottom:.6rem;}
+#page-dashboard{padding:.7rem 1.4rem .6rem;}
+#page-dashboard .hero-row{margin-bottom:0;}
+#page-dashboard .month-pill-row{margin-bottom:.45rem;}
+#page-dashboard .month-pill{padding:2px;}
+#page-dashboard .pill-btn{width:26px;height:26px;}
+#page-dashboard .kpi3{padding:.65rem .9rem;}
+#page-dashboard .kpi3-hd{margin-bottom:5px;}
+#page-dashboard .msw-lbl{margin-bottom:.4rem;}
+#page-dashboard .swipe-hint{margin:-.2rem 0 .45rem;}
+#page-dashboard .gcard-hd{padding:.6rem 1.1rem 0;}
+#page-dashboard .gcard-bd{padding:.6rem 1rem .6rem;}
+#page-dashboard .hscroll-hint{margin-top:.2rem;}
+#page-dashboard .dscad{margin-bottom:.8rem;}
+#page-dashboard .snap-remind{margin-bottom:.8rem;}
+/* Difesa contro l'overflow orizzontale: una traccia `1fr` non scende sotto la
+   larghezza minima del contenuto, e dentro le card c'è un canvas con larghezza in
+   pixel. Con minmax(0,1fr) la colonna può comprimersi e lo scorrimento resta
+   confinato dentro .hscroll, dov'è previsto. */
+.dash-charts-row,.and-charts-row{min-width:0;}
+.dash-charts-row>*,.and-charts-row>*{min-width:0;}
+.hscroll{max-width:100%;}
 
 /* ── Carosello mensile: ogni blocco scorre in modo indipendente ── */
 .msw{overflow:hidden;touch-action:pan-y;cursor:grab;position:relative;isolation:isolate;transform:translateZ(0);}
@@ -221,7 +251,7 @@ tbody tr:hover td{background:var(--s2);}
 .and-chart-wrap{position:relative;width:100%;height:320px;}
 /* ▲▲▲ es. 260px = più compatti, 400px = più grandi ▲▲▲ */
 @media(min-width:1024px){
-  .and-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;}
+  .and-charts-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;align-items:start;}
 }
 
 /* ── Rendimento per asset (Andamento) ── */
@@ -483,14 +513,12 @@ tbody tr:hover td{background:var(--s2);}
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
-  <div class="page-hd"><div><h2>Dashboard</h2><p>Panoramica del patrimonio</p></div>
-    <button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza</button>
-  </div>
+  <div class="dash-topbar"><button class="btn btn-sync" onclick="syncNow()">↺ Sincronizza</button></div>
   <div id="sync-bar-dash"></div>
   <div id="snap-reminder"></div>
   <div id="dash-scad"></div>
 
-  <div class="glass" style="padding:1.3rem 1.4rem;margin-bottom:1.2rem">
+  <div class="glass hero-card">
     <div class="hero-row">
       <div>
         <div class="hero-lbl">Patrimonio totale</div>
