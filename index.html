@@ -269,9 +269,17 @@ tbody tr:hover td{background:var(--s2);}
 .rend-note{font-size:.68rem;color:var(--text3);line-height:1.5;margin-top:.7rem;padding-top:.6rem;border-top:1px solid var(--border);}
 
 /* ── Asset: card raggruppate per tipo, stile Apple ── */
+/* Le card sono distribuite in tre colonne indipendenti invece che nelle celle di
+   una griglia: in una griglia ogni riga è alta quanto la card più alta che contiene,
+   quindi Wallet (293px) occupava una riga da ~570px dettata da Investimenti e
+   Liquidità era costretta a partire sotto, lasciando un buco enorme. Con tre
+   colonne flex ogni card parte subito sotto la precedente della sua colonna.
+   Sotto i 1024px le colonne si impilano e l'ordine torna quello naturale. */
 .asset-grid{display:flex;flex-direction:column;gap:1rem;}
+.asset-col{display:flex;flex-direction:column;gap:1rem;min-width:0;}
+.asset-col:empty{display:none;}
 @media(min-width:1024px){
-  .asset-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:start;}
+  .asset-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:start;}
 }
 .grpcard{padding:1rem 1.2rem;}
 .grp-hd{display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:0.5px solid rgba(255,255,255,.08);}
@@ -1694,7 +1702,9 @@ function renderAsset(){
   }
   const tot=db.assets.reduce((s,a)=>s+a.eur,0);
 
-  grid.innerHTML=GRP_ORDER.filter(t=>db.assets.some(a=>a.tipo===t)).map(t=>{
+  // Ogni gruppo produce la sua card; l'assegnazione alle colonne avviene dopo,
+  // in base all'altezza stimata, così non restano buchi.
+  const schede=GRP_ORDER.filter(t=>db.assets.some(a=>a.tipo===t)).map(t=>{
     const assets=db.assets.filter(a=>a.tipo===t).sort((a,b)=>b.eur-a.eur);
     const grpTot=assets.reduce((s,a)=>s+a.eur,0);
     const grpPct=tot?(grpTot/tot*100):0;
@@ -1741,7 +1751,9 @@ function renderAsset(){
         </div>
       </div>`;
     }).join('');
-    return`<div class="glass grpcard">
+    // Altezza stimata: intestazione + righe visibili + eventuale pulsante "mostra tutti".
+    const hStimata=96+visibili.length*47+(nascosti?42:0);
+    return{h:hStimata,html:`<div class="glass grpcard">
       <div class="grp-hd">
         <div class="grp-chip ${GRP_CLASS[t]}">${GRP_ICON[t]}</div>
         <div><div class="grp-name">${TLABELS[t]}</div><div class="grp-meta">${assets.length} asset</div></div>
@@ -1751,8 +1763,20 @@ function renderAsset(){
       ${nascosti?`<button type="button" class="grp-more" onclick="toggleGrpAll('${t}')">${
         espanso?'Mostra solo i primi '+GRP_LIMITE+' ▴'
                :`Mostra tutti e <b>${assets.length}</b> — altri ${nascosti} per <b>${fEUR(assets.slice(GRP_LIMITE).reduce((s,a)=>s+a.eur,0))}</b> ▾`}</button>`:''}
-    </div>`;
-  }).join('');
+    </div>`};
+  });
+
+  // Distribuzione: ogni card va nella colonna più corta in quel momento. Scorrendo
+  // le schede nell'ordine di GRP_ORDER, le prime tre finiscono una per colonna
+  // (quindi Wallet, Investimenti e Crypto restano affiancati come prima) e le
+  // successive si infilano sotto quella più bassa.
+  const NCOL=3;
+  const colonne=Array.from({length:NCOL},()=>({h:0,html:''}));
+  schede.forEach(s=>{
+    const c=colonne.reduce((min,x)=>x.h<min.h?x:min,colonne[0]);
+    c.html+=s.html; c.h+=s.h+16;
+  });
+  grid.innerHTML=colonne.map(c=>`<div class="asset-col">${c.html}</div>`).join('');
 
   attachAssetSwipeHandlers();
 }
