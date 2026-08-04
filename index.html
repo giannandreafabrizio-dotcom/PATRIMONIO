@@ -145,6 +145,18 @@ tbody tr:hover td{background:var(--s2);}
 .hero-sub{font-size:.82rem;font-weight:500;}
 .hero-sub.pos{color:#30d158;}.hero-sub.neg{color:#ff453a;}
 .hero-upd{font-size:.7rem;color:#8e8e93;margin-top:8px;}
+.hero-upd-btn{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;border-bottom:1px dotted rgba(255,255,255,.25);transition:color .12s;}
+.hero-upd-btn:hover{color:#d1d1d6;border-bottom-color:rgba(255,255,255,.5);}
+/* Storico aggiornamenti valori */
+.upd-last{font-size:.78rem;color:#8e8e93;margin-bottom:.9rem;line-height:1.5;}
+.upd-last b{color:#fff;font-weight:600;}
+.upd-list{max-height:340px;overflow-y:auto;padding-right:.3rem;}
+.upd-row{display:flex;align-items:baseline;gap:.6rem;padding:.5rem .2rem;border-bottom:1px solid var(--border);}
+.upd-row:last-child{border-bottom:none;}
+.upd-date{font-size:.83rem;font-weight:500;color:#fff;flex-shrink:0;min-width:88px;}
+.upd-n{font-size:.72rem;color:var(--text3);flex:1;}
+.upd-delta{font-size:.83rem;font-weight:600;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.upd-empty{font-size:.78rem;color:var(--text3);padding:1.4rem .2rem;text-align:center;}
 .pie-block{display:flex;align-items:center;gap:16px;}
 .pie-wrap{position:relative;width:150px;height:150px;flex-shrink:0;}
 .pie-legend{display:flex;flex-direction:column;gap:8px;}
@@ -749,6 +761,22 @@ tbody tr:hover td{background:var(--s2);}
   </div>
 </div>
 
+<!-- MODAL STORICO AGGIORNAMENTI VALORI -->
+<div class="overlay" id="mo-upd">
+  <div class="modal" style="width:460px">
+    <h3>🗓️ Storico aggiornamenti valori</h3>
+    <div class="upd-last" id="upd-last"></div>
+    <div class="upd-list" id="upd-list"></div>
+    <div style="font-size:.68rem;color:var(--text3);line-height:1.5;margin-top:.8rem;padding-top:.7rem;border-top:1px solid var(--border)">
+      Conta solo gli aggiornamenti di valore di investimenti e crypto (📸 Aggiorna valori). Restano fuori la creazione di un asset e le date in cui c'è un movimento sull'asset, che sono acquisti o vendite, non variazioni di mercato.
+    </div>
+    <div class="mf">
+      <button class="btn btn-g" onclick="closeM('mo-upd')">Chiudi</button>
+      <button class="btn btn-teal" onclick="closeM('mo-upd');openSnap()">📸 Aggiorna ora</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MOVIMENTO -->
 <div class="overlay" id="mo-mov">
   <div class="modal">
@@ -1035,6 +1063,52 @@ function ultimoSnapshotData(assetIds){
   db.snapshots.forEach(s=>{ if(ids.has(s.assetId) && (max===null||s.date>max)) max=s.date; });
   return max;
 }
+// ── STORICO AGGIORNAMENTI VALORI (04/08/2026) ──
+// Non serve una nuova chiave in pat4: le sessioni di "📸 Aggiorna valori" si
+// ricostruiscono dagli snapshot già presenti, così lo storico è disponibile anche
+// per il passato. Per ogni asset di tipo investimenti/crypto si guarda ogni
+// snapshot rispetto al precedente; si escludono il primo in assoluto (è l'apertura
+// dell'asset, non un aggiornamento) e le date in cui esiste un movimento su
+// quell'asset (acquisto o vendita: variazione di capitale, non di mercato).
+function storicoAggiornamenti(){
+  const ids=new Set(db.assets.filter(a=>a.tipo==='investimenti'||a.tipo==='crypto').map(a=>a.id));
+  const perAsset={};
+  db.snapshots.forEach(s=>{ if(ids.has(s.assetId)) (perAsset[s.assetId]=perAsset[s.assetId]||[]).push(s); });
+  const conMov=new Set();
+  db.movimenti.forEach(m=>{ if(m.assetId&&ids.has(m.assetId)) conMov.add(m.assetId+'|'+m.data); });
+  const sessioni={};
+  Object.keys(perAsset).forEach(aid=>{
+    const arr=perAsset[aid].slice().sort((a,b)=>a.date.localeCompare(b.date));
+    for(let i=1;i<arr.length;i++){
+      const s=arr[i];
+      if(conMov.has(aid+'|'+s.date)) continue;
+      const g=sessioni[s.date]||(sessioni[s.date]={date:s.date,n:0,delta:0});
+      g.n++; g.delta+=s.eur-arr[i-1].eur;
+    }
+  });
+  return Object.values(sessioni).sort((a,b)=>b.date.localeCompare(a.date));
+}
+function openUpd(){
+  const st=storicoAggiornamenti();
+  const box=document.getElementById('upd-list');
+  const head=document.getElementById('upd-last');
+  if(!st.length){
+    head.textContent='';
+    box.innerHTML='<div class="upd-empty">Nessun aggiornamento di valore registrato finora.</div>';
+  }else{
+    const gg=Math.floor((new Date(today())-new Date(st[0].date))/86400000);
+    head.innerHTML='Ultimo aggiornamento: <b>'+st[0].date.split('-').reverse().join('/')+'</b> — '+
+      (gg<=0?'oggi':gg===1?'ieri':gg+' giorni fa')+'.';
+    box.innerHTML=st.map(g=>{
+      const cls=g.delta>=0?'pos':'neg', sgn=g.delta>=0?'+':'';
+      return '<div class="upd-row"><span class="upd-date">'+fmtDayShort(g.date)+'</span>'+
+        '<span class="upd-n">'+g.n+(g.n===1?' asset':' asset')+'</span>'+
+        '<span class="upd-delta '+cls+'">'+sgn+fEUR(g.delta)+'</span></div>';
+    }).join('');
+  }
+  document.getElementById('mo-upd').classList.add('open');
+}
+
 // Ultimo snapshot per un singolo asset. Ritorna null se non ne ha.
 function ultimoSnapshotAsset(assetId){
   const rel=db.snapshots.filter(s=>s.assetId===assetId);
@@ -1927,7 +2001,10 @@ function renderDash(){
   if(heroUpd){
     const idsInvCry=db.assets.filter(a=>a.tipo==='investimenti'||a.tipo==='crypto').map(a=>a.id);
     const ud=idsInvCry.length?ultimoSnapshotData(idsInvCry):null;
-    heroUpd.textContent=ud?`Valori investimenti/crypto aggiornati al ${ud.split('-').reverse().join('/')}`:'';
+    // Cliccabile: apre lo storico delle sessioni di aggiornamento (04/08/2026)
+    heroUpd.innerHTML=ud
+      ?`<button type="button" class="hero-upd-btn" onclick="openUpd()" title="Vedi lo storico degli aggiornamenti">Valori investimenti/crypto aggiornati al ${ud.split('-').reverse().join('/')} ›</button>`
+      :'';
   }
 
   // ── Promemoria snapshot: avvisa se manca da troppo tempo un aggiornamento valori ──
