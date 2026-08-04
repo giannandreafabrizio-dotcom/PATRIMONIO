@@ -287,6 +287,9 @@ tbody tr:hover td{background:var(--s2);}
 .grp-tot-val{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:600;color:#fff;}
 .grp-tot-pct{font-size:.72rem;color:#8e8e93;}
 .grp-empty{font-size:.78rem;color:#636366;padding:.4rem 0;}
+.grp-more{display:block;width:100%;margin-top:.5rem;padding:.5rem;border-radius:11px;border:0.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#8e8e93;font-family:'Inter',sans-serif;font-size:.75rem;cursor:pointer;transition:all .12s;}
+.grp-more:hover{background:rgba(255,255,255,.09);color:#fff;}
+.grp-more b{color:#c7c7cc;font-weight:600;}
 .arow-wrap{position:relative;border-radius:12px;overflow:hidden;touch-action:pan-y;}
 .arow-wrap+.arow-wrap{margin-top:2px;}
 .arow-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;opacity:0;pointer-events:none;transition:opacity .12s;}
@@ -992,6 +995,7 @@ async function pullFromSheets(){
       db = data;
       if(!db.snapshots) db.snapshots = [];
       if(!db.scadenze) db.scadenze = [];
+      applicaMigrazioni();
       saveLocal();
       renderAll();
       setSyncStatus(true, 'OK');
@@ -1309,7 +1313,32 @@ function initSwipers(){
   makeSwiper('sw-cat',paneCat);
 }
 
-function saveLocal(){ localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
+// ══ VALUTA UNICA: EURO (04/08/2026) ══
+// Verificato sui dati reali: i 14 titoli marcati USD avevano `importo` pari
+// esattamente a `eur × 1,15` — il cambio fisso usato nella ricostruzione Revolut
+// del 21/07. Non era un dato in dollari rilevato da qualche parte: era il valore
+// in euro riscritto con una costante. Tutto ciò che l'utente vede su Revolut,
+// inserisce nella modale 📸 e ritrova nei calcoli dell'app è in euro.
+// Per gli asset in EUR `importo` ed `eur` sono per definizione lo stesso numero,
+// ma solo saveAsset() scriveva `importo`: movimenti, trasferimenti e snapshot no.
+// Risultato: tutti e 16 gli asset in euro avevano un `importo` congelato a mesi fa.
+const MIGRAZIONI={
+  // Una tantum: porta ogni asset a EUR e riallinea l'importo al controvalore.
+  'eur-valuta-unica':function(){ db.assets.forEach(a=>{ a.valuta='EUR'; a.importo=a.eur; }); }
+};
+function applicaMigrazioni(){
+  if(!Array.isArray(db.migrazioni)) db.migrazioni=[];
+  let n=0;
+  Object.keys(MIGRAZIONI).forEach(k=>{
+    if(db.migrazioni.indexOf(k)===-1){ MIGRAZIONI[k](); db.migrazioni.push(k); n++; }
+  });
+  return n;
+}
+// Invariante mantenuta a ogni salvataggio: per un asset in euro importo === eur.
+// Così il campo non può più divergere, né nei backup né nel JSON dell'assistente AI.
+function sincronizzaImporti(){ db.assets.forEach(a=>{ if(a.valuta==='EUR') a.importo=a.eur; }); }
+
+function saveLocal(){ sincronizzaImporti(); localStorage.setItem(DATA_KEY, JSON.stringify(db)); }
 
 // Salva localmente E poi manda a Sheets
 async function save(){
@@ -1324,6 +1353,8 @@ function load(){
     if(r) db = JSON.parse(r);
     if(!db.snapshots) db.snapshots = [];
     if(!db.scadenze) db.scadenze = [];
+    if(applicaMigrazioni()) saveLocal();
+    sincronizzaImporti();
   }catch(e){}
 }
 
@@ -1649,6 +1680,11 @@ const GRP_ORDER=['wallet','investimenti','crypto','liquidita','altro'];
 const GRP_ICON={wallet:'💳',investimenti:'📈',crypto:'₿',liquidita:'💰',altro:'📦'};
 const GRP_CLASS={wallet:'c-wal',investimenti:'c-inv',crypto:'c-cry',liquidita:'c-liq',altro:'c-alt'};
 const GRP_DOT={wallet:'#bf5af2',investimenti:'#0a84ff',crypto:'#ff9f0a',liquidita:'#30d158',altro:'#8e8e93'};
+// Quanti asset mostrare per gruppo prima di richiudere il resto (04/08/2026).
+// Nasce dai 22 titoli in Investimenti, che da soli rendevano la card alta 1168px.
+const GRP_LIMITE=6;
+let assetShowAll={};   // {tipo:true} — non persistito: a ogni riapertura si riparte compatti
+function toggleGrpAll(t){ assetShowAll[t]=!assetShowAll[t]; renderAsset(); }
 
 function renderAsset(){
   const grid=document.getElementById('asset-grid');
@@ -1662,15 +1698,27 @@ function renderAsset(){
     const assets=db.assets.filter(a=>a.tipo===t).sort((a,b)=>b.eur-a.eur);
     const grpTot=assets.reduce((s,a)=>s+a.eur,0);
     const grpPct=tot?(grpTot/tot*100):0;
-    const rows=assets.map(a=>{
+    // Gruppi lunghi (Investimenti ha 22 titoli): di default solo i primi 6 per valore,
+    // il resto dietro un pulsante. Totale e percentuale del gruppo restano sempre
+    // calcolati su TUTTI gli asset, non solo su quelli visibili.
+    const espanso=!!assetShowAll[t];
+    const nascosti=Math.max(0,assets.length-GRP_LIMITE);
+    const visibili=(nascosti&&!espanso)?assets.slice(0,GRP_LIMITE):assets;
+    const rows=visibili.map(a=>{
       const pct=tot?(a.eur/tot*100):0;
-      // Data ultimo snapshot in piccolo, solo per investimenti/crypto (unici tipi che vanno
-      // snapshottati a mano — vedi idea 3, 22/07/2026). Riusa lo stesso stile di arow-cur.
-      let updHtml='';
+      // Riga piccola sotto il nome. Dal 04/08/2026 non mostra più l'importo in valuta
+      // per gli asset in euro: era la ripetizione del valore già scritto grande a destra,
+      // per giunta congelata all'ultima modifica manuale della scheda. Resta solo la data
+      // dell'ultimo snapshot, e solo per investimenti/crypto (gli unici da aggiornare a
+      // mano — idea 3, 22/07/2026). Se un giorno tornerà un asset in valuta estera vera,
+      // l'importo ricompare da sé.
+      const pezzi=[];
+      if(a.valuta&&a.valuta!=='EUR') pezzi.push(`${fNum(a.importo)} ${a.valuta}`);
       if(t==='investimenti'||t==='crypto'){
         const ud=ultimoSnapshotAsset(a.id);
-        if(ud) updHtml=` · agg. ${fmtDataBreve(ud)}`;
+        if(ud) pezzi.push(`agg. ${fmtDataBreve(ud)}`);
       }
+      const subHtml=pezzi.length?`<div class="arow-cur">${pezzi.join(' · ')}</div>`:'';
       return`<div class="arow-wrap">
         <div class="arow-actions">
           <button type="button" class="arow-act arow-act-edit" onclick="openAsset('${a.id}')" aria-label="Modifica">✏</button>
@@ -1680,7 +1728,7 @@ function renderAsset(){
           <span class="dot" style="background:${GRP_DOT[t]}"></span>
           <div class="arow-main">
             <div class="arow-name">${esc(a.nome)}</div>
-            <div class="arow-cur">${fNum(a.importo)} ${a.valuta}${updHtml}</div>
+            ${subHtml}
           </div>
           <div class="arow-val">
             <div class="arow-eur">${fEUR(a.eur)}</div>
@@ -1700,6 +1748,9 @@ function renderAsset(){
         <div class="grp-tot"><div class="grp-tot-val">${fEUR(grpTot)}</div><div class="grp-tot-pct">${grpPct.toFixed(1)}% del patrimonio</div></div>
       </div>
       ${rows}
+      ${nascosti?`<button type="button" class="grp-more" onclick="toggleGrpAll('${t}')">${
+        espanso?'Mostra solo i primi '+GRP_LIMITE+' ▴'
+               :`Mostra tutti e <b>${assets.length}</b> — altri ${nascosti} per <b>${fEUR(assets.slice(GRP_LIMITE).reduce((s,a)=>s+a.eur,0))}</b> ▾`}</button>`:''}
     </div>`;
   }).join('');
 
