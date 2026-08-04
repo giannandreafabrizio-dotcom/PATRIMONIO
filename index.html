@@ -1397,7 +1397,9 @@ function saveMov(){
   const data=document.getElementById('m-data').value||today();
   if(eMov){
     const old=db.movimenti.find(x=>x.id===eMov);
-    if(old.assetId){ const oa=db.assets.find(x=>x.id===old.assetId); if(oa){ if(old.tipo==='entrata') oa.eur-=old.importo; else oa.eur+=old.importo; } }
+    // Annulla l'effetto del vecchio movimento ALLA SUA DATA: così tornano indietro
+    // anche gli snapshot successivi, invece di restare gonfiati del vecchio importo.
+    if(old.assetId) applyDelta(old.assetId,old.data,-movSigned(old));
     old.data=data; old.tipo=tipo; old.desc=desc; old.cat=cat;
     old.assetId=assetId; old.importo=importo; old.note='';
   }else{
@@ -1406,30 +1408,35 @@ function saveMov(){
   if(assetId){
     const a=db.assets.find(x=>x.id===assetId);
     if(a){
+      applyDelta(assetId,data,tipo==='entrata'?importo:-importo);
+      // "Nuovo saldo asset": correzione manuale sopra il calcolo automatico.
+      // Per un movimento di oggi il risultato è identico a prima; per uno
+      // retrodatato la correzione si propaga in avanti come il movimento stesso.
       const newBalInput=parseFloat(document.getElementById('m-newbal').value);
-      if(!isNaN(newBalInput)){ a.eur=newBalInput; }
-      else { if(tipo==='entrata') a.eur+=importo; else a.eur-=importo; }
-      a.aggiornato=data; snap(a.id,data,a.eur);
+      if(!isNaN(newBalInput)) applyDelta(assetId,data,newBalInput-a.eur);
     }
   }
   save(); closeM('mo-mov'); renderMov(); renderDash();
 }
+// Eliminare un movimento annulla il suo effetto ALLA SUA DATA (saldo attuale +
+// tutti gli snapshot successivi). Corretti qui anche due bug sui trasferimenti:
+// prima il lato del movimento cliccato non veniva mai stornato (tipo==='trasferimento'
+// falliva il test), e il lato gemello veniva stornato al contrario (il test cercava
+// 'entrata', ma i trasferimenti hanno tipo 'trasferimento' e direzione in trasfDir).
+// Risultato verificato: cancellare un trasferimento di 100 € gonfiava il patrimonio
+// totale di 100 €, invece di lasciarlo invariato com'è giusto per un giroconto.
 function delMov(id){
   if(!confirm('Eliminare questo movimento?'))return;
   const m=db.movimenti.find(x=>x.id===id);
-  if(m && m.assetId && m.tipo!=='trasferimento'){
-    const a=db.assets.find(x=>x.id===m.assetId);
-    if(a){ if(m.tipo==='entrata') a.eur-=m.importo; else a.eur+=m.importo; }
-  }
-  if(m && m.trasfId){
+  if(!m) return;
+  const daRimuovere=[m];
+  if(m.trasfId){
     const pair=db.movimenti.find(x=>x.trasfId===m.trasfId && x.id!==id);
-    if(pair){
-      const pa=db.assets.find(x=>x.id===pair.assetId);
-      if(pa){ if(pair.tipo==='entrata') pa.eur-=pair.importo; else pa.eur+=pair.importo; }
-      db.movimenti=db.movimenti.filter(x=>x.id!==pair.id);
-    }
+    if(pair) daRimuovere.push(pair);
   }
-  db.movimenti=db.movimenti.filter(x=>x.id!==id);
+  daRimuovere.forEach(x=>{ if(x.assetId) applyDelta(x.assetId,x.data,-movSigned(x)); });
+  const ids=new Set(daRimuovere.map(x=>x.id));
+  db.movimenti=db.movimenti.filter(x=>!ids.has(x.id));
   save(); renderMov(); renderDash();
 }
 
@@ -1478,16 +1485,61 @@ function saveTrasf(){
   const tid=uid();
   db.movimenti.push({id:uid(),data,tipo:'trasferimento',desc,cat:'Trasferimento',assetId:fromId,importo:imp,note:'',trasfId:tid,trasfDir:'out'});
   db.movimenti.push({id:uid(),data,tipo:'trasferimento',desc,cat:'Trasferimento',assetId:toId,importo:imp,note:'',trasfId:tid,trasfDir:'in'});
-  from.eur-=imp; from.aggiornato=data; snap(fromId,data,from.eur);
-  to.eur+=imp; to.aggiornato=data; snap(toId,data,to.eur);
+  applyDelta(fromId,data,-imp);
+  applyDelta(toId,data,imp);
   save(); closeM('mo-trasf'); renderMov(); renderDash();
 }
 
 // ── SNAPSHOTS ──
+// snap() registra un valore ASSOLUTO osservato a una certa data (📸 Aggiorna
+// valori, creazione asset): sostituisce l'eventuale snapshot già presente.
 function snap(assetId,date,eur){
   db.snapshots=db.snapshots.filter(s=>!(s.assetId===assetId&&s.date===date));
   db.snapshots.push({assetId,date,eur});
   db.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+// Importo con segno di un movimento rispetto al saldo dell'asset collegato.
+function movSigned(m){
+  if(m.tipo==='trasferimento') return m.trasfDir==='in'?m.importo:-m.importo;
+  return m.tipo==='entrata'?m.importo:-m.importo;
+}
+
+// ⚠️ Bug corretto il 04/08/2026 — vedi il caso "nutrizionista 100 → 80+20".
+// Prima, salvare un movimento datato nel passato faceva `snap(asset, dataMovimento, a.eur)`:
+// scriveva cioè nello snapshot di quella data il saldo di OGGI, distruggendo il valore
+// storico reale. Effetto visibile: la baseline del "da inizio mese" in Dashboard
+// (totAlDate al 1° del mese) si spostava, e il delta cambiava anche quando il
+// patrimonio totale non era cambiato di un euro. In più lo storico di Andamento
+// mostrava uno scalino inesistente a quella data.
+//
+// applyDelta() applica invece una variazione RELATIVA avvenuta a una certa data:
+// aggiorna il saldo attuale e sposta della stessa quantità tutti gli snapshot da
+// quella data in poi — perché un movimento del 24 luglio rende diverso ogni saldo
+// dal 24 luglio in avanti, non solo quello di oggi. Nessun valore storico viene perso.
+function applyDelta(assetId,date,delta){
+  const a=db.assets.find(x=>x.id===assetId);
+  if(!a||!delta) return;
+  const prima=db.snapshots.filter(s=>s.assetId===assetId&&s.date<date);
+  const esisteAllaData=db.snapshots.some(s=>s.assetId===assetId&&s.date===date);
+  const base=prima.length?prima[prima.length-1].eur:null;   // valore prima della data
+  db.snapshots.forEach(s=>{ if(s.assetId===assetId&&s.date>=date) s.eur+=delta; });
+  a.eur+=delta;
+  if(!esisteAllaData){
+    // Nessuno snapshot proprio a quella data: ne creo uno, partendo dal valore
+    // precedente. Se l'asset non ha storia prima, uso il primo successivo (già
+    // spostato) o, in mancanza di tutto, il saldo attuale.
+    let val;
+    if(base!==null) val=base+delta;
+    else{
+      const dopo=db.snapshots.filter(s=>s.assetId===assetId&&s.date>date);
+      val=dopo.length?dopo[0].eur:a.eur;
+    }
+    db.snapshots.push({assetId,date,eur:val});
+    db.snapshots.sort((x,y)=>x.date.localeCompare(y.date));
+  }
+  // "aggiornato" non deve tornare indietro quando si corregge un movimento vecchio
+  if(!a.aggiornato||date>a.aggiornato) a.aggiornato=date;
 }
 
 // ── RENDER ASSET: card raggruppate per tipo, stile Apple ──
@@ -2693,7 +2745,7 @@ function annullaUltimoPagamento(){
   if(last && last.movimentoId){
     const m=db.movimenti.find(x=>x.id===last.movimentoId);
     if(m){
-      if(m.assetId){ const a=db.assets.find(x=>x.id===m.assetId); if(a){ a.eur+=m.importo; a.aggiornato=today(); snap(a.id,today(),a.eur); } }
+      if(m.assetId) applyDelta(m.assetId,m.data,-movSigned(m));
       db.movimenti=db.movimenti.filter(x=>x.id!==m.id);
     }
   }
@@ -2706,7 +2758,7 @@ function annullaUltimoPagamento(){
 function registraPagamento(s,dueISO,importo,assetId,dataPag){
   const mov={id:uid(),data:dataPag,tipo:'uscita',desc:s.nome,cat:s.cat||'Varie / Altro',assetId:assetId||'',importo,note:''};
   db.movimenti.push(mov);
-  if(assetId){ const a=db.assets.find(x=>x.id===assetId); if(a){ a.eur-=importo; a.aggiornato=dataPag; snap(a.id,dataPag,a.eur); } }
+  if(assetId) applyDelta(assetId,dataPag,-importo);
   (s.pagamenti=s.pagamenti||[]).push({ciclo:dueISO,data:dataPag,importo,movimentoId:mov.id});
   save();
 }
