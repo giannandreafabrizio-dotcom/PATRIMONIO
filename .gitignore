@@ -1,0 +1,6 @@
+*.csv
+*.json
+*.zip
+patrimonio_backup_*
+Codice.gs
+password*
