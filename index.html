@@ -80,6 +80,8 @@ tbody tr:hover td{background:var(--s2);}
 .mv-seg-btn{padding:.85rem;border-radius:16px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.87rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .12s;}
 .mv-seg-btn.sel.ent{background:rgba(48,209,88,.15);border-color:var(--green);color:var(--green);}
 .mv-seg-btn.sel.usc{background:rgba(255,69,58,.15);border-color:var(--red);color:var(--red);}
+.mv-seg-btn.sel.att{background:rgba(96,165,250,.15);border-color:var(--blue);color:var(--blue);}
+.mv-seg-btn.sel.pau{background:rgba(160,160,160,.14);border-color:#8a8a8a;color:#d8d8d8;}
 .mv-amount{border-radius:18px;background:var(--s2);border:1.5px solid var(--border);padding:.9rem 1.1rem;text-align:center;margin-bottom:1rem;}
 .mv-amount input{background:transparent;border:none;outline:none;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:600;text-align:center;width:100%;}
 .mv-amount input::placeholder{color:var(--text3);}
@@ -451,16 +453,22 @@ tbody tr:hover td{background:var(--s2);}
 .scad-dot.giallo{background:var(--yellow);box-shadow:0 0 8px rgba(250,204,21,.5),0 0 0 4px rgba(250,204,21,.08);}
 .scad-dot.rosso{background:var(--red);box-shadow:0 0 8px rgba(248,113,113,.55),0 0 0 4px rgba(248,113,113,.1);}
 .scad-dot.grigio{background:#555;}
+.scad-dot.pausa{background:transparent;border:2px solid #6b7280;box-shadow:none;}
 .scad-main{flex:1;min-width:0;}
 .scad-nome{font-size:.92rem;font-weight:500;color:var(--text);}
 .scad-meta{font-size:.72rem;color:var(--text3);margin-top:2px;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
 .scad-state{font-weight:600;}
 .scad-state.verde{color:var(--green);}.scad-state.giallo{color:var(--yellow);}.scad-state.rosso{color:var(--red);}.scad-state.grigio{color:var(--text2);}
+.scad-state.pausa{color:#8a93a0;}
+.scad-row.pausa{border-style:dashed;opacity:.68;}
+.scad-row.pausa:hover{opacity:1;border-color:var(--border2);}
 .scad-imp{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;color:var(--text);white-space:nowrap;}
 .scad-actions{display:flex;gap:.4rem;align-items:center;flex-shrink:0;}
 .scad-pay{padding:.45rem .8rem;border-radius:11px;border:1.5px solid var(--green);background:rgba(74,222,128,.12);color:var(--green);font-family:'Inter',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;}
 .scad-pay:hover{background:rgba(74,222,128,.22);}
 .scad-pay.done{border-color:var(--border);background:var(--s2);color:var(--text3);cursor:default;}
+.scad-pay.attiva{border-color:var(--blue);background:rgba(96,165,250,.12);color:var(--blue);}
+.scad-pay.attiva:hover{background:rgba(96,165,250,.22);}
 .scad-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;padding:.3rem;border-radius:8px;}
 .scad-edit:hover{color:var(--text);background:var(--s2);}
 .scad-empty{text-align:center;color:var(--text3);font-size:.85rem;padding:2.5rem 1rem;}
@@ -618,6 +626,7 @@ tbody tr:hover td{background:var(--s2);}
   <div class="scad-filters">
     <button class="scad-fbtn sel" id="sf-tutte" onclick="setScadFiltro('tutte',this)">Tutte</button>
     <button class="scad-fbtn" id="sf-dapagare" onclick="setScadFiltro('dapagare',this)">Da pagare</button>
+    <button class="scad-fbtn" id="sf-pausa" onclick="setScadFiltro('pausa',this)">⏸ In pausa</button>
   </div>
   <div class="scad-list" id="scad-list"></div>
 </div>
@@ -881,6 +890,14 @@ tbody tr:hover td{background:var(--s2);}
 
     <div class="fg"><label>Nome</label><input id="s-nome" placeholder="es. Bollo moto, Assicurazione auto, 730…"></div>
 
+    <div class="fg"><label>Stato</label>
+      <div class="mv-seg">
+        <button type="button" class="mv-seg-btn" id="s-stato-att" onclick="setScadStato('attiva')">▶ Attiva</button>
+        <button type="button" class="mv-seg-btn" id="s-stato-pau" onclick="setScadStato('pausa')">⏸ In pausa</button>
+      </div>
+      <div style="font-size:.67rem;color:var(--text3);margin-top:-.6rem" id="s-stato-hint"></div>
+    </div>
+
     <div class="fg"><label>Cadenza</label><div class="mv-chipgrid" id="s-cad-chips"></div></div>
 
     <div class="fg"><label>Importo</label>
@@ -892,9 +909,9 @@ tbody tr:hover td{background:var(--s2);}
       <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="s-imp-hint"></div>
     </div>
 
-    <div class="fg"><label id="s-ancora-lbl">Prossima scadenza</label>
+    <div class="fg" id="s-ancora-wrap"><label id="s-ancora-lbl">Prossima scadenza</label>
       <input type="date" id="s-ancora">
-      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem">Da qui in poi calcolo automaticamente le scadenze successive in base alla cadenza.</div>
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="s-ancora-hint">Da qui in poi calcolo automaticamente le scadenze successive in base alla cadenza.</div>
     </div>
 
     <div class="fg"><label>Categoria (per il movimento di spesa)</label><div class="mv-chipgrid" id="s-cat-chips"></div></div>
@@ -2708,10 +2725,11 @@ const CADENZE=[
   {key:'trimestrale',label:'Trimestrale',mesi:3},
   {key:'semestrale',label:'Semestrale',mesi:6},
   {key:'annuale',label:'Annuale',mesi:12},
+  {key:'biennale',label:'Biennale',mesi:24},
   {key:'una-tantum',label:'Una tantum',mesi:0},
 ];
 const SCAD_GRACE=30; // giorni entro cui una scadenza è "in scadenza" (giallo)
-let eScad=null, scadCadenza='annuale', scadTipo='fisso', scadCat='', scadAssetId='', scadFiltro='tutte';
+let eScad=null, scadCadenza='annuale', scadTipo='fisso', scadCat='', scadAssetId='', scadFiltro='tutte', scadSospesa=false;
 let payScadId=null, payDueISO=null, payAssetId='';
 
 function cadMesi(k){ const c=CADENZE.find(x=>x.key===k); return c?c.mesi:12; }
@@ -2742,8 +2760,12 @@ function paidSetScad(s){ return new Set((s.pagamenti||[]).map(p=>p.ciclo)); }
 
 // Calcola lo stato "a pallino" di una scadenza
 function statoScad(s){
+  // Scadenza messa in pausa dall'utente: nessun calcolo, nessun sollecito.
+  if(s.sospesa) return {stato:'pausa',refDate:null,giorni:null,prossima:null};
   const t=today();
-  const occ=occorrenzeScad(s, addMonthsISO(t,-14), addMonthsISO(t,14));
+  // Finestra almeno larga quanto un ciclo intero (serve per biennale e oltre)
+  const w=Math.max(14, cadMesi(s.cadenza)+2);
+  const occ=occorrenzeScad(s, addMonthsISO(t,-w), addMonthsISO(t,w));
   if(!occ.length) return {stato:'grigio',refDate:s.ancora||null,giorni:null,prossima:s.ancora||null};
   const paid=paidSetScad(s);
   const past=occ.filter(d=>d<=t), fut=occ.filter(d=>d>t);
@@ -2764,9 +2786,10 @@ function statoScad(s){
 // L'occorrenza che un "Segna pagato" andrebbe a saldare
 function occorrenzaDaPagare(s){ const st=statoScad(s); return st.refDate; }
 
-const SCAD_ORDER={rosso:0,giallo:1,grigio:2,verde:3};
+const SCAD_ORDER={rosso:0,giallo:1,grigio:2,verde:3,pausa:4};
 function metaScad(s,st){
   const cad=cadLabel(s.cadenza);
+  if(st.stato==='pausa') return `<span class="scad-state pausa">⏸ In pausa</span> · nessuna scadenza attiva · ${cad} quando la riattivi`;
   if(st.stato==='rosso'){ const gg=Math.abs(st.giorni); return `<span class="scad-state rosso">Scaduta il ${fScadDate(st.refDate)}${gg?` · ${gg}g fa`:''}</span> · ${cad}`; }
   if(st.stato==='giallo') return `<span class="scad-state giallo">In scadenza il ${fScadDate(st.refDate)}</span> · tra ${st.giorni}g · ${cad}`;
   if(st.stato==='verde')  return `<span class="scad-state verde">✓ In regola</span>${st.prossima?` · prossima ${fScadDate(st.prossima)}`:''} · ${cad}`;
@@ -2780,12 +2803,14 @@ function renderScad(){
   const nR=arr.filter(x=>x.st.stato==='rosso').length;
   const nG=arr.filter(x=>x.st.stato==='giallo').length;
   const nOk=arr.filter(x=>x.st.stato==='verde').length;
+  const nP=arr.filter(x=>x.st.stato==='pausa').length;
   const sum=document.getElementById('scad-summary');
   if(sum){
     sum.innerHTML = arr.length? `
       <div class="scad-sum-chip"><span class="scad-dot rosso"></span><b>${nR}</b> scadute</div>
       <div class="scad-sum-chip"><span class="scad-dot giallo"></span><b>${nG}</b> in scadenza</div>
-      <div class="scad-sum-chip"><span class="scad-dot verde"></span><b>${nOk}</b> in regola</div>` : '';
+      <div class="scad-sum-chip"><span class="scad-dot verde"></span><b>${nOk}</b> in regola</div>`
+      + (nP? `<div class="scad-sum-chip"><span class="scad-dot pausa"></span><b>${nP}</b> in pausa</div>`:'') : '';
   }
   // ordinamento + filtro
   let vis=arr.slice().sort((a,b)=>{
@@ -2793,14 +2818,18 @@ function renderScad(){
     return (a.st.refDate||'9999')<(b.st.refDate||'9999')?-1:1;
   });
   if(scadFiltro==='dapagare') vis=vis.filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo');
+  if(scadFiltro==='pausa') vis=vis.filter(x=>x.st.stato==='pausa');
   if(!arr.length){ list.innerHTML=`<div class="scad-empty">Nessuna scadenza registrata.<br>Aggiungi bollo, assicurazioni, bollette, rate, tasse fisse o il 730 con “+ Aggiungi”.</div>`; return; }
+  if(!vis.length && scadFiltro==='pausa'){ list.innerHTML=`<div class="scad-empty">Nessuna scadenza in pausa.<br>Metti in pausa ciò che possiedi ma non è attivo (es. moto ferma) per tenerlo sott’occhio senza solleciti.</div>`; return; }
   if(!vis.length){ list.innerHTML=`<div class="scad-empty">Tutto in regola: nessuna scadenza da pagare al momento. 🎉</div>`; return; }
   list.innerHTML=vis.map(({s,st})=>{
     const imp = (s.importo? (s.importoTipo==='variabile'?'~':'')+fImp(s.importo) : (s.importoTipo==='variabile'?'variabile':'—'));
-    const payBtn = st.stato==='verde'
+    const payBtn = st.stato==='pausa'
+      ? `<button class="scad-pay attiva" onclick="attivaScad('${s.id}')">▶ Attiva</button>`
+      : st.stato==='verde'
       ? `<span class="scad-pay done">✓ Pagato</span>`
       : `<button class="scad-pay" onclick="segnaPagato('${s.id}')">Segna pagato</button>`;
-    return `<div class="scad-row">
+    return `<div class="scad-row${st.stato==='pausa'?' pausa':''}">
       <span class="scad-dot ${st.stato}"></span>
       <div class="scad-main">
         <div class="scad-nome">${esc(s.nome)}</div>
@@ -2823,7 +2852,8 @@ function setScadFiltro(f,btn){
 function apriScadenze(){ const b=document.querySelector(".nav-item[onclick*=\"'scadenze'\"]"); if(b) goTo('scadenze',b); }
 function renderDashScad(){
   const el=document.getElementById('dash-scad'); if(!el) return;
-  const arr=(db.scadenze||[]).map(s=>({s,st:statoScad(s)}));
+  // Le scadenze in pausa non compaiono mai in Dashboard: sono lì solo per memoria.
+  const arr=(db.scadenze||[]).filter(s=>!s.sospesa).map(s=>({s,st:statoScad(s)}));
   if(!arr.length){ el.innerHTML=''; return; }
   const nR=arr.filter(x=>x.st.stato==='rosso').length;
   const nG=arr.filter(x=>x.st.stato==='giallo').length;
@@ -2854,12 +2884,13 @@ function openScad(id){
   document.getElementById('s-undo-wrap').style.display = (s&&(s.pagamenti||[]).length)?'block':'none';
   document.getElementById('s-nome').value = s?.nome||'';
   document.getElementById('s-imp').value = s?.importo||'';
-  document.getElementById('s-ancora').value = s?.ancora||today();
+  document.getElementById('s-ancora').value = s ? (s.ancora||'') : today();
   scadCadenza = s?.cadenza||'annuale';
   scadTipo = s?.importoTipo||'fisso';
   scadCat = s?.cat||'';
   scadAssetId = s?.assetIdDefault||'';
-  renderScadCadChips(); renderScadTipoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
+  scadSospesa = !!s?.sospesa;
+  renderScadCadChips(); renderScadTipoSeg(); renderScadStatoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
   document.getElementById('mo-scad').classList.add('open');
 }
 function renderScadCadChips(){
@@ -2874,6 +2905,19 @@ function renderScadTipoSeg(){
   document.getElementById('s-tipo-var').classList.toggle('ent',scadTipo==='variabile');
 }
 function setScadTipo(t){ scadTipo=t; renderScadTipoSeg(); updateScadLabels(); }
+function renderScadStatoSeg(){
+  const a=document.getElementById('s-stato-att'), p=document.getElementById('s-stato-pau');
+  if(!a||!p) return;
+  a.classList.toggle('sel',!scadSospesa); a.classList.toggle('att',!scadSospesa);
+  p.classList.toggle('sel',scadSospesa);  p.classList.toggle('pau',scadSospesa);
+}
+function setScadStato(v){
+  const nuovaSosp = (v==='pausa');
+  if(nuovaSosp && !scadSospesa) document.getElementById('s-ancora').value=''; // la data si imposta alla riattivazione
+  if(!nuovaSosp && scadSospesa && !document.getElementById('s-ancora').value) document.getElementById('s-ancora').value=today();
+  scadSospesa=nuovaSosp;
+  renderScadStatoSeg(); updateScadLabels();
+}
 function updateScadLabels(){
   const lbl=document.getElementById('s-ancora-lbl');
   if(scadCadenza==='una-tantum') lbl.textContent='Data della scadenza';
@@ -2882,6 +2926,26 @@ function updateScadLabels(){
   else lbl.textContent='Prossima scadenza';
   document.getElementById('s-imp-hint').textContent = scadTipo==='variabile'
     ? 'Importo stimato: alla conferma del pagamento inserirai quello reale.' : '';
+  // Stato attiva/pausa
+  const hint=document.getElementById('s-stato-hint');
+  const wrap=document.getElementById('s-ancora-wrap');
+  const inp=document.getElementById('s-ancora');
+  const ahint=document.getElementById('s-ancora-hint');
+  if(hint) hint.textContent = scadSospesa
+    ? 'Resta in elenco ma non genera scadenze, pallini o promemoria. La riattivi quando vuoi.'
+    : '';
+  if(inp) inp.disabled = scadSospesa;
+  if(wrap) wrap.style.opacity = scadSospesa? '.45' : '1';
+  if(ahint) ahint.textContent = scadSospesa
+    ? 'La imposterai al momento della riattivazione.'
+    : 'Da qui in poi calcolo automaticamente le scadenze successive in base alla cadenza.';
+}
+// Riattiva una scadenza in pausa: apre la modale già pronta, basta mettere la data
+function attivaScad(id){
+  openScad(id);
+  setScadStato('attiva');
+  const inp=document.getElementById('s-ancora');
+  if(inp){ inp.value=''; setTimeout(()=>{ try{ inp.focus(); }catch(e){} },120); }
 }
 function renderScadCatChips(){
   const opts=['',...CAT_OUT];
@@ -2899,15 +2963,16 @@ function saveScad(){
   const nome=document.getElementById('s-nome').value.trim();
   if(!nome) return alert('Inserisci un nome.');
   const ancora=document.getElementById('s-ancora').value;
-  if(!ancora) return alert('Imposta la data della prossima scadenza.');
+  if(!ancora && !scadSospesa) return alert('Imposta la data della prossima scadenza, oppure mettila in pausa se non sai ancora quando riattivarla.');
   const importo=parseFloat(document.getElementById('s-imp').value)||0;
   if(eScad){
     const s=db.scadenze.find(x=>x.id===eScad);
     s.nome=nome; s.cadenza=scadCadenza; s.importoTipo=scadTipo; s.importo=importo;
-    s.ancora=ancora; s.cat=scadCat; s.assetIdDefault=scadAssetId;
+    s.ancora=scadSospesa?'':ancora; s.cat=scadCat; s.assetIdDefault=scadAssetId; s.sospesa=scadSospesa;
   }else{
     db.scadenze.push({id:uid(),nome,cadenza:scadCadenza,importoTipo:scadTipo,importo,
-      ancora,cat:scadCat,assetIdDefault:scadAssetId,creato:today(),pagamenti:[]});
+      ancora:scadSospesa?'':ancora,cat:scadCat,assetIdDefault:scadAssetId,sospesa:scadSospesa,
+      creato:today(),pagamenti:[]});
   }
   save(); closeM('mo-scad'); renderScad(); renderDash();
 }
