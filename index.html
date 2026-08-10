@@ -1084,10 +1084,20 @@ async function testConnesione(){
   const res = document.getElementById('test-result');
   if(!url){ res.textContent = '⚠ Inserisci prima un URL'; res.style.color='var(--yellow)'; return; }
   res.textContent = '⏳ Test in corso...'; res.style.color='var(--text3)';
+  // ⚠️ 10/08/2026 — questo test era un POST con body {"test":true}, cioè una
+  // SCRITTURA travestita da test: ha sovrascritto il foglio due volte in un
+  // giorno ed è l'innesco dell'incidente. Ora è una lettura e basta.
   try{
-    await fetch(url, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify({test:true})});
-    res.textContent = '✓ Connessione riuscita! Salva la configurazione.';
-    res.style.color = 'var(--green)';
+    const resp = await fetch(url+'?action=get', {method:'GET', mode:'cors'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    if(data && Array.isArray(data.assets)){
+      res.textContent = '✓ Connesso — '+data.assets.length+' asset sul foglio. Ora premi Salva.';
+      res.style.color = 'var(--green)';
+    }else{
+      res.textContent = '⚠ Risposta inattesa dal foglio (manca il campo assets)';
+      res.style.color = 'var(--yellow)';
+    }
   }catch(e){
     res.textContent = '✗ Errore: '+e.message;
     res.style.color = 'var(--red)';
@@ -1100,7 +1110,7 @@ function salvaConfig(){
   const cfg = getCfg();
   cfg.scriptUrl = url;
   saveCfg(cfg);
-  alert('✓ Configurazione salvata! Ora clicca "Sincronizza ora" per testare.');
+  alert('✓ Configurazione salvata!\n\nOra premi "⬇ Scarica" per portare qui i dati del foglio.\n\n(Non "Sincronizza": su un dispositivo appena configurato la prima cosa da fare è sempre scaricare.)');
   updateSettingsStatus();
 }
 
