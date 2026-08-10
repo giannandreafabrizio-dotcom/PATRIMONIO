@@ -993,9 +993,19 @@ function updateSettingsStatus(){
 }
 
 // ── GOOGLE SHEETS API ──
+// Un db senza asset non contiene nulla che valga la pena scrivere sul foglio:
+// è quasi sempre un dispositivo nuovo che non ha ancora scaricato i dati.
+// Vedi incidente 10/08/2026: un iPhone appena configurato ha svuotato il foglio.
+function dbVuoto(){ return !db || !db.assets || db.assets.length === 0; }
+
 async function pushToSheets(){
   const url = getScriptUrl();
   if(!url){ alert('Configura prima l\'URL dello script nelle Impostazioni.'); return; }
+  if(dbVuoto()){
+    setSyncStatus(false, '⛔ Caricamento bloccato: nessun dato locale');
+    alert('⛔ Caricamento annullato.\n\nQuesto dispositivo non ha ancora nessun asset: caricare ora sovrascriverebbe il foglio con dati vuoti.\n\nUsa prima "⬇ Scarica" per portare qui i dati dal foglio.');
+    return false;
+  }
   setSyncLoading();
   try{
     await fetch(url, {
@@ -1021,6 +1031,13 @@ async function pullFromSheets(){
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
     if(data && data.assets){
+      // Non lasciare che un foglio vuoto cancelli dati locali pieni:
+      // è l'altra metà dell'incidente del 10/08/2026 (il PC avrebbe perso
+      // l'ultima copia buona scaricando il vuoto che l'iPhone aveva scritto).
+      if(data.assets.length === 0 && !dbVuoto()){
+        setSyncStatus(false, '⚠ Foglio vuoto — dati locali conservati');
+        return 'vuoto';
+      }
       db = data;
       if(!db.snapshots) db.snapshots = [];
       if(!db.scadenze) db.scadenze = [];
@@ -1048,10 +1065,18 @@ async function syncNow(){
   }
   // Tenta pull
   const pulled = await pullFromSheets();
-  if(!pulled){
-    // Fallback: push dei dati locali
-    await pushToSheets();
+  if(pulled === true) return;
+  if(pulled === 'vuoto'){
+    // Foglio vuoto ma qui ci sono dati: situazione ambigua, mai decidere da soli.
+    setSyncStatus(false, '⚠ Il foglio è vuoto — usa ⬆ Carica per ripristinarlo da qui');
+    return;
   }
+  // Download fallito: il push di ripiego parte solo se c'è davvero qualcosa da salvare
+  if(dbVuoto()){
+    setSyncStatus(false, '⛔ Download fallito e nessun dato locale');
+    return;
+  }
+  await pushToSheets();
 }
 
 async function testConnesione(){
