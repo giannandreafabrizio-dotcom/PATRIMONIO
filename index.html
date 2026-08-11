@@ -485,6 +485,15 @@ tbody tr:hover td{background:var(--s2);}
 .dscad-badge{display:flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;}
 .dscad-next{font-size:.78rem;color:var(--text3);margin-top:.4rem;}
 .dscad-next b{color:var(--text);font-weight:600;}
+.ent-hero{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;margin-bottom:1rem;}
+.ent-hero-v{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:600;letter-spacing:-.5px;}
+.ent-hero-s{font-size:.78rem;color:var(--text3);}
+.ent-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;}
+.cal-wrap{padding:.2rem 0;}
+.cal svg{display:block;}
+.cal-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.35rem;}
+.cal-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+.ent-empty{text-align:center;color:var(--text3);font-size:.85rem;padding:2.5rem 1rem;line-height:1.7;}
 /* ── VIAGGI ── */
 .viag-tag{display:inline-block;margin-left:.4rem;padding:.06rem .42rem;border-radius:6px;background:rgba(96,165,250,.14);color:var(--blue);font-size:.66rem;font-weight:600;white-space:nowrap;vertical-align:middle;}
 .mv-chip.viag-add{border-style:dashed;color:var(--text3);}
@@ -547,6 +556,9 @@ tbody tr:hover td{background:var(--s2);}
     </button>
     <button class="nav-item" onclick="goTo('viaggi',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.4-.2c.4-.2.7-.6.6-1.2Z"/></svg>Viaggi
+    </button>
+    <button class="nav-item" onclick="goTo('entrate',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M4 21h16"/></svg>Entrate
     </button>
     <button class="nav-item" onclick="goTo('andamento',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Andamento
@@ -685,6 +697,41 @@ tbody tr:hover td{background:var(--s2);}
   </div>
   <div class="vg-summary" id="vg-summary"></div>
   <div class="vg-list" id="vg-list"></div>
+</div>
+
+<!-- ENTRATE -->
+<div class="page" id="page-entrate">
+  <div class="page-hd">
+    <div><h2>Entrate</h2><p>Quanto incassi, da dove e con che ritmo</p></div>
+  </div>
+  <div class="filters">
+    <select id="ent-anno" onchange="renderEntrate()"></select>
+  </div>
+  <div class="ent-chips" id="ent-chips"></div>
+  <div class="ent-hero"><span class="ent-hero-v" id="ent-tot">—</span><span class="ent-hero-s" id="ent-sub"></span></div>
+  <div class="and-charts-row">
+    <div class="card">
+      <div class="card-hd"><h3>Incassi per mese</h3></div>
+      <div class="card-bd">
+        <div class="hscroll" id="wrapEntMese" style="height:240px"><div class="hscroll-in"><canvas id="cEntMese"></canvas></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><h3>Cumulato dall'inizio dell'anno</h3></div>
+      <div class="card-bd">
+        <p style="font-size:.72rem;color:var(--text3);margin:0 0 .7rem;line-height:1.5" id="ent-cum-hint"></p>
+        <div class="hscroll" id="wrapEntCum" style="height:212px"><div class="hscroll-in"><canvas id="cEntCum"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><h3>Calendario degli incassi</h3></div>
+    <div class="card-bd">
+      <div class="hscroll cal-wrap" id="wrapEntCal" style="height:132px"><div class="hscroll-in cal" id="ent-cal"></div></div>
+      <div class="hscroll-hint">scorri per vedere tutto l'anno</div>
+      <div class="cal-lg" id="ent-cal-lg"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ANDAMENTO -->
@@ -1195,6 +1242,7 @@ let movViagOpts=[];       // opzioni correnti delle chip viaggio, indicizzate pe
 let movAssetAll=false;    // true = mostra anche investimenti/crypto fra gli asset pagabili
 let scadAssetAll=false;   // idem nella modale Scadenze
 let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati per l'onclick
+let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
 
 // ── HELPER MESI ──
 const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1513,6 +1561,7 @@ function goTo(name,btn){
   if(name==='movimenti') renderMov();
   if(name==='scadenze') renderScad();
   if(name==='viaggi') renderViaggi();
+  if(name==='entrate') renderEntrate();
   if(name==='andamento') renderAnd();
   if(name==='ai') renderAiPage();
   if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
@@ -1998,6 +2047,149 @@ function attachAssetSwipeHandlers(){
 }
 
 // ── RENDER MOVIMENTI ──
+
+// ══ ENTRATE ══
+// Prima vista dedicata ai soldi che entrano: finora esistevano solo grafici sul
+// patrimonio e sulle uscite. Tre forme, ognuna risponde a una domanda diversa —
+// "quanto questo mese" (barre), "a che punto sono nell'anno" (cumulato),
+// "con che ritmo lavoro" (calendario). I trasferimenti restano fuori: un giroconto
+// non è un incasso.
+const CAL_RAMP=['#14406f','#1a5595','#2270bd','#3987e5','#6aa6ee','#9cc4f4'];
+const CAL_VUOTO='#1b1b1b';
+function entrateTutte(){ return db.movimenti.filter(m=>m.tipo==='entrata'); }
+function entrateCategorie(){
+  const t={};
+  entrateTutte().forEach(m=>{ const c=m.cat||'—'; t[c]=(t[c]||0)+m.importo; });
+  return Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([c])=>c);
+}
+function entrateAnni(){ return [...new Set(entrateTutte().map(m=>m.data.slice(0,4)))].sort().reverse(); }
+function entrateFiltrate(){
+  return entrateTutte().filter(m=>
+    (!entCat || (m.cat||'—')===entCat) && (!entAnno || m.data.startsWith(entAnno)));
+}
+// cumulato mese per mese, una serie per anno: da un anno all'altro le curve si
+// confrontano perché l'asse x è il mese, non la data assoluta.
+function entrateCumulatoPerAnno(){
+  const per={};
+  entrateTutte().filter(m=>!entCat||(m.cat||'—')===entCat).forEach(m=>{
+    const y=m.data.slice(0,4), mi=+m.data.slice(5,7)-1;
+    (per[y]=per[y]||new Array(12).fill(0))[mi]+=m.importo;
+  });
+  const out={};
+  const oggi=today(); const annoCorr=oggi.slice(0,4); const meseCorr=+oggi.slice(5,7)-1;
+  Object.keys(per).sort().forEach(y=>{
+    let run=0;
+    // Nei mesi futuri la serie è null, non l'ultimo valore ripetuto: una linea
+    // piatta fino a dicembre suggerirebbe "da qui in poi non incasso più".
+    const fine=(y===annoCorr)?meseCorr:11;
+    out[y]=per[y].map((v,i)=>{ run+=v; return i<=fine?run:null; });
+  });
+  return out;
+}
+function setEntCat(i){ entCat=entCatOpts[i]||''; renderEntrate(); }
+function renderEntrate(){
+  const anni=entrateAnni();
+  const sel=document.getElementById('ent-anno'); const pv=sel.value;
+  sel.innerHTML='<option value="">Tutti gli anni</option>'+anni.map(a=>`<option value="${a}"${a===pv?' selected':''}>${a}</option>`).join('');
+  if(!anni.includes(pv)) sel.value=anni.includes(String(new Date().getFullYear()))?String(new Date().getFullYear()):'';
+  entAnno=sel.value;
+  document.getElementById('ent-anno').parentElement.style.display=anni.length>1?'':'none';
+
+  const cats=entrateCategorie();
+  entCatOpts=['',...cats];
+  if(entCat && !cats.includes(entCat)) entCat='';
+  document.getElementById('ent-chips').innerHTML=entCatOpts.map((c,i)=>
+    `<button type="button" class="mv-chip${c===entCat?' sel':''}" onclick="setEntCat(${i})">${c?esc(c):'Tutte le entrate'}</button>`).join('');
+
+  const mv=entrateFiltrate();
+  const tot=mv.reduce((s,m)=>s+m.importo,0);
+  const mesi=[...new Set(mv.map(m=>m.data.slice(0,7)))];
+  document.getElementById('ent-tot').textContent=fEUR(tot);
+  document.getElementById('ent-sub').textContent=mv.length
+    ? `${entCat||'tutte le entrate'}${entAnno?' · '+entAnno:''} · ${mv.length} incass${mv.length===1?'o':'i'} · media ${fEUR(mesi.length?tot/mesi.length:0)} al mese`
+    : 'nessun incasso nel periodo selezionato';
+
+  renderEntMese(mv);
+  renderEntCum();
+  renderEntCal(mv);
+}
+// A1 — barre mensili, una serie sola: nessuna legenda, il titolo la nomina già.
+function renderEntMese(mv){
+  const agg={};
+  mv.forEach(m=>{ const k=m.data.slice(0,7); agg[k]=(agg[k]||0)+m.importo; });
+  const keys=Object.keys(agg).sort();
+  destroyC('cEntMese');
+  sizeScroll('wrapEntMese',keys.length,keys.length>8?62:0);
+  charts['cEntMese']=new Chart(document.getElementById('cEntMese'),{
+    type:'bar',
+    data:{labels:keys.map(monthLabelIt),datasets:[{label:'Incassi',data:keys.map(k=>agg[k]),
+      backgroundColor:'#3987e5',hoverBackgroundColor:'#6aa6ee',borderRadius:4,maxBarThickness:46}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fEUR(c.parsed.y)}}},
+      scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
+}
+// A3 — cumulato: una linea per anno. Con un anno solo la legenda sparisce.
+function renderEntCum(){
+  const per=entrateCumulatoPerAnno();
+  const anni=Object.keys(per).sort();
+  destroyC('cEntCum');
+  sizeScroll('wrapEntCum',12,0);
+  const ds=anni.map((y,i)=>Object.assign({label:y,data:per[y],borderColor:ACOLORS[i%ACOLORS.length],
+    backgroundColor:gradFill(ACOLORS[i%ACOLORS.length],'33'),pointHoverBackgroundColor:ACOLORS[i%ACOLORS.length],
+    fill:anni.length===1},LINE_STYLE));
+  charts['cEntCum']=new Chart(document.getElementById('cEntCum'),{
+    type:'line',data:{labels:MESI_IT,datasets:ds},options:lineOpts(anni.length>1)});
+  document.getElementById('ent-cum-hint').textContent=anni.length>1
+    ? 'Una linea per anno: alla stessa altezza di mese, la più alta è l\'anno migliore.'
+    : 'Con un solo anno di dati c\'è una linea sola. Diventa un confronto appena inserisci i totali degli anni passati.';
+}
+// A2 — calendario: una cella per giorno, scala sequenziale a un hue (più chiaro =
+// più incassato sul fondo scuro). Il colore da solo non basta: ogni cella ha il
+// tooltip con la data e l'importo.
+function renderEntCal(mv){
+  const el=document.getElementById('ent-cal');
+  if(!el) return;
+  const byday={};
+  mv.forEach(m=>{ byday[m.data]=(byday[m.data]||0)+m.importo; });
+  const date=Object.keys(byday).sort();
+  if(!date.length){
+    el.innerHTML='<div class="ent-empty">Nessun incasso da mostrare per questa selezione.</div>';
+    document.getElementById('ent-cal-lg').innerHTML='';
+    return;
+  }
+  const anno=entAnno||date[date.length-1].slice(0,4);
+  const d0=new Date(anno+'-01-01T00:00:00'), d1=new Date(anno+'-12-31T00:00:00');
+  const mx=Math.max(...Object.values(byday));
+  const CW=13, off=(d0.getDay()+6)%7;   // lunedì = riga 0
+  const giorni=Math.round((d1-d0)/86400000)+1;
+  let cells='',mlab='';
+  for(let i=0;i<giorni;i++){
+    const d=new Date(d0.getTime()+i*86400000);
+    const iso=d.toISOString().slice(0,10);
+    const wk=Math.floor((i+off)/7), dow=(d.getDay()+6)%7;
+    const v=byday[iso]||0;
+    const col=v?CAL_RAMP[Math.min(CAL_RAMP.length-1,Math.floor(v/mx*(CAL_RAMP.length-0.01)))]:CAL_VUOTO;
+    cells+=`<rect x="${wk*CW+26}" y="${dow*CW+16}" width="${CW-2.5}" height="${CW-2.5}" rx="2.5" fill="${col}">`
+         +`<title>${fmtDataBreve(iso)} — ${v?fEUR(v):'nessun incasso'}</title></rect>`;
+    if(d.getDate()===1) mlab+=`<text x="${wk*CW+26}" y="10" fill="#555" font-size="10">${MESI_IT[d.getMonth()]}</text>`;
+  }
+  const dow=['L','','M','','V','','D'].map((n,i)=>n?`<text x="20" y="${i*CW+26}" text-anchor="end" fill="#555" font-size="9">${n}</text>`:'').join('');
+  const W=Math.ceil((giorni+off)/7)*CW+34;
+  el.style.width=W+'px';
+  el.innerHTML=`<svg width="${W}" height="120" viewBox="0 0 ${W} 120">${mlab}${dow}${cells}</svg>`;
+  document.getElementById('ent-cal-lg').innerHTML='<span>meno</span>'+
+    [CAL_VUOTO,...CAL_RAMP].map(c=>`<i style="background:${c}"></i>`).join('')+'<span>più</span>';
+  // Su schermo stretto l'anno non ci sta: porto la vista sul mese corrente invece
+  // che su gennaio, altrimenti il primo colpo d'occhio è su celle vuote.
+  const wrap=document.getElementById('wrapEntCal');
+  if(wrap){
+    const oggi=new Date(); const rif=(oggi.getFullYear()===+anno)?oggi:d1;
+    const wkOggi=Math.floor((Math.round((rif-d0)/86400000)+off)/7);
+    requestAnimationFrame(()=>{ wrap.scrollLeft=Math.max(0,wkOggi*CW+26-wrap.clientWidth/2); });
+  }
+}
+
 // ══ VIAGGI ══
 // Il viaggio è una SECONDA dimensione accanto alla categoria, non un suo sostituto:
 // una cena a New York resta "Cibo" (così i grafici mensili di Cibo restano
