@@ -497,7 +497,11 @@ tbody tr:hover td{background:var(--s2);}
 .vg-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:1.05rem 1.15rem;transition:border-color .12s;}
 .vg-card:hover{border-color:var(--border2);}
 .vg-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;}
-.vg-nome{font-size:1rem;font-weight:600;color:var(--text);}
+.vg-nome{font-size:1rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:.4rem;}
+.vg-ren{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.85rem;padding:.15rem .3rem;border-radius:6px;line-height:1;}
+.vg-ren:hover{color:var(--text);background:var(--s2);}
+.vg-renbox{display:flex;gap:.4rem;margin-top:.5rem;}
+.vg-renbox input{flex:1;min-width:0;background:var(--s2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.82rem;padding:.45rem .7rem;outline:none;}
 .vg-when{font-size:.74rem;color:var(--text3);margin-top:.18rem;}
 .vg-tot{text-align:right;}
 .vg-tot-eur{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:600;color:var(--text);}
@@ -2071,8 +2075,13 @@ function renderViaggi(){
     return `<div class="vg-card">
       <div class="vg-hd">
         <div>
-          <div class="vg-nome">✈ ${esc(r.nome)}</div>
+          <div class="vg-nome">✈ ${esc(r.nome)}<button class="vg-ren" onclick="rinominaViaggio(${i})" title="Rinomina questo viaggio" aria-label="Rinomina">✏</button></div>
           <div class="vg-when">${r.nMov} moviment${r.nMov===1?'o':'i'} · ${fmtPeriodo(r.dal,r.al)}</div>
+          <div class="vg-renbox" id="vg-ren-${i}" style="display:none">
+            <input maxlength="40" placeholder="Nuovo nome del viaggio" onkeydown="if(event.key==='Enter'){event.preventDefault();confermaRinomina(${i});}if(event.key==='Escape')annullaRinomina(${i});">
+            <button type="button" class="btn btn-p btn-sm" onclick="confermaRinomina(${i})">Rinomina</button>
+            <button type="button" class="btn btn-g btn-sm" onclick="annullaRinomina(${i})">Annulla</button>
+          </div>
         </div>
         <div class="vg-tot">
           <div class="vg-tot-eur">${fEUR(r.netto)}</div>
@@ -2084,6 +2093,38 @@ function renderViaggi(){
     </div>`;
   }).join('');
 }
+// ── Rinomina un viaggio ──
+// Serve perché il nome NON è salvato da nessuna parte: vive replicato dentro ogni
+// movimento taggato. Senza questo pulsante, cambiare nome a un viaggio da 14 spese
+// vuol dire riaprire 14 volte la modale. Il valore del campo si imposta da JS e mai
+// nell'HTML: esc() non protegge le virgolette e un nome con l'apice romperebbe l'attributo.
+function rinominaViaggio(i){
+  const box=document.getElementById('vg-ren-'+i);
+  if(!box) return;
+  box.style.display='flex';
+  const inp=box.querySelector('input');
+  inp.value=vgRepNomi[i]||'';
+  inp.focus(); inp.select();
+}
+function annullaRinomina(i){ const b=document.getElementById('vg-ren-'+i); if(b) b.style.display='none'; }
+function confermaRinomina(i){
+  const vecchio=vgRepNomi[i];
+  const box=document.getElementById('vg-ren-'+i);
+  if(vecchio===undefined || !box) return;
+  const nuovo=(box.querySelector('input').value||'').trim();
+  if(!nuovo || nuovo===vecchio){ annullaRinomina(i); return; }
+  // Rinominare su un nome esistente equivale a fondere due viaggi: è un'operazione
+  // legittima (un viaggio spezzato in due tag per errore) ma va dichiarata.
+  if(viaggiElenco().includes(nuovo) &&
+     !confirm(`Esiste già un viaggio chiamato "${nuovo}".\n\nContinuando, i movimenti di "${vecchio}" ci finiscono dentro e i due viaggi diventano uno solo. Procedere?`)) return;
+  let n=0;
+  db.movimenti.forEach(m=>{ if((m.viaggio||'').trim()===vecchio){ m.viaggio=nuovo; n++; } });
+  save();
+  annullaRinomina(i);
+  renderViaggi(); renderMov();
+  alert(`✓ Rinominato in "${nuovo}" su ${n} moviment${n===1?'o':'i'}.`);
+}
+
 // Apre Movimenti già filtrato su quel viaggio. Due renderMov(): il primo popola le
 // opzioni del select (che esistono solo se ci sono viaggi), il secondo applica il filtro.
 function apriMovimentiViaggio(i){
