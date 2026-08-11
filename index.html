@@ -514,6 +514,22 @@ tbody tr:hover td{background:var(--s2);}
 .ah-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.6rem;}
 .ah-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
 /* ── VIAGGI ── */
+.es-seg{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:11px;padding:3px;margin-bottom:1rem;width:fit-content;}
+.es-seg button{padding:.38rem .8rem;border-radius:8px;border:none;background:none;color:var(--text2);font-family:'Inter',sans-serif;font-size:.77rem;cursor:pointer;white-space:nowrap;}
+.es-seg button.sel{background:var(--s3);color:#fff;font-weight:500;}
+.es-nota{font-size:.72rem;color:var(--text3);margin:-.5rem 0 1rem;line-height:1.5;}
+.es-mesi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;}
+.es-m label{display:block;font-size:.62rem;color:var(--text3);margin-bottom:.15rem;text-transform:uppercase;letter-spacing:.5px;}
+.es-m input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.8rem;padding:.4rem .5rem;outline:none;}
+.es-paste{width:100%;background:var(--s2);border:1px dashed var(--border2);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:.78rem;padding:.5rem .7rem;outline:none;resize:vertical;min-height:52px;}
+.es-tot{text-align:right;font-size:.8rem;color:var(--text2);margin-top:.6rem;}
+.es-tot b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:1rem;}
+.es-anni{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+.es-anno{display:flex;align-items:center;gap:.45rem;padding:.35rem .7rem;border-radius:11px;background:var(--s1);border:1px dashed var(--border2);font-size:.76rem;color:var(--text2);}
+.es-anno b{color:var(--text);}
+.es-anno button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.8rem;padding:0 .1rem;}
+.es-anno button:hover{color:var(--text);}
+
 .vg-card.vg-st{border-style:dashed;}
 .vg-badge{display:inline-block;margin-left:.45rem;padding:.08rem .4rem;border-radius:6px;background:var(--s3);color:var(--text3);font-size:.62rem;font-weight:600;letter-spacing:.4px;text-transform:uppercase;vertical-align:middle;}
 .vg-sep{display:flex;align-items:center;gap:.7rem;margin:1.6rem 0 .2rem;color:var(--text3);font-size:.75rem;}
@@ -740,11 +756,18 @@ tbody tr:hover td{background:var(--s2);}
 <div class="page" id="page-entrate">
   <div class="page-hd">
     <div><h2>Entrate</h2><p>Quanto incassi, da dove e con che ritmo</p></div>
+    <button class="btn btn-g" onclick="openEntStorico()">+ Anno storico</button>
   </div>
   <div class="filters">
     <select id="ent-anno" onchange="renderEntrate()"></select>
   </div>
   <div class="ent-chips" id="ent-chips"></div>
+  <div class="es-anni" id="ent-archivio"></div>
+  <div class="es-seg" id="ent-fonte" style="display:none">
+    <button type="button" onclick="setEntFonte('full',this)">Storico completo</button>
+    <button type="button" onclick="setEntFonte('mov',this)">Solo registrato nell'app</button>
+  </div>
+  <div class="es-nota" id="ent-nota"></div>
   <div class="ent-hero"><span class="ent-hero-v" id="ent-tot">—</span><span class="ent-hero-s" id="ent-sub"></span></div>
   <div class="and-charts-row">
     <div class="card">
@@ -1015,6 +1038,32 @@ tbody tr:hover td{background:var(--s2);}
   </div>
 </div>
 
+<!-- MODAL ANNO STORICO ENTRATE -->
+<div class="overlay" id="mo-entst">
+  <div class="modal">
+    <h3 id="es-title">Anno storico</h3>
+    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1rem;line-height:1.5">I totali mese per mese di un anno che l'app non ha registrato. Servono <b>solo ai grafici</b>: non creano movimenti, non toccano nessun saldo.</p>
+    <div class="fr">
+      <div class="fg"><label>Categoria</label><select id="es-cat"></select></div>
+      <div class="fg"><label>Anno</label><input id="es-anno" type="number" inputmode="numeric" min="1950" max="2100"></div>
+    </div>
+    <div class="fg">
+      <label>Incolla i valori (opzionale)</label>
+      <textarea class="es-paste" id="es-paste" placeholder="120, 490, 1495, 980…  — da gennaio in poi, separati da virgola o spazio" oninput="incollaMesi(this.value)"></textarea>
+    </div>
+    <div class="fg">
+      <label>Totali mensili</label>
+      <div class="es-mesi" id="es-mesi"></div>
+      <div class="es-tot">Totale dell'anno: <b id="es-tot">0 €</b></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-d" id="es-del" style="display:none;margin-right:auto" onclick="delEntStorico()">Elimina</button>
+      <button class="btn btn-g" onclick="closeM('mo-entst')">Annulla</button>
+      <button class="btn btn-p" onclick="saveEntStorico()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VIAGGIO STORICO -->
 <div class="overlay" id="mo-viagst">
   <div class="modal">
@@ -1214,6 +1263,7 @@ async function pullFromSheets(){
       if(!db.snapshots) db.snapshots = [];
       if(!db.scadenze) db.scadenze = [];
     if(!db.viaggiStorici) db.viaggiStorici = [];
+    if(!db.entrateStoriche) db.entrateStoriche = [];
       applicaMigrazioni();
       saveLocal();
       renderAll();
@@ -1310,6 +1360,7 @@ let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati pe
 let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
 let andGridAll=false;     // true = griglia asset estesa a tutti
 let eViagSt=null, vsVoci=[], vgStIds=[];   // modale viaggio storico
+let eEntSt=null, esMesi=[], entFonte='full';   // archivio entrate: 'full' = quaderno + app
 
 // ── HELPER MESI ──
 const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1599,6 +1650,7 @@ function load(){
     if(!db.snapshots) db.snapshots = [];
     if(!db.scadenze) db.scadenze = [];
     if(!db.viaggiStorici) db.viaggiStorici = [];
+    if(!db.entrateStoriche) db.entrateStoriche = [];
     if(applicaMigrazioni()) saveLocal();
     sincronizzaImporti();
   }catch(e){}
@@ -2234,67 +2286,177 @@ function entrateCumulatoPerAnno(){
   });
   return out;
 }
+
+// ── ENTRATE STORICHE (archivio dal quaderno) ──
+// Totali mese per mese di anni che l'app non ha registrato. Servono SOLO ai
+// grafici: l'utente li ha chiesti per "vedere la realtà delle entrate" mentre
+// "il sistema patrimonio rimane così com'è". Quindi nessun movimento, nessun
+// saldo toccato, e un interruttore esplicito fra le due letture — perché un
+// numero che cambia senza dire da dove viene è peggio di un numero mancante.
+// Chiave nuova `entrateStoriche` in pat4: come `viaggiStorici`, sopravvive alla
+// sync perché scriviDati_ salva il JSON intero e validaPayload_ guarda solo
+// assets e movimenti.
+function entStoriche(cat){ return (db.entrateStoriche||[]).filter(x=>!cat||x.cat===cat); }
+function entStoricoDi(cat,anno){ return (db.entrateStoriche||[]).find(x=>x.cat===cat&&String(x.anno)===String(anno)); }
+function totMesi(m){ return (m||[]).reduce((s,x)=>s+(+x||0),0); }
+// Serie mensile "reale": il quaderno vince dove c'è, i movimenti coprono il resto.
+function serieMensile(cat,anno,fonte){
+  const mov=new Array(12).fill(0);
+  entrateTutte().filter(m=>(!cat||(m.cat||'—')===cat)&&m.data.startsWith(String(anno)))
+    .forEach(m=>{ mov[+m.data.slice(5,7)-1]+=m.importo; });
+  if(fonte==='mov') return {v:mov,da:mov.map(()=>'app')};
+  const st=cat?entStoricoDi(cat,anno):null;
+  if(!st) return {v:mov,da:mov.map(()=>'app')};
+  return {v:mov.map((x,i)=>(+st.mesi[i]||0)>0?+st.mesi[i]:x),
+          da:mov.map((x,i)=>(+st.mesi[i]||0)>0?'quaderno':'app')};
+}
+function anniEntrate(cat){
+  return [...new Set([...entrateTutte().filter(m=>!cat||(m.cat||'—')===cat).map(m=>m.data.slice(0,4)),
+                      ...entStoriche(cat).map(x=>String(x.anno))])].sort().reverse();
+}
+function setEntFonte(f,btn){ entFonte=f; btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); renderEntrate(); }
+function openEntStorico(id){
+  eEntSt=id||null;
+  const x=id?(db.entrateStoriche||[]).find(y=>y.id===id):null;
+  document.getElementById('es-title').textContent=x?'Modifica anno storico':'Nuovo anno storico';
+  const cats=entrateCategorie();
+  document.getElementById('es-cat').innerHTML=cats.map(c=>`<option value="${esc(c)}"${(x?x.cat:entCat)===c?' selected':''}>${esc(c)}</option>`).join('');
+  document.getElementById('es-anno').value=x?x.anno:new Date().getFullYear()-1;
+  document.getElementById('es-del').style.display=x?'inline-flex':'none';
+  document.getElementById('es-paste').value='';
+  esMesi=x?[...x.mesi]:new Array(12).fill('');
+  renderMesiStorici();
+  document.getElementById('mo-entst').classList.add('open');
+}
+function renderMesiStorici(){
+  document.getElementById('es-mesi').innerHTML=MESI_IT.map((m,i)=>
+    `<div class="es-m"><label>${m}</label><input type="number" step="1" min="0" inputmode="decimal" value="${esMesi[i]===''?'':(+esMesi[i]||0)}" oninput="setMeseStorico(${i},this.value)"></div>`).join('');
+  document.getElementById('es-tot').textContent=fEUR(totMesi(esMesi));
+}
+function setMeseStorico(i,v){ esMesi[i]=v; document.getElementById('es-tot').textContent=fEUR(totMesi(esMesi)); }
+// Incollare 43 numeri a mano sarebbe un invito a sbagliare: si incolla la riga
+// così com'è, separata da virgole o spazi, e riempie i mesi da gennaio in poi.
+function incollaMesi(txt){
+  const n=(txt||'').split(/[^0-9.,-]+/).map(x=>x.replace(/\.(?=\d{3}\b)/g,'').replace(',','.')).filter(x=>x!=='').map(Number).filter(x=>!isNaN(x));
+  if(!n.length) return;
+  esMesi=new Array(12).fill('');
+  n.slice(0,12).forEach((v,i)=>esMesi[i]=v);
+  renderMesiStorici();
+}
+function saveEntStorico(){
+  const cat=document.getElementById('es-cat').value;
+  const anno=parseInt(document.getElementById('es-anno').value,10);
+  if(!cat) return alert('Scegli una categoria.');
+  if(!anno||anno<1950||anno>2100) return alert('Inserisci un anno valido.');
+  const mesi=esMesi.map(v=>+v||0);
+  if(!totMesi(mesi)) return alert('Inserisci almeno un importo.');
+  const gemello=(db.entrateStoriche||[]).find(x=>x.cat===cat&&x.anno===anno&&x.id!==eEntSt);
+  if(gemello && !confirm(`C'è già un archivio ${cat} ${anno}. Continuando lo sostituisci.`)) return;
+  if(!db.entrateStoriche) db.entrateStoriche=[];
+  if(gemello) db.entrateStoriche=db.entrateStoriche.filter(x=>x.id!==gemello.id);
+  if(eEntSt) Object.assign(db.entrateStoriche.find(x=>x.id===eEntSt),{cat,anno,mesi});
+  else db.entrateStoriche.push({id:uid(),cat,anno,mesi});
+  save(); closeM('mo-entst'); renderEntrate();
+}
+function delEntStorico(){
+  if(!eEntSt||!confirm('Eliminare questo anno d\'archivio?')) return;
+  db.entrateStoriche=(db.entrateStoriche||[]).filter(x=>x.id!==eEntSt);
+  save(); closeM('mo-entst'); renderEntrate();
+}
+function renderEntArchivio(){
+  const el=document.getElementById('ent-archivio');
+  const lista=entStoriche(entCat).sort((a,b)=>b.anno-a.anno);
+  el.innerHTML=lista.length?lista.map(x=>
+    `<span class="es-anno">${x.anno} <b>${fEUR(totMesi(x.mesi))}</b>
+       <button onclick="openEntStorico('${x.id}')" title="Modifica" aria-label="Modifica">✏</button></span>`).join(''):'';
+}
+
 function setEntCat(i){ entCat=entCatOpts[i]||''; renderEntrate(); }
 function renderEntrate(){
-  const anni=entrateAnni();
-  const sel=document.getElementById('ent-anno'); const pv=sel.value;
-  sel.innerHTML='<option value="">Tutti gli anni</option>'+anni.map(a=>`<option value="${a}"${a===pv?' selected':''}>${a}</option>`).join('');
-  if(!anni.includes(pv)) sel.value=anni.includes(String(new Date().getFullYear()))?String(new Date().getFullYear()):'';
-  entAnno=sel.value;
-  document.getElementById('ent-anno').parentElement.style.display=anni.length>1?'':'none';
-
   const cats=entrateCategorie();
   entCatOpts=['',...cats];
   if(entCat && !cats.includes(entCat)) entCat='';
   document.getElementById('ent-chips').innerHTML=entCatOpts.map((c,i)=>
     `<button type="button" class="mv-chip${c===entCat?' sel':''}" onclick="setEntCat(${i})">${c?esc(c):'Tutte le entrate'}</button>`).join('');
 
-  const mv=entrateFiltrate();
-  const tot=mv.reduce((s,m)=>s+m.importo,0);
-  const mesi=[...new Set(mv.map(m=>m.data.slice(0,7)))];
-  document.getElementById('ent-tot').textContent=fEUR(tot);
-  document.getElementById('ent-sub').textContent=mv.length
-    ? `${entCat||'tutte le entrate'}${entAnno?' · '+entAnno:''} · ${mv.length} incass${mv.length===1?'o':'i'} · media ${fEUR(mesi.length?tot/mesi.length:0)} al mese`
-    : 'nessun incasso nel periodo selezionato';
+  const anni=anniEntrate(entCat);
+  const sel=document.getElementById('ent-anno'); const pv=sel.value;
+  sel.innerHTML='<option value="">Tutti gli anni</option>'+anni.map(a=>`<option value="${a}"${a===pv?' selected':''}>${a}</option>`).join('');
+  if(!anni.includes(pv)) sel.value='';
+  entAnno=sel.value;
+  sel.parentElement.style.display=anni.length>1?'':'none';
 
-  renderEntMese(mv);
-  renderEntCum();
-  renderEntCal(mv);
+  renderEntArchivio();
+  const hasArch=entStoriche(entCat).length>0;
+  const segEl=document.getElementById('ent-fonte');
+  segEl.style.display=hasArch?'':'none';
+  segEl.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('sel',(i===0)===(entFonte==='full')));
+
+  // serie mensile per ogni anno, con la fonte di ciascun mese
+  const perAnno={};
+  anni.forEach(a=>{ perAnno[a]=serieMensile(entCat,a,entFonte); });
+  const anniMostrati=entAnno?[entAnno]:anni;
+  const tot=anniMostrati.reduce((s,a)=>s+totMesi(perAnno[a].v),0);
+  const nQ=anniMostrati.reduce((s,a)=>s+perAnno[a].da.filter((d,i)=>d==='quaderno'&&perAnno[a].v[i]>0).length,0);
+  const mesiPieni=anniMostrati.reduce((s,a)=>s+perAnno[a].v.filter(v=>v>0).length,0);
+
+  document.getElementById('ent-tot').textContent=fEUR(tot);
+  document.getElementById('ent-sub').textContent=mesiPieni
+    ? `${entCat||'tutte le entrate'}${entAnno?' · '+entAnno:' · '+anni.length+' anni'} · ${mesiPieni} mes${mesiPieni===1?'e':'i'} con incassi · media ${fEUR(tot/mesiPieni)}`
+    : 'nessun incasso nel periodo selezionato';
+  document.getElementById('ent-nota').textContent=!hasArch?''
+    : entFonte==='full'
+      ? `${nQ} mes${nQ===1?'e preso':'i presi'} dall'archivio del quaderno, il resto dai movimenti registrati. I saldi e la contabilità non cambiano: l'archivio vive solo qui.`
+      : 'Solo quello che hai registrato nell\'app. I mesi precedenti alla registrazione risultano vuoti.';
+
+  renderEntMese(perAnno,anniMostrati);
+  renderEntCum(perAnno,anni);
+  renderEntCal(entrateFiltrate());
 }
-// A1 — barre mensili, una serie sola: nessuna legenda, il titolo la nomina già.
-function renderEntMese(mv){
-  const agg={};
-  mv.forEach(m=>{ const k=m.data.slice(0,7); agg[k]=(agg[k]||0)+m.importo; });
-  const keys=Object.keys(agg).sort();
+// A1 — un anno selezionato: 12 barre mensili. "Tutti gli anni": una barra per anno,
+// che è la domanda con cui è nato l'archivio ("quanto ho guadagnato negli anni").
+function renderEntMese(perAnno,anniMostrati){
+  let labels,dati;
+  if(entAnno){ labels=MESI_IT; dati=perAnno[entAnno].v; }
+  else { const a=[...anniMostrati].sort(); labels=a; dati=a.map(y=>totMesi(perAnno[y].v)); }
   destroyC('cEntMese');
-  sizeScroll('wrapEntMese',keys.length,keys.length>8?62:0);
+  sizeScroll('wrapEntMese',labels.length,labels.length>8?62:0);
   charts['cEntMese']=new Chart(document.getElementById('cEntMese'),{
     type:'bar',
-    data:{labels:keys.map(monthLabelIt),datasets:[{label:'Incassi',data:keys.map(k=>agg[k]),
+    data:{labels,datasets:[{label:'Incassi',data:dati,
       backgroundColor:'#3987e5',hoverBackgroundColor:'#6aa6ee',borderRadius:4,maxBarThickness:46}]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fEUR(c.parsed.y)}}},
       scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0},grid:{display:false}},
         y:{beginAtZero:true,ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
 }
-// A3 — cumulato: una linea per anno. Con un anno solo la legenda sparisce.
-function renderEntCum(){
-  const per=entrateCumulatoPerAnno();
-  const anni=Object.keys(per).sort();
+// A3 — cumulato, una linea per anno: a parità di mese la più alta è l'anno migliore.
+function renderEntCum(perAnno,anni){
+  const oggi=today(), annoCorr=oggi.slice(0,4), meseCorr=+oggi.slice(5,7)-1;
+  const ord=[...anni].sort();
   destroyC('cEntCum');
   sizeScroll('wrapEntCum',12,0);
-  const ds=anni.map((y,i)=>Object.assign({label:y,data:per[y],borderColor:ACOLORS[i%ACOLORS.length],
-    backgroundColor:gradFill(ACOLORS[i%ACOLORS.length],'33'),pointHoverBackgroundColor:ACOLORS[i%ACOLORS.length],
-    fill:anni.length===1},LINE_STYLE));
+  const ds=ord.map((y,i)=>{
+    let run=0;
+    // Nei mesi futuri null, non l'ultimo valore ripetuto: una linea piatta fino a
+    // dicembre suggerirebbe "da qui in poi non incasso più".
+    const fine=(y===annoCorr)?meseCorr:11;
+    const data=perAnno[y].v.map((v,m)=>{ run+=v; return m<=fine?run:null; });
+    const col=ACOLORS[i%ACOLORS.length];
+    return Object.assign({label:y,data,borderColor:col,backgroundColor:gradFill(col,'33'),
+      pointHoverBackgroundColor:col,fill:ord.length===1},LINE_STYLE);
+  });
   charts['cEntCum']=new Chart(document.getElementById('cEntCum'),{
-    type:'line',data:{labels:MESI_IT,datasets:ds},options:lineOpts(anni.length>1)});
-  document.getElementById('ent-cum-hint').textContent=anni.length>1
+    type:'line',data:{labels:MESI_IT,datasets:ds},options:lineOpts(ord.length>1)});
+  document.getElementById('ent-cum-hint').textContent=ord.length>1
     ? 'Una linea per anno: alla stessa altezza di mese, la più alta è l\'anno migliore.'
-    : 'Con un solo anno di dati c\'è una linea sola. Diventa un confronto appena inserisci i totali degli anni passati.';
+    : 'Con un solo anno di dati c\'è una linea sola. Aggiungi un anno storico per avere il confronto.';
 }
+
 // A2 — calendario: una cella per giorno, scala sequenziale a un hue (più chiaro =
 // più incassato sul fondo scuro). Il colore da solo non basta: ogni cella ha il
-// tooltip con la data e l'importo.
+// tooltip con la data e l'importo. Nasce dai movimenti, quindi gli anni d'archivio
+// — che hanno solo i totali mensili — qui non compaiono, e lo dice.
 function renderEntCal(mv){
   const el=document.getElementById('ent-cal');
   if(!el) return;
@@ -2302,7 +2464,9 @@ function renderEntCal(mv){
   mv.forEach(m=>{ byday[m.data]=(byday[m.data]||0)+m.importo; });
   const date=Object.keys(byday).sort();
   if(!date.length){
-    el.innerHTML='<div class="ent-empty">Nessun incasso da mostrare per questa selezione.</div>';
+    el.style.width='';
+    el.innerHTML='<div class="ent-empty">Nessun incasso <b>registrato giorno per giorno</b> per questa selezione.'
+      +(entStoriche(entCat).length?'<br>Gli anni d\'archivio hanno solo i totali mensili, quindi qui non compaiono.':'')+'</div>';
     document.getElementById('ent-cal-lg').innerHTML='';
     return;
   }
