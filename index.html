@@ -1192,6 +1192,8 @@ let charts={};
 let dashMonthOffset=0;
 let movViaggio='';        // viaggio selezionato nella modale movimento ('' = nessuno)
 let movViagOpts=[];       // opzioni correnti delle chip viaggio, indicizzate per l'onclick
+let movAssetAll=false;    // true = mostra anche investimenti/crypto fra gli asset pagabili
+let scadAssetAll=false;   // idem nella modale Scadenze
 let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati per l'onclick
 
 // ── HELPER MESI ──
@@ -1600,6 +1602,7 @@ function openMov(id){
   movTipo=m?.tipo||'uscita';
   movCat=m?.cat||null;
   movAssetId=m?.assetId||'';
+  movAssetAll=false;
   movViaggio=m?.viaggio||'';
   renderMovSeg();
   renderMovCatChips();
@@ -1667,11 +1670,29 @@ function confermaViaggioNuovo(){
 document.getElementById('m-viag-nome')?.addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); confermaViaggioNuovo(); }
 });
-function renderMovAssetChips(){
-  const opts=[{id:'',nome:'— nessuno —'},...db.assets];
-  document.getElementById('m-asset-chips').innerHTML=opts.map(a=>
-    `<button type="button" class="mv-chip${a.id===movAssetId?' sel':''}" onclick="setMovAsset('${a.id}')">${esc(a.nome)}</button>`).join('');
+// ── Asset selezionabili come mezzo di pagamento ──
+// Titoli di investimento e crypto non si usano per pagare: a un titolo ci si arriva
+// con un Trasferimento, mai con un movimento (regola storica del progetto). Con 22
+// titoli in elenco le chip erano un muro in cui cercare i 6 conti veri. Restano
+// raggiungibili con "+ Altri N" per i casi leciti ma rari — cedole o interessi
+// accreditati direttamente su un conto deposito, che è tipo `investimenti`.
+const TIPI_PAGAMENTO=['wallet','liquidita','altro'];
+function assetPagamento(){ return db.assets.filter(a=>TIPI_PAGAMENTO.includes(a.tipo)); }
+function chipsAsset(elId,selId,fn,tutti){
+  const base=assetPagamento();
+  const sel=db.assets.find(a=>a.id===selId);
+  // se il movimento che sto modificando punta a un asset fuori lista, la mostro
+  // già espansa: altrimenti la sua chip non esisterebbe e sembrerebbe deselezionato
+  const espansa=tutti || (sel && !TIPI_PAGAMENTO.includes(sel.tipo));
+  const nascosti=db.assets.length-base.length;
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.innerHTML=[{id:'',nome:'— nessuno —'},...(espansa?db.assets:base)].map(a=>
+      `<button type="button" class="mv-chip${a.id===selId?' sel':''}" onclick="${fn}('${a.id}')">${esc(a.nome)}</button>`).join('')
+    +(!espansa&&nascosti>0?`<button type="button" class="mv-chip viag-add" onclick="${fn==='setMovAsset'?'mostraTuttiAssetMov':'mostraTuttiAssetScad'}()">+ Altri ${nascosti}</button>`:'');
 }
+function renderMovAssetChips(){ chipsAsset('m-asset-chips',movAssetId,'setMovAsset',movAssetAll); }
+function mostraTuttiAssetMov(){ movAssetAll=true; renderMovAssetChips(); }
 function setMovAsset(id){ movAssetId=id; renderMovAssetChips(); onMovAssetChange(); }
 function setMovOggi(){ document.getElementById('m-data').value=today(); syncMovTodayBtn(); }
 function syncMovTodayBtn(){
@@ -3210,6 +3231,7 @@ function openScad(id){
   scadTipo = s?.importoTipo||'fisso';
   scadCat = s?.cat||'';
   scadAssetId = s?.assetIdDefault||'';
+  scadAssetAll = false;
   scadSospesa = !!s?.sospesa;
   renderScadCadChips(); renderScadTipoSeg(); renderScadStatoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
   document.getElementById('mo-scad').classList.add('open');
@@ -3274,11 +3296,8 @@ function renderScadCatChips(){
     `<button type="button" class="mv-chip${c===scadCat?' sel':''}" onclick="setScadCat('${(c||'').replace(/'/g,"\\'")}')">${c?esc(c):'— nessuna —'}</button>`).join('');
 }
 function setScadCat(c){ scadCat=c; renderScadCatChips(); }
-function renderScadAssetChips(){
-  const opts=[{id:'',nome:'— nessuno —'},...db.assets];
-  document.getElementById('s-asset-chips').innerHTML=opts.map(a=>
-    `<button type="button" class="mv-chip${a.id===scadAssetId?' sel':''}" onclick="setScadAsset('${a.id}')">${esc(a.nome)}</button>`).join('');
-}
+function renderScadAssetChips(){ chipsAsset('s-asset-chips',scadAssetId,'setScadAsset',scadAssetAll); }
+function mostraTuttiAssetScad(){ scadAssetAll=true; renderScadAssetChips(); }
 function setScadAsset(id){ scadAssetId=id; renderScadAssetChips(); }
 function saveScad(){
   const nome=document.getElementById('s-nome').value.trim();
