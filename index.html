@@ -514,6 +514,22 @@ tbody tr:hover td{background:var(--s2);}
 .ah-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.6rem;}
 .ah-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
 /* ── VIAGGI ── */
+.vg-card.vg-st{border-style:dashed;}
+.vg-badge{display:inline-block;margin-left:.45rem;padding:.08rem .4rem;border-radius:6px;background:var(--s3);color:var(--text3);font-size:.62rem;font-weight:600;letter-spacing:.4px;text-transform:uppercase;vertical-align:middle;}
+.vg-sep{display:flex;align-items:center;gap:.7rem;margin:1.6rem 0 .2rem;color:var(--text3);font-size:.75rem;}
+.vg-sep::after{content:"";flex:1;height:1px;background:var(--border);}
+.vg-sep b{color:var(--text2);font-weight:600;}
+.vs-voci{display:flex;flex-direction:column;gap:.45rem;}
+.vs-voce{display:flex;gap:.4rem;}
+.vs-voce input:first-child{flex:1;min-width:0;}
+.vs-voce input:nth-child(2){width:104px;flex:none;}
+.vs-del{background:none;border:1px solid var(--border);color:var(--text3);border-radius:8px;width:34px;flex:none;cursor:pointer;font-size:.9rem;}
+.vs-del:hover{color:var(--red);border-color:var(--red);}
+.vs-add{margin-top:.5rem;padding:.45rem .8rem;border-radius:10px;border:1px dashed var(--border2);background:none;color:var(--text2);font-family:'Inter',sans-serif;font-size:.76rem;cursor:pointer;}
+.vs-add:hover{color:var(--text);}
+.vs-tot{text-align:right;font-size:.8rem;color:var(--text2);margin-top:.6rem;}
+.vs-tot b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:1rem;}
+
 .viag-tag{display:inline-block;margin-left:.4rem;padding:.06rem .42rem;border-radius:6px;background:rgba(96,165,250,.14);color:var(--blue);font-size:.66rem;font-weight:600;white-space:nowrap;vertical-align:middle;}
 .mv-chip.viag-add{border-style:dashed;color:var(--text3);}
 .viag-new{display:flex;gap:.4rem;margin-top:.5rem;}
@@ -710,12 +726,14 @@ tbody tr:hover td{background:var(--s2);}
 <div class="page" id="page-viaggi">
   <div class="page-hd">
     <div><h2>Viaggi</h2><p>Quanto è costato ogni viaggio — ricavato dai movimenti che hai taggato</p></div>
+    <button class="btn btn-g" onclick="openViagStorico()">+ Viaggio passato</button>
   </div>
   <div class="filters" id="vg-filters">
     <select id="vg-anno" onchange="renderViaggi()"><option value="">Tutti gli anni</option></select>
   </div>
   <div class="vg-summary" id="vg-summary"></div>
   <div class="vg-list" id="vg-list"></div>
+  <div id="vg-archivio"></div>
 </div>
 
 <!-- ENTRATE -->
@@ -997,6 +1015,30 @@ tbody tr:hover td{background:var(--s2);}
   </div>
 </div>
 
+<!-- MODAL VIAGGIO STORICO -->
+<div class="overlay" id="mo-viagst">
+  <div class="modal">
+    <h3 id="vs-title">Viaggio passato</h3>
+    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1rem;line-height:1.5">Un viaggio fatto prima che l'app esistesse. Resta come scheda d'archivio: <b>non tocca saldi, movimenti né statistiche</b>.</p>
+    <div class="fr">
+      <div class="fg"><label>Nome</label><input id="vs-nome" placeholder="es. NY giugno 2025" maxlength="40"></div>
+      <div class="fg"><label>Anno</label><input id="vs-anno" type="number" inputmode="numeric" placeholder="2025" min="1950" max="2100"></div>
+    </div>
+    <div class="fg">
+      <label>Voci di spesa</label>
+      <div class="vs-voci" id="vs-voci"></div>
+      <button type="button" class="vs-add" onclick="addVoceStorica()">+ Aggiungi voce</button>
+      <div class="vs-tot">Totale del viaggio: <b id="vs-tot">0 €</b></div>
+    </div>
+    <div class="fg"><label>Note (opzionale)</label><input id="vs-note" placeholder="con chi, cosa ricordi…" maxlength="120"></div>
+    <div class="mf">
+      <button class="btn btn-d" id="vs-del" style="display:none;margin-right:auto" onclick="delViagStorico()">Elimina</button>
+      <button class="btn btn-g" onclick="closeM('mo-viagst')">Annulla</button>
+      <button class="btn btn-p" onclick="saveViagStorico()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL TRASFERIMENTO -->
 <div class="overlay" id="mo-trasf">
   <div class="modal">
@@ -1171,6 +1213,7 @@ async function pullFromSheets(){
       db = data;
       if(!db.snapshots) db.snapshots = [];
       if(!db.scadenze) db.scadenze = [];
+    if(!db.viaggiStorici) db.viaggiStorici = [];
       applicaMigrazioni();
       saveLocal();
       renderAll();
@@ -1266,6 +1309,7 @@ let scadAssetAll=false;   // idem nella modale Scadenze
 let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati per l'onclick
 let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
 let andGridAll=false;     // true = griglia asset estesa a tutti
+let eViagSt=null, vsVoci=[], vgStIds=[];   // modale viaggio storico
 
 // ── HELPER MESI ──
 const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1554,6 +1598,7 @@ function load(){
     if(r) db = JSON.parse(r);
     if(!db.snapshots) db.snapshots = [];
     if(!db.scadenze) db.scadenze = [];
+    if(!db.viaggiStorici) db.viaggiStorici = [];
     if(applicaMigrazioni()) saveLocal();
     sincronizzaImporti();
   }catch(e){}
@@ -1591,7 +1636,7 @@ function goTo(name,btn){
 }
 
 // ── MODALS ──
-function closeM(id){ document.getElementById(id).classList.remove('open'); eAsset=null; eMov=null; }
+function closeM(id){ document.getElementById(id).classList.remove('open'); eAsset=null; eMov=null; eViagSt=null; }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 
 // ── ASSET MODAL ──
@@ -2354,9 +2399,96 @@ function viaggiReport(){
     return r;
   }).sort((a,b)=>b.dal.localeCompare(a.dal));
 }
+
+// ── VIAGGI STORICI (archivio) ──
+// Viaggi fatti prima che l'app esistesse. Qui NON si ricava niente dai movimenti:
+// non ci sono. È l'unico caso che giustifica un'anagrafica vera, e sta in una
+// chiave nuova `viaggiStorici` di pat4. Verificato prima di aggiungerla:
+// `scriviDati_` salva il JSON intero come testo e `validaPayload_` rifiuta solo i
+// payload senza assets/movimenti, quindi la chiave sopravvive alla sync e il
+// backend non va toccato. Restano fuori da saldi, KPI e totale dei viaggi veri:
+// l'utente li ha chiesti esplicitamente come "storico ricordi", non come contabilità.
+function viagStoriciOrd(){
+  return [...(db.viaggiStorici||[])].sort((a,b)=>(b.anno||0)-(a.anno||0)||a.nome.localeCompare(b.nome));
+}
+function totVoci(v){ return (v.voci||[]).reduce((s,x)=>s+(+x.imp||0),0); }
+function openViagStorico(id){
+  eViagSt=id||null;
+  const v=id?(db.viaggiStorici||[]).find(x=>x.id===id):null;
+  document.getElementById('vs-title').textContent=v?'Modifica viaggio passato':'Nuovo viaggio passato';
+  document.getElementById('vs-nome').value=v?.nome||'';
+  document.getElementById('vs-anno').value=v?.anno||new Date().getFullYear()-1;
+  document.getElementById('vs-note').value=v?.note||'';
+  document.getElementById('vs-del').style.display=v?'inline-flex':'none';
+  vsVoci=v?v.voci.map(x=>({...x})):[{lbl:'',imp:''}];
+  renderVociStoriche();
+  document.getElementById('mo-viagst').classList.add('open');
+}
+function renderVociStoriche(){
+  const el=document.getElementById('vs-voci');
+  el.innerHTML=vsVoci.map((v,i)=>
+    `<div class="vs-voce">
+       <input placeholder="es. Biglietto aereo" maxlength="30" value="${esc(v.lbl||'').replace(/"/g,'&quot;')}" oninput="setVoce(${i},'lbl',this.value)">
+       <input type="number" step="0.01" min="0" inputmode="decimal" placeholder="0 €" value="${v.imp===''?'':(+v.imp||0)}" oninput="setVoce(${i},'imp',this.value)">
+       <button type="button" class="vs-del" onclick="rmVoce(${i})" aria-label="Togli questa voce"${vsVoci.length<2?' disabled style="opacity:.35"':''}>✕</button>
+     </div>`).join('');
+  document.getElementById('vs-tot').textContent=fEUR(totVoci({voci:vsVoci}));
+}
+function setVoce(i,k,v){ if(vsVoci[i]){ vsVoci[i][k]=v; document.getElementById('vs-tot').textContent=fEUR(totVoci({voci:vsVoci})); } }
+function addVoceStorica(){ vsVoci.push({lbl:'',imp:''}); renderVociStoriche(); }
+function rmVoce(i){ if(vsVoci.length>1){ vsVoci.splice(i,1); renderVociStoriche(); } }
+function saveViagStorico(){
+  const nome=document.getElementById('vs-nome').value.trim();
+  if(!nome) return alert('Dai un nome al viaggio.');
+  const anno=parseInt(document.getElementById('vs-anno').value,10);
+  if(!anno || anno<1950 || anno>2100) return alert('Inserisci un anno valido.');
+  // Una voce senza etichetta è comunque valida: chi ricorda solo il totale non
+  // deve inventarsi un nome. Diventa "Spese totali" in lettura.
+  const voci=vsVoci.map(v=>({lbl:(v.lbl||'').trim()||'Spese totali',imp:+v.imp||0})).filter(v=>v.imp>0);
+  if(!voci.length) return alert('Inserisci almeno un importo.');
+  if(!db.viaggiStorici) db.viaggiStorici=[];
+  const dati={nome,anno,voci,note:document.getElementById('vs-note').value.trim()};
+  if(eViagSt){ Object.assign(db.viaggiStorici.find(x=>x.id===eViagSt),dati); }
+  else { db.viaggiStorici.push({id:uid(),...dati}); }
+  save(); closeM('mo-viagst'); renderViaggi();
+}
+function delViagStorico(){
+  if(!eViagSt || !confirm('Eliminare questa scheda d\'archivio?')) return;
+  db.viaggiStorici=(db.viaggiStorici||[]).filter(x=>x.id!==eViagSt);
+  save(); closeM('mo-viagst'); renderViaggi();
+}
+function renderViagArchivio(anno){
+  const el=document.getElementById('vg-archivio');
+  if(!el) return;
+  let lista=viagStoriciOrd();
+  if(anno) lista=lista.filter(v=>String(v.anno)===anno);
+  vgStIds=lista.map(v=>v.id);
+  if(!lista.length){ el.innerHTML=''; return; }
+  const tot=lista.reduce((s,v)=>s+totVoci(v),0);
+  el.innerHTML=`<div class="vg-sep"><b>Archivio</b> · ${lista.length} viagg${lista.length===1?'io':'i'} · ${fEUR(tot)} · fuori dai conteggi</div>
+    <div class="vg-list" style="margin-top:.9rem">`+lista.map((v,i)=>{
+    const t=totVoci(v);
+    const voci=[...v.voci].sort((a,b)=>b.imp-a.imp);
+    const barre=voci.map((c,j)=>`<span style="width:${(t?c.imp/t*100:0).toFixed(2)}%;background:${ACOLORS[j%ACOLORS.length]}"></span>`).join('');
+    const lab=voci.map((c,j)=>`<div class="vg-cat"><span class="vg-dot" style="background:${ACOLORS[j%ACOLORS.length]}"></span>${esc(c.lbl)} <b>${fEUR(c.imp)}</b></div>`).join('');
+    return `<div class="vg-card vg-st">
+      <div class="vg-hd">
+        <div>
+          <div class="vg-nome">✈ ${esc(v.nome)}<span class="vg-badge">storico</span>
+            <button class="vg-ren" onclick="openViagStorico('${v.id}')" title="Modifica" aria-label="Modifica">✏</button></div>
+          <div class="vg-when">${v.anno}${v.note?' · '+esc(v.note):''}</div>
+        </div>
+        <div class="vg-tot"><div class="vg-tot-eur">${fEUR(t)}</div></div>
+      </div>
+      <div class="vg-bar">${barre}</div>
+      <div class="vg-cats">${lab}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
 function renderViaggi(){
   const tutti=viaggiReport();
-  const anni=[...new Set(tutti.map(r=>r.dal.slice(0,4)))].sort().reverse();
+  const anni=[...new Set([...tutti.map(r=>r.dal.slice(0,4)),...(db.viaggiStorici||[]).map(v=>String(v.anno))])].sort().reverse();
   const sel=document.getElementById('vg-anno'); const pv=sel.value;
   sel.innerHTML='<option value="">Tutti gli anni</option>'+anni.map(a=>`<option value="${a}"${a===pv?' selected':''}>${a}</option>`).join('');
   if(!anni.includes(pv)) sel.value='';
@@ -2373,9 +2505,12 @@ function renderViaggi(){
     `<div class="vg-chip">Media per viaggio <b>${fEUR(totNetto/rep.length)}</b></div>`
   ].join(''):'';
 
+  renderViagArchivio(anno);
+
   const list=document.getElementById('vg-list');
   if(!rep.length){
-    list.innerHTML=`<div class="vg-empty">Nessun viaggio registrato${anno?' nel '+anno:''}.<br>
+    const arch=(db.viaggiStorici||[]).filter(v=>!anno||String(v.anno)===anno).length;
+    list.innerHTML=arch?'':`<div class="vg-empty">Nessun viaggio registrato${anno?' nel '+anno:''}.<br>
       Per tracciarne uno registra i movimenti come sempre — categoria <b>Cibo</b>, <b>Carburante</b>, <b>Biglietti aerei</b>… —<br>
       e nel campo <b>Viaggio</b> tocca <b>+ Nuovo</b> per dargli un nome la prima volta.<br>
       Da lì in poi il nome compare tra le chip e basta un tap.</div>`;
