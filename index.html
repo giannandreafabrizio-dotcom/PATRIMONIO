@@ -494,6 +494,25 @@ tbody tr:hover td{background:var(--s2);}
 .cal-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.35rem;}
 .cal-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
 .ent-empty{text-align:center;color:var(--text3);font-size:.85rem;padding:2.5rem 1rem;line-height:1.7;}
+/* ── ANDAMENTO: griglia per asset e mappa settimanale ── */
+.ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:.65rem;}
+.ag-card{background:var(--s2);border:1px solid var(--border);border-radius:11px;padding:.55rem .7rem;}
+.ag-hd{display:flex;justify-content:space-between;gap:.4rem;align-items:baseline;}
+.ag-n{font-size:.74rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ag-v{font-size:.78rem;font-weight:600;white-space:nowrap;}
+.ag-card svg{width:100%;height:36px;display:block;margin:.25rem 0;}
+.ag-d{font-size:.7rem;font-weight:600;white-space:nowrap;}
+.ag-d span{color:var(--text3);font-weight:400;}
+.ag-more{display:block;width:100%;margin-top:.8rem;padding:.5rem;border-radius:10px;border:1px dashed var(--border2);
+  background:none;color:var(--text2);font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;}
+.ag-more:hover{color:var(--text);border-color:#555;}
+.ah-scroll{overflow-x:auto;}
+.ah{border-collapse:separate;border-spacing:2px;font-size:.66rem;width:100%;}
+.ah th{color:var(--text3);font-weight:500;font-size:.63rem;padding:1px 2px;white-space:nowrap;text-transform:none;letter-spacing:0;}
+.ah .ah-rn{text-align:right;color:var(--text2);font-size:.7rem;white-space:nowrap;padding-right:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+.ah td{text-align:center;border-radius:3px;padding:4px 3px;color:#fff;font-variant-numeric:tabular-nums;min-width:30px;}
+.ah-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.6rem;}
+.ah-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
 /* ── VIAGGI ── */
 .viag-tag{display:inline-block;margin-left:.4rem;padding:.06rem .42rem;border-radius:6px;background:rgba(96,165,250,.14);color:var(--blue);font-size:.66rem;font-weight:600;white-space:nowrap;vertical-align:middle;}
 .mv-chip.viag-add{border-style:dashed;color:var(--text3);}
@@ -746,6 +765,7 @@ tbody tr:hover td{background:var(--s2);}
           <button class="ct active" onclick="setAndTab('tot',this)">Patrimonio totale</button>
           <button class="ct" onclick="setAndTab('tipo',this)">Per tipo asset</button>
           <button class="ct" onclick="setAndTab('asset',this)">Per singolo asset</button>
+          <button class="ct" onclick="setAndTab('mappa',this)">Mappa settimanale</button>
         </div>
       </div>
       <div class="card-bd">
@@ -758,7 +778,9 @@ tbody tr:hover td{background:var(--s2);}
           </div>
         </div>
         <div class="at-wrap" id="at-wrap" style="display:none"></div>
-        <div class="hscroll" id="wrapMain" style="height:300px"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div><div class="hscroll-hint">scorri per navigare la storia completa</div>
+        <div class="hscroll" id="wrapMain" style="height:300px"><div class="hscroll-in"><canvas id="cMain"></canvas></div></div><div class="hscroll-hint" id="mainHint">scorri per navigare la storia completa</div>
+        <div id="and-grid" style="display:none"></div>
+        <div id="and-heat" style="display:none"></div>
       </div>
     </div>
     <div class="card">
@@ -1243,6 +1265,7 @@ let movAssetAll=false;    // true = mostra anche investimenti/crypto fra gli ass
 let scadAssetAll=false;   // idem nella modale Scadenze
 let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati per l'onclick
 let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
+let andGridAll=false;     // true = griglia asset estesa a tutti
 
 // ── HELPER MESI ──
 const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -2048,6 +2071,86 @@ function attachAssetSwipeHandlers(){
 
 // ── RENDER MOVIMENTI ──
 
+
+// ══ ANDAMENTO — vista per singolo asset (griglia) e mappa settimanale ══
+// La vecchia scheda "per singolo asset" era trenta linee sovrapposte su un asse
+// unico: illeggibile, e i titoli piccoli schiacciati a zero dal PIR e da ING.
+// Qui ogni asset ha il SUO mini-grafico con la SUA scala, così un titolo da 300 €
+// che fa +12% si legge quanto uno da 27.000 €. Direzione data da colore E freccia:
+// il colore non è mai l'unica informazione.
+const AG_LIMITE=12;
+function serieAsset(dates){
+  return db.assets.map(a=>({a,v:dates.map(d=>valAt(a.id,d))}))
+    .filter(x=>x.v.some(v=>v!==null))
+    .map(x=>({...x, v:x.v.map(v=>v===null?0:v)}))
+    .sort((p,q)=>q.a.eur-p.a.eur);
+}
+function sparkPath(v,w,h){
+  const lo=Math.min(...v), hi=Math.max(...v), rng=(hi-lo)||1;
+  return {d:'M'+v.map((x,i)=>`${(i*(w-10)/Math.max(1,v.length-1)+5).toFixed(1)} ${(h-4-(x-lo)/rng*(h-9)).toFixed(1)}`).join(' L'),
+          cx:w-5, cy:h-4-(v[v.length-1]-lo)/rng*(h-9)};
+}
+function renderAndGrid(dates){
+  const el=document.getElementById('and-grid');
+  if(!el) return;
+  if(dates.length<2){ el.innerHTML='<div class="ent-empty">Servono almeno due rilevazioni nel periodo per disegnare l\'andamento. Prova ad allargare il periodo.</div>'; return; }
+  const s=serieAsset(dates);
+  const mostra=andGridAll?s:s.slice(0,AG_LIMITE);
+  el.innerHTML='<div class="ag-grid">'+mostra.map(({a,v})=>{
+    const sp=sparkPath(v,160,36);
+    const delta=v[v.length-1]-v[0];
+    const su=delta>=0;
+    const col=su?'#3987e5':'#d95926';
+    // percentuale solo se l'asset esisteva già a inizio periodo: da 0 non ha senso
+    const pct=v[0]>0?` <span>(${(delta/v[0]*100>=0?'+':'')}${(delta/v[0]*100).toFixed(1)}%)</span>`:' <span>(aperto nel periodo)</span>';
+    return `<div class="ag-card" title="${esc(a.nome)} — da ${fEUR(v[0])} a ${fEUR(v[v.length-1])}">
+      <div class="ag-hd"><span class="ag-n">${esc(a.nome)}</span><span class="ag-v">${fEUR(v[v.length-1])}</span></div>
+      <svg viewBox="0 0 160 36" preserveAspectRatio="none"><path d="${sp.d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        <circle cx="${sp.cx}" cy="${sp.cy.toFixed(1)}" r="3" fill="${col}"/></svg>
+      <div class="ag-d" style="color:${col}">${su?'▲':'▼'} ${(delta>=0?'+':'')}${fEUR(delta)}${pct}</div>
+    </div>`;
+  }).join('')+'</div>'
+  +(s.length>AG_LIMITE?`<button class="ag-more" onclick="toggleAndGrid()">${andGridAll?'Mostra solo i primi '+AG_LIMITE:'Mostra tutti e '+s.length}</button>`:'');
+}
+function toggleAndGrid(){ andGridAll=!andGridAll; renderAnd(); }
+
+// Mappa: una riga per asset, una colonna per settimana, colore = variazione %.
+// Scala divergente (blu sale / arancione scende) con il grigio al centro; il numero
+// nella cella è la percentuale, così il colore non porta l'informazione da solo.
+function settimanali(dates){
+  const out=[]; let last=null;
+  dates.forEach(d=>{
+    if(last===null || (new Date(d)-new Date(last))/86400000>=7){ out.push(d); last=d; }
+  });
+  if(out[out.length-1]!==dates[dates.length-1]) out.push(dates[dates.length-1]);
+  return out;
+}
+function renderAndHeat(dates){
+  const el=document.getElementById('and-heat');
+  if(!el) return;
+  const cols=settimanali(dates);
+  if(cols.length<2){ el.innerHTML='<div class="ent-empty">Servono almeno due settimane di rilevazioni nel periodo.</div>'; return; }
+  const righe=serieAsset(cols).filter(x=>x.a.eur>0);
+  const varz=righe.map(x=>x.v.slice(1).map((v,i)=>x.v[i]?((v-x.v[i])/x.v[i]*100):0));
+  // La scala si taglia al 90° percentile, non sul massimo: un singolo evento fuori
+  // scala (ING che entra a 50.000 € = +4.195% in una settimana) schiaccerebbe tutte
+  // le altre celle su un grigio indistinguibile. Gli estremi saturano, e il numero
+  // scritto nella cella resta comunque quello vero.
+  const ord=varz.flat().map(Math.abs).filter(v=>v>0).sort((a,b)=>a-b);
+  const mx=Math.max(2,ord.length?ord[Math.floor(ord.length*0.9)]:2);
+  const col=p=>{
+    if(Math.abs(p)<0.05) return '#232323';
+    const a=Math.round(40+Math.min(1,Math.abs(p)/mx)*215).toString(16).padStart(2,'0');
+    return (p>0?'#3987e5':'#d95926')+a;
+  };
+  const th=cols.slice(1).map(d=>`<th>${fmtDataBreve(d)}</th>`).join('');
+  const body=righe.map((x,r)=>`<tr><th class="ah-rn" title="${esc(x.a.nome)}">${esc(x.a.nome)}</th>`+
+    varz[r].map((p,i)=>`<td style="background:${col(p)}" title="${esc(x.a.nome)} · ${fmtDataBreve(cols[i+1])} — ${p>=0?'+':''}${p.toFixed(1)}%">${Math.abs(p)>=1?(p>=0?'+':'')+p.toFixed(0):'·'}</td>`).join('')+'</tr>').join('');
+  el.innerHTML=`<div class="ah-scroll"><table class="ah"><thead><tr><th></th>${th}</tr></thead><tbody>${body}</tbody></table></div>`
+    +`<div class="ah-lg"><span>scende</span><i style="background:#d95926"></i><i style="background:#d9592688"></i><i style="background:#232323"></i><i style="background:#3987e588"></i><i style="background:#3987e5"></i><span>sale</span>`
+    +`<span style="margin-left:.8rem">· = meno dell'1%</span></div>`;
+}
+
 // ══ ENTRATE ══
 // Prima vista dedicata ai soldi che entrano: finora esistevano solo grafici sul
 // patrimonio e sulle uscite. Tre forme, ognuna risponde a una domanda diversa —
@@ -2747,7 +2850,6 @@ function setAndTab(t,btn){
   andTab=t;
   btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('at-wrap').style.display=(t==='asset')?'flex':'none';
   renderAnd();
 }
 function setPer(m,btn){period=m;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAnd();}
@@ -2801,7 +2903,9 @@ function renderAnd(){
     ?db.assets.map((a,i)=>`<span class="at ${toggles[a.id]?'on':'off'}" onclick="tog('${a.id}')">
         <span class="dot" style="background:${ACOLORS[i%ACOLORS.length]}"></span>${esc(a.nome)}</span>`).join('')
     :'<span style="font-size:.77rem;color:var(--text3)">Aggiungi asset per visualizzare</span>';
-  document.getElementById('at-wrap').style.display=(andTab==='asset')?'flex':'none';
+  // I toggle servivano solo alla vecchia vista a linee sovrapposte: la griglia
+  // mostra ogni asset da sola e non ha bisogno di nasconderne nessuno.
+  document.getElementById('at-wrap').style.display='none';
 
   const snaps=getFilteredSnaps();
   let dates=[...new Set(snaps.map(s=>s.date))].sort();
@@ -2809,12 +2913,23 @@ function renderAnd(){
   // Fix: scarta le date in cui non tutti gli asset hanno ancora uno snapshot,
   // altrimenti quelli mancanti valgono 0 e la linea mostra crolli inesistenti.
   const cov=coverageStart();
-  if(cov && (andTab==='tot'||andTab==='tipo')) dates=dates.filter(d=>d>=cov);
+  if(cov) dates=dates.filter(d=>d>=cov);
 
   renderAndKpi(dates);
 
   destroyC('cMain');
   const ctx=document.getElementById('cMain');
+
+  // Le schede "per singolo asset" e "mappa settimanale" non sono grafici Chart.js
+  // ma HTML/SVG: nascondo il canvas invece di disegnarci sopra.
+  const grafico=(andTab==='tot'||andTab==='tipo');
+  document.getElementById('wrapMain').style.display=grafico?'':'none';
+  document.getElementById('mainHint').style.display=grafico?'':'none';
+  document.getElementById('and-grid').style.display=(andTab==='asset')?'':'none';
+  document.getElementById('and-heat').style.display=(andTab==='mappa')?'':'none';
+  if(andTab==='asset'){ renderAndGrid(dates); renderDelta(); renderRend(); return; }
+  if(andTab==='mappa'){ renderAndHeat(dates); renderDelta(); renderRend(); return; }
+
   sizeScroll('wrapMain',dates.length,dates.length>14?26:0);
 
   if(andTab==='tot'){
@@ -2832,16 +2947,6 @@ function renderAnd(){
         backgroundColor:gradFill(TCOLORS[t],'33'),pointHoverBackgroundColor:TCOLORS[t],fill:true},LINE_STYLE);
     });
     charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(true)});
-  } else {
-    const filtAssets=db.assets.filter(a=>toggles[a.id]);
-    const dsArr=filtAssets.map(a=>{
-      const idx=db.assets.indexOf(a);
-      const col=ACOLORS[idx%ACOLORS.length];
-      const data=dates.map(d=>valAt(a.id,d));
-      return Object.assign({label:a.nome,data,borderColor:col,backgroundColor:'transparent',
-        pointHoverBackgroundColor:col,fill:false,spanGaps:true},LINE_STYLE);
-    });
-    charts['cMain']=new Chart(ctx,{type:'line',data:{labels:dates,datasets:dsArr},options:lineOpts(filtAssets.length>0)});
   }
   scrollToNow('wrapMain');
 
