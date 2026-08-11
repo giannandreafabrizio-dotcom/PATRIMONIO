@@ -513,6 +513,16 @@ tbody tr:hover td{background:var(--s2);}
 .ah td{text-align:center;border-radius:3px;padding:4px 3px;color:#fff;font-variant-numeric:tabular-nums;min-width:30px;}
 .ah-lg{display:flex;align-items:center;gap:.35rem;justify-content:flex-end;font-size:.68rem;color:var(--text3);margin-top:.6rem;}
 .ah-lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+.us-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:.65rem;}
+.us-card{background:var(--s2);border:1px solid var(--border);border-radius:11px;padding:.55rem .7rem;cursor:pointer;transition:border-color .12s;}
+.us-card:hover{border-color:var(--border2);}
+.us-card.sel{border-color:#fff;}
+.us-hd{display:flex;justify-content:space-between;gap:.4rem;align-items:baseline;}
+.us-n{font-size:.73rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:.35rem;}
+.us-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.us-v{font-size:.78rem;font-weight:600;white-space:nowrap;}
+.us-card svg{width:100%;height:32px;display:block;margin:.3rem 0 .15rem;}
+.us-sub{font-size:.68rem;color:var(--text3);}
 /* ── VIAGGI ── */
 .es-seg{display:flex;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:11px;padding:3px;margin-bottom:1rem;width:fit-content;}
 .es-seg button{padding:.38rem .8rem;border-radius:8px;border:none;background:none;color:var(--text2);font-family:'Inter',sans-serif;font-size:.77rem;cursor:pointer;white-space:nowrap;}
@@ -610,6 +620,9 @@ tbody tr:hover td{background:var(--s2);}
     </button>
     <button class="nav-item" onclick="goTo('entrate',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M4 21h16"/></svg>Entrate
+    </button>
+    <button class="nav-item" onclick="goTo('uscite',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/><path d="M4 3h16"/></svg>Uscite
     </button>
     <button class="nav-item" onclick="goTo('andamento',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Andamento
@@ -790,6 +803,47 @@ tbody tr:hover td{background:var(--s2);}
       <div class="hscroll cal-wrap" id="wrapEntCal" style="height:132px"><div class="hscroll-in cal" id="ent-cal"></div></div>
       <div class="hscroll-hint">scorri per vedere tutto l'anno</div>
       <div class="cal-lg" id="ent-cal-lg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USCITE -->
+<div class="page" id="page-uscite">
+  <div class="page-hd">
+    <div><h2>Uscite</h2><p>Dove vanno i soldi, come si muove ogni categoria, e quanto resta</p></div>
+  </div>
+  <div class="filters" id="us-filters">
+    <select id="us-anno" onchange="renderUscite()"></select>
+  </div>
+  <div class="ent-chips" id="us-chips"></div>
+  <div class="ent-hero"><span class="ent-hero-v" id="us-tot">—</span><span class="ent-hero-s" id="us-sub"></span></div>
+  <div class="and-charts-row">
+    <div class="card">
+      <div class="card-hd"><h3>Cumulato dall'inizio dell'anno</h3></div>
+      <div class="card-bd">
+        <p style="font-size:.72rem;color:var(--text3);margin:0 0 .7rem;line-height:1.5" id="us-cum-hint"></p>
+        <div class="hscroll" id="wrapUsCum" style="height:212px"><div class="hscroll-in"><canvas id="cUsCum"></canvas></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><h3>Uscite per mese</h3></div>
+      <div class="card-bd">
+        <div class="hscroll" id="wrapUsMese" style="height:240px"><div class="hscroll-in"><canvas id="cUsMese"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><h3>Come si muove ogni categoria</h3></div>
+    <div class="card-bd">
+      <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Un mini-grafico per categoria, ognuno con la propria scala. Clicca una card per filtrare tutto il resto su quella categoria.</p>
+      <div id="us-grid"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><h3>Quanto resta ogni mese</h3></div>
+    <div class="card-bd">
+      <p style="font-size:.72rem;color:var(--text3);margin:0 0 .8rem;line-height:1.5">Entrate meno uscite, mese per mese. Verde = hai messo da parte, rosso = hai speso più di quanto è entrato. Conta tutti i movimenti registrati, non risente del filtro per categoria e non usa l'archivio storico.</p>
+      <div class="hscroll" id="wrapUsRisp" style="height:230px"><div class="hscroll-in"><canvas id="cUsRisp"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -1361,6 +1415,7 @@ let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
 let andGridAll=false;     // true = griglia asset estesa a tutti
 let eViagSt=null, vsVoci=[], vgStIds=[];   // modale viaggio storico
 let eEntSt=null, esMesi=[], entFonte='full';   // archivio entrate: 'full' = quaderno + app
+let usCat='', usAnno='', usCatOpts=[], usGridAll=false;   // filtri della pagina Uscite
 
 // ── HELPER MESI ──
 const MESI_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1682,6 +1737,7 @@ function goTo(name,btn){
   if(name==='scadenze') renderScad();
   if(name==='viaggi') renderViaggi();
   if(name==='entrate') renderEntrate();
+  if(name==='uscite') renderUscite();
   if(name==='andamento') renderAnd();
   if(name==='ai') renderAiPage();
   if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
@@ -2246,6 +2302,167 @@ function renderAndHeat(dates){
   el.innerHTML=`<div class="ah-scroll"><table class="ah"><thead><tr><th></th>${th}</tr></thead><tbody>${body}</tbody></table></div>`
     +`<div class="ah-lg"><span>scende</span><i style="background:#d95926"></i><i style="background:#d9592688"></i><i style="background:#232323"></i><i style="background:#3987e588"></i><i style="background:#3987e5"></i><span>sale</span>`
     +`<span style="margin-left:.8rem">· = meno dell'1%</span></div>`;
+}
+
+
+// ══ USCITE ══
+// Speculare a Entrate ma NON identica, di proposito. Scartati il calendario — le
+// uscite ci sono quasi ogni giorno, verrebbe un rettangolo pieno che non dice
+// nulla — e le barre per categoria del mese, che la Dashboard mostra già.
+// Tenuto invece quello che mancava: il confronto con l'anno scorso, il movimento
+// di ogni singola categoria nel tempo, e quanto resta a fine mese.
+function usciteTutte(){ return db.movimenti.filter(m=>m.tipo==='uscita'); }
+function usciteCategorie(){
+  const t={};
+  usciteTutte().forEach(m=>{ const c=m.cat||'—'; t[c]=(t[c]||0)+m.importo; });
+  return Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([c])=>c);
+}
+function anniUscite(){ return [...new Set(usciteTutte().map(m=>m.data.slice(0,4)))].sort().reverse(); }
+function serieUscite(cat,anno){
+  const v=new Array(12).fill(0);
+  usciteTutte().filter(m=>(!cat||(m.cat||'—')===cat)&&m.data.startsWith(String(anno)))
+    .forEach(m=>{ v[+m.data.slice(5,7)-1]+=m.importo; });
+  return v;
+}
+// Entrate meno uscite: solo dai movimenti registrati. L'archivio storico delle
+// entrate resta fuori — c'è solo per la nutrizionista e solo prima del 2026,
+// quindi mescolarlo qui darebbe un risparmio gonfiato in anni senza uscite.
+function serieRisparmio(anno){
+  const e=new Array(12).fill(0), u=new Array(12).fill(0);
+  db.movimenti.forEach(m=>{
+    if(!m.data.startsWith(String(anno))||m.tipo==='trasferimento') return;
+    const i=+m.data.slice(5,7)-1;
+    if(m.tipo==='entrata') e[i]+=m.importo; else u[i]+=m.importo;
+  });
+  return {e,u,net:e.map((x,i)=>x-u[i])};
+}
+function setUsCat(i){ usCat=usCatOpts[i]||''; renderUscite(); }
+function toggleUsGrid(){ usGridAll=!usGridAll; renderUscite(); }
+function renderUscite(){
+  const cats=usciteCategorie();
+  usCatOpts=['',...cats];
+  if(usCat && !cats.includes(usCat)) usCat='';
+  document.getElementById('us-chips').innerHTML=usCatOpts.map((c,i)=>
+    `<button type="button" class="mv-chip${c===usCat?' sel':''}" onclick="setUsCat(${i})">${c?esc(c):'Tutte le uscite'}</button>`).join('');
+
+  const anni=anniUscite();
+  const sel=document.getElementById('us-anno'); const pv=sel.value;
+  sel.innerHTML='<option value="">Tutti gli anni</option>'+anni.map(a=>`<option value="${a}"${a===pv?' selected':''}>${a}</option>`).join('');
+  if(!anni.includes(pv)) sel.value='';
+  usAnno=sel.value;
+  sel.parentElement.style.display=anni.length>1?'':'none';
+
+  const perAnno={}; anni.forEach(a=>{ perAnno[a]=serieUscite(usCat,a); });
+  const mostrati=usAnno?[usAnno]:anni;
+  const tot=mostrati.reduce((s,a)=>s+perAnno[a].reduce((x,y)=>x+y,0),0);
+  const mesi=mostrati.reduce((s,a)=>s+perAnno[a].filter(v=>v>0).length,0);
+  document.getElementById('us-tot').textContent=fEUR(tot);
+  document.getElementById('us-sub').textContent=mesi
+    ? `${usCat||'tutte le uscite'}${usAnno?' · '+usAnno:(anni.length>1?' · '+anni.length+' anni':'')} · ${mesi} mes${mesi===1?'e':'i'} · media ${fEUR(tot/mesi)} al mese`
+    : 'nessuna uscita nel periodo selezionato';
+
+  renderUsCum(perAnno,anni);
+  renderUsMese(perAnno,mostrati);
+  renderUsGrid(anni);
+  renderUsRisp(anni);
+}
+function renderUsCum(perAnno,anni){
+  const oggi=today(), annoCorr=oggi.slice(0,4), meseCorr=+oggi.slice(5,7)-1;
+  const ord=[...anni].sort();
+  destroyC('cUsCum'); sizeScroll('wrapUsCum',12,0);
+  const ds=ord.map((y,i)=>{
+    let run=0;
+    const fine=(y===annoCorr)?meseCorr:11;
+    const data=perAnno[y].map((v,m)=>{ run+=v; return m<=fine?run:null; });
+    const col=ACOLORS[i%ACOLORS.length];
+    return Object.assign({label:y,data,borderColor:col,backgroundColor:gradFill(col,'33'),
+      pointHoverBackgroundColor:col,fill:ord.length===1},LINE_STYLE);
+  });
+  charts['cUsCum']=new Chart(document.getElementById('cUsCum'),{
+    type:'line',data:{labels:MESI_IT,datasets:ds},options:lineOpts(ord.length>1)});
+  document.getElementById('us-cum-hint').textContent=ord.length>1
+    ? 'Una linea per anno: alla stessa altezza di mese, la più bassa è l\'anno in cui hai speso meno.'
+    : 'Con un solo anno di dati c\'è una linea sola. Diventa un confronto quando arriva il prossimo anno.';
+}
+function renderUsMese(perAnno,mostrati){
+  let labels,dati;
+  if(usAnno){ labels=MESI_IT; dati=perAnno[usAnno]; }
+  else { const a=[...mostrati].sort(); labels=a; dati=a.map(y=>perAnno[y].reduce((x,v)=>x+v,0)); }
+  destroyC('cUsMese'); sizeScroll('wrapUsMese',labels.length,labels.length>8?62:0);
+  charts['cUsMese']=new Chart(document.getElementById('cUsMese'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Uscite',data:dati,backgroundColor:coloreVoce(usCat||'Varie / Altro'),
+      hoverBackgroundColor:'#fff',borderRadius:4,maxBarThickness:46}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fEUR(c.parsed.y)}}},
+      scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0},grid:{display:false}},
+        y:{beginAtZero:true,ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
+}
+// Griglia: ogni categoria con la sua scala, come per gli asset in Andamento.
+// La freccia accanto al numero evita che la direzione sia affidata al solo colore.
+const US_LIMITE=12;
+function renderUsGrid(anni){
+  const el=document.getElementById('us-grid');
+  if(!el) return;
+  const y=usAnno?[usAnno]:anni;
+  const anniOrd=[...y].sort();
+  let righe=usciteCategorie().map(c=>{
+    const v=[].concat(...anniOrd.map(a=>serieUscite(c,a)));
+    return {c,v,tot:v.reduce((s,x)=>s+x,0)};
+  }).filter(r=>r.tot>0).sort((a,b)=>b.tot-a.tot);
+  // Il periodo si restringe ai mesi in cui l'app ha davvero dei dati, tagliando i
+  // vuoti sia in coda sia in testa. Sul solo anno solare il confronto fra le due
+  // metà era doppiamente falso: con quattro mesi ancora da vivere quasi tutte le
+  // categorie dicevano "-100%", e includendo gennaio-marzo (vuoti, l'app parte da
+  // aprile) dicevano invece "+4000%". Nessuno dei due numeri significava niente.
+  let primo=99,ultimo=-1;
+  righe.forEach(r=>r.v.forEach((x,i)=>{ if(x>0){ if(i<primo)primo=i; if(i>ultimo)ultimo=i; } }));
+  if(ultimo>=0) righe=righe.map(r=>({...r,v:r.v.slice(primo,ultimo+1)}));
+  if(!righe.length){ el.innerHTML='<div class="ent-empty">Nessuna uscita nel periodo selezionato.</div>'; return; }
+  const mostra=usGridAll?righe:righe.slice(0,US_LIMITE);
+  el.innerHTML='<div class="us-grid">'+mostra.map(r=>{
+    const col=coloreVoce(r.c);
+    const sp=sparkPath(r.v,160,32);
+    // metà periodo contro metà periodo: dice se la categoria sta salendo o calando.
+    // Sotto i 4 mesi il confronto non significa niente e non si mostra.
+    let trend='';
+    if(r.v.length>=4){
+      // medie e non somme: con un periodo di lunghezza dispari le due metà hanno un
+      // numero diverso di mesi, e una categoria costante risulterebbe in crescita.
+      const h=Math.floor(r.v.length/2);
+      const a=r.v.slice(0,h).reduce((s,x)=>s+x,0)/h, b=r.v.slice(h).reduce((s,x)=>s+x,0)/(r.v.length-h);
+      if(a===0&&b>0) trend='▲ tutto nella seconda metà';
+      else if(b===0&&a>0) trend='▼ ferma da metà periodo';
+      else if(a>0){
+        const d=(b-a)/a*100;
+        trend=Math.abs(d)<5?'≈ stabile':(d>0?`▲ in crescita del ${d.toFixed(0)}%`:`▼ in calo del ${Math.abs(d).toFixed(0)}%`);
+      }
+    }
+    const i=usCatOpts.indexOf(r.c);
+    return `<div class="us-card${r.c===usCat?' sel':''}" onclick="setUsCat(${i})" title="${esc(r.c)} — ${fEUR(r.tot)} nel periodo">
+      <div class="us-hd"><span class="us-n"><span class="us-dot" style="background:${col}"></span>${esc(r.c)}</span><span class="us-v">${fEUR(r.tot)}</span></div>
+      <svg viewBox="0 0 160 32" preserveAspectRatio="none"><path d="${sp.d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+      ${trend?`<div class="us-sub">${trend}</div>`:''}
+    </div>`;
+  }).join('')+'</div>'
+  +(righe.length>US_LIMITE?`<button class="ag-more" onclick="toggleUsGrid()">${usGridAll?'Mostra solo le prime '+US_LIMITE:'Mostra tutte e '+righe.length}</button>`:'');
+}
+function renderUsRisp(anni){
+  const anno=usAnno||(anni[0]||String(new Date().getFullYear()));
+  const r=serieRisparmio(anno);
+  const oggi=today(), fine=(anno===oggi.slice(0,4))?+oggi.slice(5,7)-1:11;
+  const dati=r.net.map((v,i)=>i<=fine?v:null);
+  destroyC('cUsRisp'); sizeScroll('wrapUsRisp',12,0);
+  charts['cUsRisp']=new Chart(document.getElementById('cUsRisp'),{
+    type:'bar',
+    data:{labels:MESI_IT,datasets:[{label:'Risparmio',data:dati,
+      backgroundColor:c=>((c.raw||0)>=0?'#4ade80':'#f87171'),borderRadius:4,maxBarThickness:44}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>[`${(c.parsed.y>=0?'Messo da parte ':'Sotto di ')}${fEUR(Math.abs(c.parsed.y))}`,
+                  `entrate ${fEUR(r.e[c.dataIndex])} · uscite ${fEUR(r.u[c.dataIndex])}`]}}},
+      scales:{x:{ticks:{color:'#555',font:{size:11},maxRotation:0},grid:{display:false}},
+        y:{ticks:{color:'#555',font:{size:11},callback:v=>fEUR(v)},grid:{color:'#1a1a1a',drawTicks:false},border:{display:false}}}}});
 }
 
 // ══ ENTRATE ══
