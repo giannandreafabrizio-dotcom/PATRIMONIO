@@ -2633,8 +2633,9 @@ function renderViagArchivio(anno){
     <div class="vg-list" style="margin-top:.9rem">`+lista.map((v,i)=>{
     const t=totVoci(v);
     const voci=[...v.voci].sort((a,b)=>b.imp-a.imp);
-    const barre=voci.map((c,j)=>`<span style="width:${(t?c.imp/t*100:0).toFixed(2)}%;background:${ACOLORS[j%ACOLORS.length]}"></span>`).join('');
-    const lab=voci.map((c,j)=>`<div class="vg-cat"><span class="vg-dot" style="background:${ACOLORS[j%ACOLORS.length]}"></span>${esc(c.lbl)} <b>${fEUR(c.imp)}</b></div>`).join('');
+    const col=coloriVoci(voci.map(c=>c.lbl));
+    const barre=voci.map((c,j)=>`<span style="width:${(t?c.imp/t*100:0).toFixed(2)}%;background:${col[j]}"></span>`).join('');
+    const lab=voci.map((c,j)=>`<div class="vg-cat"><span class="vg-dot" style="background:${col[j]}"></span>${esc(c.lbl)} <b>${fEUR(c.imp)}</b></div>`).join('');
     return `<div class="vg-card vg-st">
       <div class="vg-hd">
         <div>
@@ -2648,6 +2649,50 @@ function renderViagArchivio(anno){
       <div class="vg-cats">${lab}</div>
     </div>`;
   }).join('')+'</div>';
+}
+
+
+// ── Colore stabile per voce di spesa ──
+// Regola: il colore segue l'ENTITÀ, mai la sua posizione. Prima i colori erano
+// assegnati per indice, quindi "Biglietti aerei" era blu se stava per primo e
+// verde se stava per secondo — la stessa voce cambiava colore da una card
+// all'altra e il confronto a colpo d'occhio diventava impossibile.
+// Le voci dei viaggi d'archivio sono testo libero scritto a mano, quindi passano
+// prima da un normalizzatore che le riconduce alle categorie vere dove possibile.
+const VOCE_ALIAS=[[/aere|volo|flight/,'Biglietti aerei'],[/cibo|ristor|mangia|cena|pranzo/,'Cibo'],
+  [/traspor|metro|bus|taxi|bici/,'Trasporti'],[/carbur|benzin|gasolio|diesel/,'Carburante'],
+  [/regal/,'Regali'],[/farmac/,'Farmacia'],[/abbiglia|vestit/,'Abbigliamento'],
+  [/vari|altro|totali|extra/,'Varie / Altro']];
+function normalizzaVoce(nome){
+  const k=(nome||'').toLowerCase().trim();
+  const esatta=CAT_OUT.find(c=>c.toLowerCase()===k);
+  if(esatta) return esatta;
+  for(const [re,cat] of VOCE_ALIAS) if(re.test(k)) return cat;
+  return k;
+}
+// Mappa esplicita per le categorie che compaiono davvero in un viaggio. Serve
+// perché ACOLORS ha 10 slot e CAT_OUT 21 voci: assegnare per indice faceva
+// collidere Cibo (0) e Varie / Altro (20), e la voce perdente cambiava colore da
+// una card all'altra. Le categorie che in viaggio non compaiono mai (Mensa VVF,
+// Tasse…) restano sull'hash: si dividono gli stessi slot senza dare fastidio.
+const COL_CAT={'Biglietti aerei':'#60a5fa','Cibo':'#4ade80','Trasporti':'#fb923c',
+  'Varie / Altro':'#a78bfa','Regali':'#f87171','Carburante':'#facc15','Droga':'#c084fc',
+  'Abbigliamento':'#38bdf8','Farmacia':'#34d399','Benessere / Sport / Palestra':'#e879f9'};
+function coloreVoce(nome){
+  const n=normalizzaVoce(nome);
+  if(COL_CAT[n]) return COL_CAT[n];
+  let h=0; for(let j=0;j<n.length;j++) h=(h*31+n.charCodeAt(j))|0;
+  return ACOLORS[Math.abs(h)%ACOLORS.length];
+}
+// Due voci diverse nella stessa card non devono finire sullo stesso colore:
+// se capita, la seconda scala allo slot libero successivo.
+function coloriVoci(nomi){
+  const usati=new Set();
+  return nomi.map(n=>{
+    let c=coloreVoce(n), i=ACOLORS.indexOf(c), g=0;
+    while(usati.has(c) && g++<ACOLORS.length){ i=(i+1)%ACOLORS.length; c=ACOLORS[i]; }
+    usati.add(c); return c;
+  });
 }
 
 function renderViaggi(){
@@ -2681,9 +2726,10 @@ function renderViaggi(){
     return;
   }
   list.innerHTML=rep.map((r,i)=>{
-    const barre=r.perCat.map((c,j)=>`<span style="width:${c.pct.toFixed(2)}%;background:${ACOLORS[j%ACOLORS.length]}"></span>`).join('');
+    const col=coloriVoci(r.perCat.map(c=>c.cat));
+    const barre=r.perCat.map((c,j)=>`<span style="width:${c.pct.toFixed(2)}%;background:${col[j]}"></span>`).join('');
     const cats=r.perCat.map((c,j)=>
-      `<div class="vg-cat"><span class="vg-dot" style="background:${ACOLORS[j%ACOLORS.length]}"></span>${esc(c.cat)} <b>${fEUR(c.tot)}</b> <i>${c.pct.toFixed(0)}%</i></div>`).join('');
+      `<div class="vg-cat"><span class="vg-dot" style="background:${col[j]}"></span>${esc(c.cat)} <b>${fEUR(c.tot)}</b> <i>${c.pct.toFixed(0)}%</i></div>`).join('');
     const foot=r.rimborsi
       ?`<div class="vg-rimb">Speso <b>${fEUR(r.speso)}</b> − rimborsi <b>${fEUR(r.rimborsi)}</b> = netto <b>${fEUR(r.netto)}</b></div>`
       :`<div class="vg-rimb"></div>`;
