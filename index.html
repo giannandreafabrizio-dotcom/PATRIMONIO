@@ -1126,7 +1126,7 @@ tbody tr:hover td{background:var(--s2);}
       </div>
     </div>
 
-    <div class="fg"><label>Descrizione</label><input id="m-desc" placeholder="es. Stipendio, Spesa Esselunga…"></div>
+    <div class="fg"><label>Descrizione (facoltativa)</label><input id="m-desc" placeholder="Vuoto = usa il cliente o la categoria"></div>
 
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-mov')">Annulla</button>
@@ -2054,7 +2054,12 @@ function onMovAssetChange(){
 function saveMov(){
   const desc=document.getElementById('m-desc').value.trim();
   const importo=parseFloat(document.getElementById('m-imp').value)||0;
-  if(!desc)return alert('Inserisci una descrizione.');
+  // La descrizione non è più obbligatoria: quando il "chi" sta nel cliente e il
+  // "cosa" nella categoria, pretenderla è battitura a vuoto — e su iPhone è
+  // l'attrito che fa saltare la registrazione dell'incasso. Nelle liste il testo
+  // mancante viene DERIVATO da cliente/categoria (descRiga), mai salvato: così una
+  // rinomina del cliente si propaga anche alle righe senza descrizione, invece di
+  // lasciarle congelate su un nome che non esiste più.
   if(!importo)return alert('Inserisci un importo.');
   const assetId=movAssetId;
   const tipo=movTipo;
@@ -3032,6 +3037,16 @@ function viaggiElenco(){ return dimElenco('viaggio'); }
 function clientiElenco(){ return dimElenco('cliente','recente'); }
 function viagTag(m){ return dimTag(m,'viaggio','✈','viag-tag'); }
 function cliTag(m){ return dimTag(m,'cliente','👤','cli-tag'); }
+// Testo di una riga di movimento, badge inclusi. Usata da tutte e tre le viste
+// (tabella, card desktop, righe mobile) perché la regola del ripiego stia scritta
+// in un posto solo. Senza descrizione si mostra il cliente — e allora il badge
+// sarebbe una ripetizione dello stesso nome, quindi si omette — e in mancanza
+// anche di quello la categoria. Il ripiego è calcolato ogni volta, non salvato.
+function descRiga(m){
+  const d=dimNormalizza(m.desc), cli=dimNormalizza(m.cliente);
+  const testo=d||(m.tipo==='entrata'&&cli)||m.cat||'—';
+  return esc(testo)+viagTag(m)+(d?cliTag(m):'');
+}
 function giorniTra(d1,d2){
   const a=new Date(d1+'T00:00:00'), b=new Date(d2+'T00:00:00');
   if(isNaN(a)||isNaN(b)) return 1;
@@ -3351,7 +3366,7 @@ function renderMov(){
     const amtSign=isTrasf?(m.trasfDir==='in'?'+':'-'):(m.tipo==='entrata'?'+':'-');
     return`<tr${isTrasf?' class="b-tra-row"':''}>
       <td style="color:var(--text2)">${m.data}</td>
-      <td>${esc(m.desc)}${viagTag(m)}${cliTag(m)}</td>
+      <td>${descRiga(m)}</td>
       <td><span class="badge ${badgeClass}">${badgeTxt}</span></td>
       <td style="font-size:.75rem;color:var(--text2)">${esc(m.cat)}</td>
       <td style="font-size:.75rem;color:var(--text3)">${ast?esc(ast.nome):'—'}</td>
@@ -3402,7 +3417,7 @@ function renderMovDesk(rows){
         :`${esc(m.cat)} · ${ast?esc(ast.nome):'—'}`;
       return `<div class="md-row">
         <div class="md-chip" style="background:${chipBg};color:${chipFg}">${glyph}</div>
-        <div class="md-main"><div class="md-desc">${esc(m.desc)}${viagTag(m)}${cliTag(m)}</div><div class="md-meta">${meta}</div></div>
+        <div class="md-main"><div class="md-desc">${descRiga(m)}</div><div class="md-meta">${meta}</div></div>
         <div class="md-amt" style="color:${amtCol}">${sign}${fEUR(m.importo)}</div>
         <div class="md-acts">${!isTrasf?`<button class="md-act" onclick="openMov('${m.id}')" aria-label="Modifica">✏</button>`:''}<button class="md-act del" onclick="delMov('${m.id}')" aria-label="Elimina">✕</button></div>
       </div>`;
@@ -3437,7 +3452,7 @@ function renderMovList(rows){
       </div>
       <div class="mov-row${isTrasf?' trasf':''}" data-id="${m.id}">
         <div class="mov-row-main">
-          <div class="mov-row-desc">${esc(m.desc)}${viagTag(m)}${cliTag(m)}</div>
+          <div class="mov-row-desc">${descRiga(m)}</div>
           <div class="mov-row-meta">${meta}</div>
         </div>
         <div class="mov-row-amt ${amtClass}">${amtSign}${fEUR(m.importo)}</div>
