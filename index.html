@@ -557,6 +557,23 @@ tbody tr:hover td{background:var(--s2);}
 .vs-tot b{color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:1rem;}
 
 .viag-tag{display:inline-block;margin-left:.4rem;padding:.06rem .42rem;border-radius:6px;background:rgba(96,165,250,.14);color:var(--blue);font-size:.66rem;font-weight:600;white-space:nowrap;vertical-align:middle;}
+.cli-tag{display:inline-block;margin-left:.4rem;padding:.06rem .42rem;border-radius:6px;background:rgba(192,132,252,.14);color:var(--purple);font-size:.66rem;font-weight:600;white-space:nowrap;vertical-align:middle;}
+.cli-hint{font-size:.67rem;color:var(--text3);margin-top:.45rem;line-height:1.5;}
+.cli-cerca{width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.8rem;padding:.45rem .7rem;outline:none;margin-bottom:.5rem;}
+.cl-cover{font-size:.74rem;color:var(--text2);line-height:1.55;margin-bottom:.9rem;}
+.cl-cover button{background:none;border:none;color:var(--blue);cursor:pointer;font-family:'Inter',sans-serif;font-size:.74rem;padding:0;text-decoration:underline;}
+.cl-list{display:flex;flex-direction:column;gap:.55rem;}
+.cl-row{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:.7rem .85rem;}
+.cl-top{display:flex;justify-content:space-between;align-items:baseline;gap:.8rem;}
+.cl-nome{font-size:.87rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:.3rem;min-width:0;}
+.cl-nome>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cl-tot{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;white-space:nowrap;}
+.cl-meta{font-size:.71rem;color:var(--text3);margin-top:.2rem;}
+.cl-meta .old{color:var(--orange);}
+.cl-bar{height:6px;border-radius:3px;background:var(--s3);margin-top:.5rem;overflow:hidden;}
+.cl-bar i{display:block;height:100%;border-radius:3px;background:var(--green);}
+.cl-note{font-size:.68rem;color:var(--text3);line-height:1.5;margin-top:.9rem;padding-top:.7rem;border-top:1px solid var(--border);}
+.cl-empty{font-size:.78rem;color:var(--text3);line-height:1.6;}
 .mv-chip.viag-add{border-style:dashed;color:var(--text3);}
 .viag-new{display:flex;gap:.4rem;margin-top:.5rem;}
 .viag-new input{flex:1;min-width:0;background:var(--s2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:.82rem;padding:.5rem .7rem;outline:none;}
@@ -726,6 +743,7 @@ tbody tr:hover td{background:var(--s2);}
     <select id="f-cat" onchange="renderMov()"><option value="">Tutte le categorie</option></select>
     <input type="month" id="f-mese" onchange="renderMov()">
     <select id="f-viag" onchange="renderMov()" style="display:none"><option value="">Tutti i viaggi</option></select>
+    <select id="f-cli" onchange="renderMov()" style="display:none"><option value="">Tutti i clienti</option></select>
   </div>
   <div class="card">
     <table><thead><tr><th>Data</th><th>Descrizione</th><th>Tipo</th><th>Categoria</th><th>Asset</th><th style="text-align:right">EUR</th><th></th></tr></thead>
@@ -795,6 +813,20 @@ tbody tr:hover td{background:var(--s2);}
         <p style="font-size:.72rem;color:var(--text3);margin:0 0 .7rem;line-height:1.5" id="ent-cum-hint"></p>
         <div class="hscroll" id="wrapEntCum" style="height:212px"><div class="hscroll-in"><canvas id="cEntCum"></canvas></div></div>
       </div>
+    </div>
+  </div>
+  <div class="card" id="ent-clienti-card" style="display:none">
+    <div class="card-hd">
+      <h3>Chi paga</h3>
+      <div class="es-seg" style="margin:0">
+        <button type="button" class="sel" onclick="setCliOrd('tot',this)">Per totale</button>
+        <button type="button" onclick="setCliOrd('recency',this)">Chi non si vede da un po'</button>
+      </div>
+    </div>
+    <div class="card-bd">
+      <div class="cl-cover" id="cl-cover"></div>
+      <div class="cl-list" id="cl-list"></div>
+      <div class="cl-note" id="cl-note"></div>
     </div>
   </div>
   <div class="card">
@@ -1066,6 +1098,17 @@ tbody tr:hover td{background:var(--s2);}
         <button type="button" class="btn btn-p btn-sm" onclick="confermaViaggioNuovo()">OK</button>
         <button type="button" class="btn btn-g btn-sm" onclick="annullaViaggioNuovo()">Annulla</button>
       </div>
+    </div>
+    <div class="fg" id="fg-cliente" style="display:none">
+      <label>Da chi arriva (facoltativo)</label>
+      <input class="cli-cerca" id="m-cli-cerca" placeholder="Cerca fra i clienti…" style="display:none" oninput="cercaCliente(this.value)">
+      <div class="mv-chipgrid" id="m-cli-chips"></div>
+      <div class="viag-new" id="m-cli-new" style="display:none">
+        <input id="m-cli-nome" placeholder="Nome, iniziali o codice, es. M.R." maxlength="40">
+        <button type="button" class="btn btn-p btn-sm" onclick="confermaClienteNuovo()">OK</button>
+        <button type="button" class="btn btn-g btn-sm" onclick="annullaClienteNuovo()">Annulla</button>
+      </div>
+      <div class="cli-hint" id="m-cli-hint">Meglio iniziali o un codice: questi nomi finiscono nel foglio sincronizzato e nei backup.</div>
     </div>
     <div class="fg"><label>Asset collegato</label><div class="mv-chipgrid" id="m-asset-chips"></div></div>
 
@@ -1411,6 +1454,12 @@ let movViagOpts=[];       // opzioni correnti delle chip viaggio, indicizzate pe
 let movAssetAll=false;    // true = mostra anche investimenti/crypto fra gli asset pagabili
 let scadAssetAll=false;   // idem nella modale Scadenze
 let vgRepNomi=[];         // nomi dei viaggi mostrati nel report, indicizzati per l'onclick
+let movCliente='';        // cliente selezionato nella modale movimento ('' = nessuno)
+let movCliOpts=[];        // opzioni correnti delle chip cliente, indicizzate per l'onclick
+let movCliAll=false;      // true = mostra tutti i clienti, non solo i recenti
+let movCliQ='';           // testo di ricerca nel campo cliente
+let cliOrd='tot';         // ordinamento del blocco "Chi paga": 'tot' | 'recency'
+let clRepNomi=[];         // nomi dei clienti mostrati nel report, indicizzati per l'onclick
 let entCat='', entAnno='', entCatOpts=[];   // filtri della pagina Entrate
 let andGridAll=false;     // true = griglia asset estesa a tutti
 let eViagSt=null, vsVoci=[], vgStIds=[];   // modale viaggio storico
@@ -1829,10 +1878,14 @@ function openMov(id){
   movAssetId=m?.assetId||'';
   movAssetAll=false;
   movViaggio=m?.viaggio||'';
+  movCliente=m?.cliente||'';
+  movCliAll=false; movCliQ='';
   renderMovSeg();
   renderMovCatChips();
   annullaViaggioNuovo();
   renderMovViagChips();
+  annullaClienteNuovo();
+  renderMovCliChips();
   renderMovAssetChips();
   onMovAssetChange();
   const dIn=document.getElementById('m-data');
@@ -1851,6 +1904,7 @@ function setMovTipo(t){
   movCat=null;
   renderMovSeg();
   renderMovCatChips();
+  renderMovCliChips();   // il campo "Da chi" esiste solo sulle entrate
 }
 function renderMovCatChips(){
   const cats=movTipo==='entrata'?CAT_IN:CAT_OUT;
@@ -1894,6 +1948,70 @@ function confermaViaggioNuovo(){
 }
 document.getElementById('m-viag-nome')?.addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); confermaViaggioNuovo(); }
+});
+// ── Chip "Da chi arriva" nella modale movimento (solo entrate) ──
+// Stessa struttura dei viaggi — nessuna anagrafica, elenco dedotto, nomi passati
+// per indice e mai interpolati in un onclick — con tre differenze volute, che
+// nascono dalla cardinalità: i clienti sono decine, i viaggi quattro.
+//  1. si mostrano solo i CLI_CHIP usati più di recente, il resto dietro "+ Altri N",
+//     perché 50 chip sono il muro che il 10/08 è stato tolto dagli asset;
+//  2. c'è un campo di ricerca, che compare da CLI_CHIP+1 clienti in su;
+//  3. nessuna preselezione dell'ultimo cliente usato: attribuirebbe un incasso al
+//     cliente sbagliato in silenzio, che è peggio di un campo vuoto.
+const CLI_CHIP=8;
+function renderMovCliChips(){
+  const box=document.getElementById('fg-cliente');
+  if(!box) return;
+  box.style.display = movTipo==='entrata' ? '' : 'none';
+  if(movTipo!=='entrata') return;
+  const tutti=clientiElenco();
+  let list=[...tutti];
+  if(movCliente && !list.includes(movCliente)) list.unshift(movCliente);
+  const q=dimNormalizza(movCliQ).toLowerCase();
+  if(q) list=list.filter(v=>v.toLowerCase().includes(q));
+  const nascosti=Math.max(0,list.length-CLI_CHIP);
+  let mostra=(movCliAll||q)?list:list.slice(0,CLI_CHIP);
+  // il cliente selezionato dev'essere sempre visibile, altrimenti la chip attiva
+  // non esiste e il movimento sembra non assegnato
+  if(movCliente && list.includes(movCliente) && !mostra.includes(movCliente)) mostra=[movCliente,...mostra];
+  const cerca=document.getElementById('m-cli-cerca');
+  if(cerca) cerca.style.display = tutti.length>CLI_CHIP ? '' : 'none';
+  movCliOpts=['',...mostra];
+  const el=document.getElementById('m-cli-chips');
+  if(!el) return;
+  el.innerHTML=movCliOpts.map((v,i)=>
+      `<button type="button" class="mv-chip${v===movCliente?' sel':''}" onclick="setMovClienteIdx(${i})">${v?'👤 '+esc(v):'— nessuno —'}</button>`).join('')
+    +(!movCliAll&&!q&&nascosti>0?`<button type="button" class="mv-chip viag-add" onclick="mostraTuttiClienti()">+ Altri ${nascosti}</button>`:'')
+    +`<button type="button" class="mv-chip viag-add" onclick="nuovoClienteInput()">+ Nuovo</button>`;
+}
+function setMovClienteIdx(i){ movCliente=movCliOpts[i]||''; annullaClienteNuovo(); renderMovCliChips(); }
+function mostraTuttiClienti(){ movCliAll=true; renderMovCliChips(); }
+function cercaCliente(v){ movCliQ=v; renderMovCliChips(); }
+function nuovoClienteInput(){
+  const box=document.getElementById('m-cli-new');
+  if(!box) return;
+  box.style.display='flex';
+  const inp=document.getElementById('m-cli-nome');
+  inp.value=''; inp.focus();
+}
+function annullaClienteNuovo(){ const b=document.getElementById('m-cli-new'); if(b) b.style.display='none'; }
+function confermaClienteNuovo(){
+  const inp=document.getElementById('m-cli-nome');
+  const v=dimNormalizza(inp?.value);
+  if(!v) return;
+  // Se esiste già lo stesso nome con maiuscole diverse, si riusa quello invece di
+  // creare un doppione che poi andrebbe fuso a mano.
+  const gia=dimEsistente('cliente',v);
+  if(gia && gia!==v && !confirm(`Esiste già "${gia}".\n\nOK = uso quello (consigliato). Annulla = creo "${v}" come cliente separato.`)){
+    movCliente=v;
+  } else {
+    movCliente=gia||v;
+  }
+  annullaClienteNuovo();
+  renderMovCliChips();
+}
+document.getElementById('m-cli-nome')?.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); confermaClienteNuovo(); }
 });
 // ── Asset selezionabili come mezzo di pagamento ──
 // Titoli di investimento e crypto non si usano per pagare: a un titolo ci si arriva
@@ -1950,8 +2068,12 @@ function saveMov(){
     old.data=data; old.tipo=tipo; old.desc=desc; old.cat=cat;
     old.assetId=assetId; old.importo=importo; old.note='';
     old.viaggio=movViaggio||'';
+    // il cliente esiste solo sulle entrate: cambiando tipo in uscita il tag va via,
+    // altrimenti resterebbe attaccato a un movimento dove non ha significato
+    old.cliente=tipo==='entrata'?dimNormalizza(movCliente):'';
   }else{
-    db.movimenti.push({id:uid(),data,tipo,desc,cat,assetId,importo,note:'',viaggio:movViaggio||''});
+    db.movimenti.push({id:uid(),data,tipo,desc,cat,assetId,importo,note:'',
+      viaggio:movViaggio||'', cliente:tipo==='entrata'?dimNormalizza(movCliente):''});
   }
   if(assetId){
     const a=db.assets.find(x=>x.id===assetId);
@@ -2588,6 +2710,137 @@ function renderEntArchivio(){
        <button onclick="openEntStorico('${x.id}')" title="Modifica" aria-label="Modifica">✏</button></span>`).join(''):'';
 }
 
+// ── CHI PAGA — incassi per cliente ──
+// Vive dentro Entrate e non in una voce di menu propria: l'architettura fissata in
+// §10 dice "Entrate = incassi", il menu ha già dieci voci e la Dashboard è tarata
+// per stare in una schermata sola. Rispetta i filtri già in pagina (categoria +
+// anno), ed è anche ciò che lo rende generico gratis: filtri Nutrizionista e vedi i
+// pazienti, filtri Affitto e vedi gli inquilini, filtri Rimborso e vedi chi ti ha
+// restituito i soldi. Chi non assegna mai un incasso non vede affatto la card.
+//
+// Differenza di logica rispetto al report dei viaggi, ed è la ragione principale
+// per cui questa modifica vale: nei viaggi un tag dimenticato è invisibile e falsa
+// il totale in silenzio (§9-19). Qui la copertura è misurabile — il totale del
+// periodo è noto, la somma degli assegnati è ≤ — quindi lo scoperto si dichiara
+// come numero cliccabile invece di sparire.
+function clientiReport(mvs){
+  const per={};
+  let nonAss=0, impNonAss=0, totale=0;
+  mvs.forEach(m=>{
+    totale+=m.importo;
+    const c=dimNormalizza(m.cliente);
+    if(!c){ nonAss++; impNonAss+=m.importo; return; }
+    if(!per[c]) per[c]={nome:c,n:0,tot:0,primo:m.data,ultimo:m.data};
+    const r=per[c];
+    r.n++; r.tot+=m.importo;
+    if(m.data<r.primo) r.primo=m.data;
+    if(m.data>r.ultimo) r.ultimo=m.data;
+  });
+  const righe=Object.values(per).map(r=>{ r.media=r.n?r.tot/r.n:0; r.giorni=giorniDa(r.ultimo); return r; });
+  const assegnato=righe.reduce((s,r)=>s+r.tot,0);
+  righe.forEach(r=>{ r.pct=assegnato?r.tot/assegnato*100:0; });
+  return {righe,nonAss,impNonAss,totale,assegnato,nAss:mvs.length-nonAss};
+}
+function setCliOrd(o,btn){
+  cliOrd=o;
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderClienti();
+}
+function renderClienti(){
+  const card=document.getElementById('ent-clienti-card');
+  if(!card) return;
+  const usata=db.movimenti.some(m=>dimNormalizza(m.cliente));
+  card.style.display=usata?'':'none';
+  if(!usata) return;
+  const rep=clientiReport(entrateFiltrate());
+  const righe=[...rep.righe].sort(cliOrd==='recency'
+    ? (a,b)=>b.giorni-a.giorni||b.tot-a.tot
+    : (a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome));
+  clRepNomi=righe.map(r=>r.nome);
+
+  const nTot=rep.nAss+rep.nonAss;
+  let covHtml=`<b>${fEUR(rep.assegnato)}</b> assegnati a ${righe.length} client${righe.length===1?'e':'i'} su ${nTot} incass${nTot===1?'o':'i'} del periodo.`;
+  if(rep.nonAss) covHtml+=` <button onclick="apriMovimentiCliente('__none__')">${rep.nonAss} senza cliente · ${fEUR(rep.impNonAss)} →</button>`;
+  // La concentrazione è la stessa domanda che ci si fa sul portafoglio: se un solo
+  // cliente vale un terzo degli incassi, quello è un rischio, non un successo.
+  if(righe.length>1){
+    const top=[...rep.righe].sort((a,b)=>b.tot-a.tot)[0];
+    covHtml+=`<br>Il cliente più grande vale il <b>${top.pct.toFixed(0)}%</b> degli incassi assegnati.`;
+  }
+  document.getElementById('cl-cover').innerHTML=covHtml;
+
+  const max=righe.reduce((s,r)=>Math.max(s,r.tot),0);
+  // "3 giorni fa" ha senso solo se il periodo mostrato include oggi: su un anno
+  // passato si mostra la data e basta, invece di un numero vero ma inutile.
+  const mostraGiorni=!entAnno||entAnno===today().slice(0,4);
+  document.getElementById('cl-list').innerHTML=righe.length?righe.map((r,i)=>{
+    const quando=mostraGiorni
+      ? `ultimo ${fmtDataBreve(r.ultimo)} · <span class="${r.giorni>=60?'old':''}">${r.giorni===0?'oggi':r.giorni+' giorni fa'}</span>`
+      : `ultimo ${fmtDataBreve(r.ultimo)}`;
+    return `<div class="cl-row">
+      <div class="cl-top">
+        <div class="cl-nome"><span>👤 ${esc(r.nome)}</span><button class="vg-ren" onclick="rinominaCliente(${i})" title="Rinomina questo cliente" aria-label="Rinomina">✏</button></div>
+        <div class="cl-tot">${fEUR(r.tot)}</div>
+      </div>
+      <div class="cl-meta">${r.n} pagament${r.n===1?'o':'i'} · media ${fEUR(r.media)} · ${quando} · ${r.pct.toFixed(0)}%</div>
+      <div class="cl-bar"><i style="width:${max?Math.max(2,r.tot/max*100):0}%"></i></div>
+      <div class="vg-renbox" id="cl-ren-${i}" style="display:none">
+        <input maxlength="40" placeholder="Nuovo nome del cliente" onkeydown="if(event.key==='Enter'){event.preventDefault();confermaRinomCli(${i});}if(event.key==='Escape')annullaRinomCli(${i});">
+        <button type="button" class="btn btn-p btn-sm" onclick="confermaRinomCli(${i})">Rinomina</button>
+        <button type="button" class="btn btn-g btn-sm" onclick="annullaRinomCli(${i})">Annulla</button>
+      </div>
+    </div>`;
+  }).join('')
+  : `<div class="cl-empty">Nessun incasso assegnato a un cliente in questo periodo. Il campo <b>“Da chi arriva”</b> si compila nella modale del movimento, sotto la categoria.</div>`;
+
+  // Dichiarato, non taciuto: l'archivio del quaderno ha i totali del mese e non sa
+  // chi ha pagato. Senza questa riga, con l'interruttore su "Storico completo" i
+  // numeri non tornerebbero e sembrerebbe un bug.
+  document.getElementById('cl-note').textContent=
+    "Solo dai movimenti registrati nell'app: l'archivio del quaderno ha i totali del mese, non i clienti. I nomi restano sul tuo dispositivo e nel tuo foglio; all'assistente AI vengono passati come “Cliente 1, 2, 3”.";
+}
+function rinominaCliente(i){
+  const box=document.getElementById('cl-ren-'+i);
+  if(!box) return;
+  box.style.display='flex';
+  const inp=box.querySelector('input');
+  // il valore si imposta da JS e mai nell'HTML: esc() non protegge le virgolette e
+  // un nome come D'Angelo "il grande" romperebbe l'attributo
+  inp.value=clRepNomi[i]||'';
+  inp.focus(); inp.select();
+}
+function annullaRinomCli(i){ const b=document.getElementById('cl-ren-'+i); if(b) b.style.display='none'; }
+function confermaRinomCli(i){
+  const vecchio=clRepNomi[i];
+  const box=document.getElementById('cl-ren-'+i);
+  if(vecchio===undefined || !box) return;
+  const nuovo=dimNormalizza(box.querySelector('input').value);
+  if(!nuovo || nuovo===vecchio){ annullaRinomCli(i); return; }
+  const gia=dimEsistente('cliente',nuovo);
+  const dest=(gia&&gia!==vecchio)?gia:nuovo;
+  if(gia && gia!==vecchio &&
+     !confirm(`Esiste già un cliente chiamato "${gia}".\n\nContinuando, i pagamenti di "${vecchio}" ci finiscono dentro e i due diventano uno solo. Procedere?`)) return;
+  const n=dimRinomina('cliente',vecchio,dest);
+  save();
+  annullaRinomCli(i);
+  renderEntrate(); renderMov();
+  alert(`✓ Rinominato in "${dest}" su ${n} pagament${n===1?'o':'i'}.`);
+}
+// Apre Movimenti già filtrato. Due renderMov(): il primo popola le opzioni del
+// select (che esistono solo se c'è almeno un cliente), il secondo applica il filtro.
+function apriMovimentiCliente(nome){
+  const b=document.querySelector(".nav-item[onclick*=\"'movimenti'\"]");
+  if(b) goTo('movimenti',b);
+  document.getElementById('f-tipo').value='';
+  document.getElementById('f-cat').value='';
+  document.getElementById('f-mese').value='';
+  document.getElementById('f-viag').value='';
+  renderMov();
+  document.getElementById('f-cli').value=nome;
+  renderMov();
+}
+
 function setEntCat(i){ entCat=entCatOpts[i]||''; renderEntrate(); }
 function renderEntrate(){
   const cats=entrateCategorie();
@@ -2628,6 +2881,7 @@ function renderEntrate(){
 
   renderEntMese(perAnno,anniMostrati);
   renderEntCum(perAnno,anni);
+  renderClienti();
   renderEntCal(entrateFiltrate());
 }
 // A1 — un anno selezionato: 12 barre mensili. "Tutti gli anni": una barra per anno,
@@ -2728,19 +2982,56 @@ function renderEntCal(mv){
 // fa con gli snapshot. Conseguenze: nessuna migrazione, forma del backup invariata,
 // validaPayload_ lato server da non toccare, e un movimento senza il campo (tutti
 // quelli storici) si comporta esattamente come prima perché '' è falsy.
-function viaggiElenco(){
-  const primo={};
+// ── DIMENSIONI ORTOGONALI SUI MOVIMENTI ──
+// `viaggio` (10/08) e `cliente` (14/08) sono la stessa identica cosa: una stringa
+// facoltativa sul movimento, senza anagrafica, il cui elenco si ricava dai valori
+// distinti già presenti. Le funzioni erano gemelle a meno del nome del campo, e
+// duplicarle avrebbe voluto dire mantenere due volte elenco, badge, filtro e
+// rinomina. Qui stanno una volta sola, parametriche: la terza dimensione, se mai
+// servirà, costa tre righe di wrapper e non altre 250 di copia.
+// `ord`: 'primo' = per data del primo movimento (viaggi, sono episodi che iniziano)
+//        'recente' = per data dell'ultimo (clienti: chi ha pagato ieri va in cima)
+function dimElenco(campo,ord){
+  const primo={},ultimo={};
   db.movimenti.forEach(m=>{
-    const v=(m.viaggio||'').trim();
+    const v=dimNormalizza(m[campo]);
     if(!v) return;
     if(!(v in primo) || m.data<primo[v]) primo[v]=m.data;
+    if(!(v in ultimo) || m.data>ultimo[v]) ultimo[v]=m.data;
   });
-  return Object.keys(primo).sort((a,b)=>primo[b].localeCompare(primo[a])||a.localeCompare(b));
+  const k=Object.keys(primo);
+  if(ord==='recente') return k.sort((a,b)=>ultimo[b].localeCompare(ultimo[a])||a.localeCompare(b));
+  return k.sort((a,b)=>primo[b].localeCompare(primo[a])||a.localeCompare(b));
 }
-function viagTag(m){
-  const v=(m.viaggio||'').trim();
-  return v?`<span class="viag-tag">✈ ${esc(v)}</span>`:'';
+// Trim + spazi collassati. Un cliente si scrive decine di volte (un viaggio dieci):
+// senza questa, "Marco  R." e "Marco R. " diventano due clienti finti.
+function dimNormalizza(s){ return (s||'').trim().replace(/\s+/g,' '); }
+// Match case-insensitive: serve a proporre il nome già esistente invece di crearne
+// un gemello. Ritorna il nome nella grafia già in uso, o null.
+function dimEsistente(campo,nome){
+  const t=dimNormalizza(nome).toLowerCase();
+  return dimElenco(campo).find(v=>v.toLowerCase()===t)||null;
 }
+function dimTag(m,campo,icona,cls){
+  const v=dimNormalizza(m[campo]);
+  return v?`<span class="${cls}">${icona} ${esc(v)}</span>`:'';
+}
+// Rinomina di massa: il nome vive replicato dentro ogni movimento, quindi cambiarlo
+// è un'operazione su N record. Ritorna quanti ne ha toccati (il chiamante avvisa).
+function dimRinomina(campo,vecchio,nuovo){
+  let n=0;
+  db.movimenti.forEach(m=>{ if(dimNormalizza(m[campo])===vecchio){ m[campo]=nuovo; n++; } });
+  return n;
+}
+function giorniDa(d){
+  const a=new Date(d+'T00:00:00'), b=new Date(today()+'T00:00:00');
+  if(isNaN(a)||isNaN(b)) return 0;
+  return Math.max(0,Math.round((b-a)/86400000));
+}
+function viaggiElenco(){ return dimElenco('viaggio'); }
+function clientiElenco(){ return dimElenco('cliente','recente'); }
+function viagTag(m){ return dimTag(m,'viaggio','✈','viag-tag'); }
+function cliTag(m){ return dimTag(m,'cliente','👤','cli-tag'); }
 function giorniTra(d1,d2){
   const a=new Date(d1+'T00:00:00'), b=new Date(d2+'T00:00:00');
   if(isNaN(a)||isNaN(b)) return 1;
@@ -2995,8 +3286,7 @@ function confermaRinomina(i){
   // legittima (un viaggio spezzato in due tag per errore) ma va dichiarata.
   if(viaggiElenco().includes(nuovo) &&
      !confirm(`Esiste già un viaggio chiamato "${nuovo}".\n\nContinuando, i movimenti di "${vecchio}" ci finiscono dentro e i due viaggi diventano uno solo. Procedere?`)) return;
-  let n=0;
-  db.movimenti.forEach(m=>{ if((m.viaggio||'').trim()===vecchio){ m.viaggio=nuovo; n++; } });
+  const n=dimRinomina('viaggio',vecchio,nuovo);
   save();
   annullaRinomina(i);
   renderViaggi(); renderMov();
@@ -3029,15 +3319,27 @@ function renderMov(){
   fv.style.display=viaggi.length?'':'none';
   fv.innerHTML='<option value="">Tutti i viaggi</option>'+viaggi.map(v=>`<option value="${esc(v)}"${v===pvv?' selected':''}>✈ ${esc(v)}</option>`).join('');
   if(!viaggi.includes(pvv)) fv.value='';
+  // Stesso principio per i clienti, con in più la voce "non assegnati": è il modo
+  // di arrivare in un tap ai movimenti che il report dichiara come scoperti.
+  const clienti=clientiElenco();
+  const fcl=document.getElementById('f-cli'); const pvc=fcl.value;
+  fcl.style.display=clienti.length?'':'none';
+  fcl.innerHTML='<option value="">Tutti i clienti</option>'
+    +clienti.map(v=>`<option value="${esc(v)}"${v===pvc?' selected':''}>👤 ${esc(v)}</option>`).join('')
+    +`<option value="__none__"${pvc==='__none__'?' selected':''}>— non assegnati —</option>`;
+  if(pvc!=='__none__' && !clienti.includes(pvc)) fcl.value='';
   const tipo=document.getElementById('f-tipo').value;
   const cat=fc.value;
   const mese=document.getElementById('f-mese').value;
   const viag=fv.value;
+  const cli=fcl.value;
   let rows=[...db.movimenti].sort((a,b)=>b.data.localeCompare(a.data));
   if(tipo)rows=rows.filter(m=>m.tipo===tipo);
   if(cat)rows=rows.filter(m=>m.cat===cat);
   if(mese)rows=rows.filter(m=>m.data.startsWith(mese));
   if(viag)rows=rows.filter(m=>(m.viaggio||'')===viag);
+  if(cli==='__none__') rows=rows.filter(m=>m.tipo==='entrata' && !dimNormalizza(m.cliente));
+  else if(cli) rows=rows.filter(m=>dimNormalizza(m.cliente)===cli);
   const tb=document.getElementById('mov-tb');
   if(!rows.length){tb.innerHTML='<tr class="empty-row"><td colspan="7">Nessun movimento trovato.</td></tr>';renderMovDesk([]);renderMovList([]);return;}
   tb.innerHTML=rows.map(m=>{
@@ -3049,7 +3351,7 @@ function renderMov(){
     const amtSign=isTrasf?(m.trasfDir==='in'?'+':'-'):(m.tipo==='entrata'?'+':'-');
     return`<tr${isTrasf?' class="b-tra-row"':''}>
       <td style="color:var(--text2)">${m.data}</td>
-      <td>${esc(m.desc)}${viagTag(m)}</td>
+      <td>${esc(m.desc)}${viagTag(m)}${cliTag(m)}</td>
       <td><span class="badge ${badgeClass}">${badgeTxt}</span></td>
       <td style="font-size:.75rem;color:var(--text2)">${esc(m.cat)}</td>
       <td style="font-size:.75rem;color:var(--text3)">${ast?esc(ast.nome):'—'}</td>
@@ -3100,7 +3402,7 @@ function renderMovDesk(rows){
         :`${esc(m.cat)} · ${ast?esc(ast.nome):'—'}`;
       return `<div class="md-row">
         <div class="md-chip" style="background:${chipBg};color:${chipFg}">${glyph}</div>
-        <div class="md-main"><div class="md-desc">${esc(m.desc)}${viagTag(m)}</div><div class="md-meta">${meta}</div></div>
+        <div class="md-main"><div class="md-desc">${esc(m.desc)}${viagTag(m)}${cliTag(m)}</div><div class="md-meta">${meta}</div></div>
         <div class="md-amt" style="color:${amtCol}">${sign}${fEUR(m.importo)}</div>
         <div class="md-acts">${!isTrasf?`<button class="md-act" onclick="openMov('${m.id}')" aria-label="Modifica">✏</button>`:''}<button class="md-act del" onclick="delMov('${m.id}')" aria-label="Elimina">✕</button></div>
       </div>`;
@@ -3135,7 +3437,7 @@ function renderMovList(rows){
       </div>
       <div class="mov-row${isTrasf?' trasf':''}" data-id="${m.id}">
         <div class="mov-row-main">
-          <div class="mov-row-desc">${esc(m.desc)}${viagTag(m)}</div>
+          <div class="mov-row-desc">${esc(m.desc)}${viagTag(m)}${cliTag(m)}</div>
           <div class="mov-row-meta">${meta}</div>
         </div>
         <div class="mov-row-amt ${amtClass}">${amtSign}${fEUR(m.importo)}</div>
@@ -3732,6 +4034,21 @@ function aiBuildContext(){
       speso_eur:Math.round(r.speso), rimborsi_eur:Math.round(r.rimborsi), netto_eur:Math.round(r.netto),
       per_categoria:r.perCat.map(c=>({categoria:c.cat,eur:Math.round(c.tot)}))
     })),
+    // ANONIMIZZATI DI PROPOSITO. Un elenco di persone che pagano un nutrizionista
+    // lascia dedurre una relazione sanitaria, e questo oggetto esce dall'app verso
+    // l'API a ogni domanda. Con etichette "Cliente 1, 2, 3" l'analisi che serve
+    // — concentrazione, ricorrenza, chi non paga da mesi — funziona identica, e i
+    // nomi restano nel dispositivo e nel foglio dell'utente.
+    clienti_anonimi:(()=>{
+      const rep=clientiReport(entrateTutte());
+      return rep.righe.sort((a,b)=>b.tot-a.tot).map((r,i)=>({
+        etichetta:'Cliente '+(i+1),
+        incassi_eur:Math.round(r.tot), n_pagamenti:r.n,
+        media_eur:Math.round(r.media), primo:r.primo, ultimo:r.ultimo,
+        giorni_dall_ultimo:r.giorni, pct_sugli_assegnati:+r.pct.toFixed(1)
+      }));
+    })(),
+    incassi_senza_cliente_eur:Math.round(clientiReport(entrateTutte()).impNonAss),
     baseline_inizio_apr2026_eur:79977
   };
 }
