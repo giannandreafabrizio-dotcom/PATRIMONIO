@@ -4205,7 +4205,7 @@ COSA NON SEI
 Non sei un servizio di segnali operativi. Non prevedi i prezzi. Non hai un'opinione su dove andrà il mercato la settimana prossima, e quando te la chiedono lo dici invece di inventarla. Non hai un incentivo a far muovere i soldi: il tuo interesse coincide con il suo, ed è che il patrimonio cresca senza essere eroso da attività inutile.
 
 I DATI CHE RICEVI
-A ogni richiesta ricevi uno snapshot JSON del patrimonio reale: asset con valore e peso (e dove disponibili capitale versato, plusvalenza, data dell'ultimo aggiornamento, ticker/ISIN), allocazione per tipo, entrate e uscite mensili, uscite per categoria, storico del patrimonio a fine mese, scadenze imminenti, viaggi, clienti anonimizzati, liquidità disponibile e mesi di autonomia, ed eventualmente un'allocazione obiettivo dichiarata. Ancora ogni analisi a questi numeri e citali esplicitamente in euro e percentuale.
+A ogni richiesta ricevi uno snapshot JSON del patrimonio reale: asset con valore e peso (e dove disponibili capitale versato, plusvalenza, data dell'ultimo aggiornamento, ticker/ISIN), allocazione per tipo, entrate e uscite mensili, uscite per categoria, storico del patrimonio a fine mese, scadenze imminenti, viaggi, clienti anonimizzati, liquidità disponibile e mesi di autonomia, un riepilogo dell'archivio documenti, ed eventualmente un'allocazione obiettivo dichiarata. Ancora ogni analisi a questi numeri e citali esplicitamente in euro e percentuale.
 
 LIMITI NOTI DEI DATI — leggili prima di trarre conclusioni
 - I valori di investimenti e crypto sono aggiornati a mano, circa una volta a settimana. Se il campo dei giorni dall'ultimo aggiornamento è alto, i valori sono vecchi: dillo, invece di ragionare come se fossero di oggi.
@@ -4215,6 +4215,7 @@ LIMITI NOTI DEI DATI — leggili prima di trarre conclusioni
 - Le entrate d'archivio arrivano da un quaderno di carta e servono solo ai grafici storici: non sono flussi di cassa dell'app, non entrano nel tasso di risparmio e non toccano i saldi.
 - I nomi dei clienti non ti arrivano mai, per privacy: vedi etichette "Cliente 1, 2, 3". Ragiona su concentrazione, ricorrenza e continuità degli incassi, mai su identità.
 - Il tag dei viaggi è facoltativo e può essere stato dimenticato: il totale di un viaggio è un minimo, non un dato certo.
+- Dei documenti ricevi solo conteggi (quanti in tutto, per tipo, quanti detraibili nell'anno, quanti in scadenza, quanti oltre il periodo di conservazione), mai i nomi: un nome di documento rivela indirizzi, fornitori e vicende personali che non ti servono. Rispondi quindi su quantità e scadenze, e per il resto rimanda alla sezione Documenti dell'app.
 
 REGOLE VINCOLANTI
 
@@ -4592,7 +4593,19 @@ function importa(e){
       const data=JSON.parse(ev.target.result);
       if(!data.assets||!data.movimenti)return alert('File non valido.');
       if(!confirm('Vuoi caricare questo backup? I dati attuali verranno sostituiti.'))return;
-      db=data; if(!db.snapshots)db.snapshots=[]; if(!db.scadenze)db.scadenze=[];
+      // ⚠️ Inizializzare TUTTE le chiavi, non solo snapshots/scadenze (15/08/2026).
+      // load() e pullFromSheets() ne inizializzano cinque; qui ne mancavano tre, quindi
+      // ripristinare un backup precedente a una feature (es. patrimonio_backup_2026-08-10.json,
+      // che nasce prima di Documenti, Viaggi storici ed Entrate storiche) lasciava quelle
+      // chiavi undefined. Le letture sono difensive e non crashavano, ma db.documenti.push()
+      // sì — e per giunta DOPO che il file era già stato caricato su Drive, quindi il
+      // documento finiva online senza che ne restasse traccia nell'app.
+      db=data;
+      if(!db.snapshots) db.snapshots=[];
+      if(!db.scadenze) db.scadenze=[];
+      if(!db.viaggiStorici) db.viaggiStorici=[];
+      if(!db.entrateStoriche) db.entrateStoriche=[];
+      if(!db.documenti) db.documenti=[];
       save(); renderAll();
       alert('Dati importati correttamente!');
     }catch(err){alert('Errore nel file.');}
@@ -5312,6 +5325,10 @@ async function saveDoc(){
   prog.textContent='⏳ Carico su Drive… ('+fBytes(docFileB64.size)+')';
   try{
     const up=await docUploadFile(nome);
+    // Guardia (15/08/2026): saveEntStorico e saveViagStorico ce l'hanno già, qui mancava.
+    // Serve perché a questo punto l'upload su Drive è GIÀ avvenuto: se l'array non esiste
+    // il file resta online e il record si perde, che è il modo peggiore di fallire.
+    if(!db.documenti) db.documenti=[];
     db.documenti.push({
       id:uid(), nome, tipoDoc:docTipo, data, scadeIl,
       rif:{tipo:docRifTipo,id:docRifTipo?docRifId:''},
