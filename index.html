@@ -654,7 +654,25 @@ tbody tr:hover td{background:var(--s2);}
 #toast-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:900;display:flex;flex-direction:column;gap:.5rem;align-items:center;}
 .toast{display:flex;align-items:center;gap:.8rem;background:var(--s3);border:1px solid var(--border2);border-radius:12px;padding:.65rem .9rem;font-size:.78rem;box-shadow:0 8px 28px rgba(0,0,0,.6);max-width:92vw;}
 .toast button{background:var(--text);color:#000;border:none;border-radius:7px;padding:.32rem .7rem;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
-@media(max-width:640px){ .doc-list{grid-template-columns:1fr;} }
+/* pagamenti senza ricevuta + pacchetto 730 (19/08/2026) */
+.miss-box{background:var(--s1);border:1px solid #3a2a12;border-radius:14px;padding:.85rem 1rem;margin-bottom:.9rem;}
+.miss-hd{display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;}
+.miss-tit{font-size:.82rem;color:var(--orange);font-weight:500;}
+.miss-sub{font-size:.7rem;color:var(--text3);margin-top:.25rem;line-height:1.5;}
+.miss-rows{margin-top:.7rem;display:flex;flex-direction:column;gap:.35rem;}
+.miss-row{display:flex;align-items:center;gap:.6rem;font-size:.77rem;padding:.35rem .5rem;background:var(--s2);border-radius:9px;}
+.miss-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.miss-data{color:var(--text3);font-size:.72rem;white-space:nowrap;}
+.miss-imp{color:var(--text2);font-size:.75rem;white-space:nowrap;}
+.miss-row button{background:var(--s3);border:1px solid var(--border2);color:var(--text);border-radius:7px;padding:.24rem .5rem;font-size:.72rem;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+.miss-row button:hover{background:var(--text);color:#000;}
+.miss-altri{font-size:.72rem;color:var(--text3);padding:.2rem .5rem;}
+.pack-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:.9rem;}
+.pack-tit{font-size:.82rem;font-weight:500;}
+.pack-sub{font-size:.7rem;color:var(--text3);margin-top:.25rem;line-height:1.55;}
+.pack-out{font-size:.75rem;margin-top:.55rem;line-height:1.6;}
+.pack-out a{color:var(--blue);text-decoration:none;}
+@media(max-width:640px){ .doc-list{grid-template-columns:1fr;} .miss-row{flex-wrap:wrap;} .miss-nome{flex:1 0 100%;} }
 </style>
 </head>
 <body>
@@ -821,6 +839,8 @@ tbody tr:hover td{background:var(--s2);}
     <button class="btn btn-p" onclick="openDoc()">+ Aggiungi</button>
   </div>
   <div class="doc-summary" id="doc-summary"></div>
+  <div id="doc-missing"></div>
+  <div id="doc-pack"></div>
   <div class="doc-filters" id="doc-filters"></div>
   <div class="doc-list" id="doc-list"></div>
 </div>
@@ -4876,7 +4896,9 @@ function segnaPagato(id){
     renderScad(); renderDash();
     // Un tap resta un tap: la ricevuta si propone dopo, senza bloccare nulla.
     // Se lo si ignora, il pagamento è comunque registrato.
-    toast('✓ '+s.nome+' segnata pagata','📎 Allega ricevuta',()=>{
+    // Frase costruita così e non "X segnata pagata": il nome è variabile
+    // ("Bollo moto", "Vodafone") e la concordanza salterebbe una volta su due.
+    toast('✓ Pagato: '+s.nome,'📎 Allega ricevuta',()=>{
       openDoc(null,'movimento',movId,{nome:s.nome+' — ricevuta',tipoDoc:'Ricevuta'});
     });
     return;
@@ -5223,7 +5245,7 @@ async function saveDoc(){
     btn.disabled=false;
     closeM('mo-doc');
     refreshAttBoxes();
-    toast('📎 '+nome+' archiviato su Drive');
+    toast('📎 Archiviato su Drive: '+nome);
   }catch(err){
     btn.disabled=false;
     prog.textContent='⚠ '+(err.message||'Upload fallito');
@@ -5249,6 +5271,153 @@ async function delDoc(){
   if(avviso) alert(avviso);
 }
 
+// ── Pagamenti senza ricevuta (19/08/2026) ──
+// È la stessa idea della copertura clienti del 14/08: il buco si DICHIARA come
+// numero cliccabile invece di sparire. Qui è misurabile perché ogni pagamento di
+// una scadenza genera un movimento con un id noto — basta guardare se qualche
+// documento lo nomina. ⚠️ Si guardano SOLO i pagamenti delle scadenze, non tutti
+// i movimenti: per bollette, affitti e multe un giustificativo è atteso, per un
+// caffè no, e segnalare ogni spesa senza scontrino sarebbe rumore che si impara
+// a ignorare — cioè la fine di qualsiasi indicatore.
+function pagamentiSenzaRicevuta(){
+  const out=[];
+  (db.scadenze||[]).forEach(s=>{
+    (s.pagamenti||[]).forEach(p=>{
+      if(!p.movimentoId) return;                       // pagamenti vecchi, prima del collegamento
+      if(docsDi('movimento',p.movimentoId).length) return;
+      out.push({nome:s.nome,data:p.data,importo:p.importo,movId:p.movimentoId,cat:s.cat||''});
+    });
+  });
+  return out.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+}
+function renderDocMissing(){
+  const box=document.getElementById('doc-missing'); if(!box) return;
+  const arr=pagamentiSenzaRicevuta();
+  if(!arr.length){ box.innerHTML=''; return; }
+  const MAX=8;
+  const righe=arr.slice(0,MAX).map(x=>
+    `<div class="miss-row">
+       <span class="miss-nome">${esc(x.nome)}</span>
+       <span class="miss-data">${fScadDate(x.data)}</span>
+       <span class="miss-imp">${fImp(x.importo)}</span>
+       <button onclick="allegaRicevutaA('${x.movId}','${esc(x.nome).replace(/'/g,"&#39;")}')">📎 Allega</button>
+     </div>`).join('');
+  box.innerHTML=`<div class="miss-box">
+    <div class="miss-hd">
+      <div>
+        <div class="miss-tit">⚠ ${arr.length} pagament${arr.length===1?'o':'i'} senza ricevuta</div>
+        <div class="miss-sub">Scadenze che hai segnato come pagate ma di cui non hai archiviato il documento. Se non ce l'hai più, va bene così: serve solo a non crederti coperto quando non lo sei.</div>
+      </div>
+    </div>
+    <div class="miss-rows">${righe}${arr.length>MAX?`<div class="miss-altri">…e altri ${arr.length-MAX}.</div>`:''}</div>
+  </div>`;
+}
+function allegaRicevutaA(movId,nome){
+  openDoc(null,'movimento',movId,{nome:nome+' — ricevuta',tipoDoc:'Ricevuta'});
+}
+
+// ── Pacchetto 730 (19/08/2026) ──
+// Il flag "detraibile" da solo non serve a niente: a maggio al CAF serve il PDF,
+// non il conteggio. Qui i giustificativi dell'anno vengono COPIATI in una
+// sottocartella di Drive (copie, non spostamenti: gli originali restano collegati
+// alle schede) insieme a un riepilogo CSV, così la cartella si scarica in blocco
+// o si condivide con chi fa la dichiarazione.
+function docAnno730(){ return docFiltroAnno || String(new Date().getFullYear()); }
+function documenti730(anno){
+  return (db.documenti||[]).filter(d=>d.detraibile && (d.data||'').slice(0,4)===anno)
+                           .sort((a,b)=>(a.data||'').localeCompare(b.data||''));
+}
+// Importo e categoria si prendono dal movimento collegato, se c'è: è l'unico
+// posto dove esistono davvero. Un documento non collegato entra comunque nel
+// pacchetto, ma con importo vuoto — e il riepilogo lo dice, invece di far
+// sembrare che il totale sia completo.
+function riepilogo730(anno){
+  const docs=documenti730(anno);
+  const righe=[], perCat={};
+  const contati=new Set();          // movimenti già sommati
+  let tot=0, senzaImporto=0, doppi=0;
+  docs.forEach(d=>{
+    let imp='', cat='', coll='';
+    if(d.rif&&d.rif.tipo==='movimento'){
+      const m=db.movimenti.find(x=>x.id===d.rif.id);
+      if(m){
+        imp=m.importo; cat=m.cat||''; coll=descRiga(m);
+        // ⚠️ Una spesa può avere DUE documenti (ricevuta + fattura). L'importo
+        // sulla riga resta, perché dice cosa documenta quel foglio, ma nel
+        // totale entra UNA volta sola: un totale gonfiato su un documento
+        // fiscale è peggio di un totale assente.
+        if(contati.has(m.id)){ doppi++; }
+        else{ contati.add(m.id); tot+=m.importo; perCat[cat]=(perCat[cat]||0)+m.importo; }
+      }
+    }
+    if(imp==='') senzaImporto++;
+    righe.push([d.data||'',d.nome||'',d.tipoDoc||'',cat,
+      imp===''?'':String(imp).replace('.',','),coll]);
+  });
+  const csv=[];
+  csv.push('RIEPILOGO GIUSTIFICATIVI 730 — anno '+anno);
+  csv.push('Generato il;'+fScadDate(today()));
+  csv.push('');
+  csv.push('Data;Documento;Tipo;Categoria;Importo EUR;Movimento collegato');
+  righe.forEach(r=>csv.push(r.map(c=>String(c).replace(/;/g,',')).join(';')));
+  csv.push('');
+  csv.push('TOTALE PER CATEGORIA');
+  Object.entries(perCat).sort((a,b)=>b[1]-a[1]).forEach(([c,v])=>csv.push(c+';'+String(v.toFixed(2)).replace('.',',')));
+  csv.push('');
+  csv.push('TOTALE DOCUMENTATO;'+String(tot.toFixed(2)).replace('.',','));
+  csv.push('Documenti nel pacchetto;'+docs.length);
+  if(senzaImporto) csv.push('Di cui senza importo (non collegati a un movimento);'+senzaImporto);
+  if(doppi) csv.push('Di cui documentano una spesa gia\' contata (importo sommato una volta sola);'+doppi);
+  return {csv:csv.join('\n'),docs,tot,senzaImporto,doppi,perCat};
+}
+function renderDocPack(){
+  const box=document.getElementById('doc-pack'); if(!box) return;
+  const anno=docAnno730();
+  const r=riepilogo730(anno);
+  if(!r.docs.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="pack-box">
+    <div class="miss-hd">
+      <div>
+        <div class="pack-tit">🧾 Pacchetto 730 ${anno}</div>
+        <div class="pack-sub">${r.docs.length} giustificativ${r.docs.length===1?'o':'i'} · ${fImp(r.tot)} documentati${r.senzaImporto?` · ${r.senzaImporto} senza importo (non collegati a un movimento)`:''}${r.doppi?` · ${r.doppi} su una spesa già contata`:''}.<br>
+        Li copio in una cartella <b>730 ${anno}</b> su Drive, con un riepilogo in CSV. Gli originali restano dove sono.</div>
+      </div>
+      <button class="btn btn-p" id="pack-btn" onclick="prepara730()">Prepara</button>
+    </div>
+    <div class="pack-out" id="pack-out"></div>
+  </div>`;
+}
+async function prepara730(){
+  const anno=docAnno730();
+  const r=riepilogo730(anno);
+  if(!r.docs.length) return;
+  const out=document.getElementById('pack-out');
+  const btn=document.getElementById('pack-btn');
+  const url=getScriptUrl();
+  if(!url){ out.textContent='⚠ Configura prima l’URL dello script nelle Impostazioni.'; return; }
+  btn.disabled=true;
+  out.textContent='⏳ Copio '+r.docs.length+' documenti su Drive…';
+  try{
+    const payload={action:'pack730',anno,riepilogo:r.csv,
+      files:r.docs.map(d=>({fileId:d.fileId,nome:(d.data||'')+' — '+d.nome}))};
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const raw=await resp.text();
+    let data;
+    try{ data=JSON.parse(raw); }
+    catch(_){ throw new Error('Lo script non ha restituito JSON (HTTP '+resp.status+'). Hai incollato anche la PARTE 2 e ripubblicato lo script?'); }
+    if(!data.ok) throw new Error(data.error||'Operazione rifiutata dallo script.');
+    const note=[];
+    if(data.copiati) note.push(data.copiati+' copiati');
+    if(data.saltati) note.push(data.saltati+' già presenti');
+    if(data.errori&&data.errori.length) note.push('<span style="color:var(--orange)">'+data.errori.length+' non copiati: '+esc(data.errori.join(', '))+'</span>');
+    out.innerHTML='✓ Pacchetto pronto ('+note.join(' · ')+') — <a href="'+esc(data.url)+'" target="_blank" rel="noopener">apri la cartella su Drive</a>.<br>'+
+      '<span style="color:var(--text3);font-size:.72rem">Da Drive puoi scaricarla tutta in una volta: tasto destro sulla cartella → Scarica.</span>';
+  }catch(err){
+    out.innerHTML='⚠ '+esc(err.message||'Errore');
+  }
+  btn.disabled=false;
+}
+
 // ── Pagina Documenti ──
 function docAnni(){ return [...new Set((db.documenti||[]).map(d=>(d.data||'').slice(0,4)).filter(Boolean))].sort().reverse(); }
 function docFiltrati(){
@@ -5265,6 +5434,8 @@ function renderDocumenti(){
   const list=document.getElementById('doc-list'); if(!list) return;
   const tutti=db.documenti||[];
   const anno=String(new Date().getFullYear());
+  renderDocMissing();
+  renderDocPack();
 
   const sum=document.getElementById('doc-summary');
   if(sum){
