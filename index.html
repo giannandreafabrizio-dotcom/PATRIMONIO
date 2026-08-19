@@ -4593,7 +4593,7 @@ function importa(e){
       const data=JSON.parse(ev.target.result);
       if(!data.assets||!data.movimenti)return alert('File non valido.');
       if(!confirm('Vuoi caricare questo backup? I dati attuali verranno sostituiti.'))return;
-      // ⚠️ Inizializzare TUTTE le chiavi, non solo snapshots/scadenze (15/08/2026).
+      // ⚠️ Inizializzare TUTTE le chiavi, non solo snapshots/scadenze (19/08/2026).
       // load() e pullFromSheets() ne inizializzano cinque; qui ne mancavano tre, quindi
       // ripristinare un backup precedente a una feature (es. patrimonio_backup_2026-08-10.json,
       // che nasce prima di Documenti, Viaggi storici ed Entrate storiche) lasciava quelle
@@ -5325,7 +5325,7 @@ async function saveDoc(){
   prog.textContent='⏳ Carico su Drive… ('+fBytes(docFileB64.size)+')';
   try{
     const up=await docUploadFile(nome);
-    // Guardia (15/08/2026): saveEntStorico e saveViagStorico ce l'hanno già, qui mancava.
+    // Guardia (19/08/2026): saveEntStorico e saveViagStorico ce l'hanno già, qui mancava.
     // Serve perché a questo punto l'upload su Drive è GIÀ avvenuto: se l'array non esiste
     // il file resta online e il record si perde, che è il modo peggiore di fallire.
     if(!db.documenti) db.documenti=[];
