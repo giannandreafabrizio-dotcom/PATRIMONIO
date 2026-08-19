@@ -842,6 +842,7 @@ tbody tr:hover td{background:var(--s2);}
   <div id="doc-missing"></div>
   <div id="doc-pack"></div>
   <div class="doc-filters" id="doc-filters"></div>
+  <div class="doc-hint" id="doc-legenda" style="margin:-.4rem 0 .9rem"></div>
   <div class="doc-list" id="doc-list"></div>
 </div>
 
@@ -1389,7 +1390,13 @@ tbody tr:hover td{background:var(--s2);}
 
     <div class="fg"><label>Nome</label><input id="d-nome" placeholder="es. Bolletta Vodafone agosto 2026" maxlength="120"></div>
     <div class="fg"><label>Tipo</label><div class="mv-chipgrid" id="d-tipo-chips"></div></div>
-    <div class="fg"><label>Data del documento</label><input type="date" id="d-data"></div>
+    <div class="fg"><label>Data del documento</label><input type="date" id="d-data" onchange="aggiornaHintConservazione()">
+      <div class="doc-hint" id="d-cons-hint"></div>
+    </div>
+
+    <div class="fg"><label>Scade il (facoltativo)</label><input type="date" id="d-scade">
+      <div class="doc-hint">Solo per i documenti che a un certo punto smettono di valere: garanzie, carta d'identità, patente, passaporto, revisione. Te lo ricorda il promemoria del lunedì su Telegram.</div>
+    </div>
 
     <div class="fg">
       <label>Collegato a</label>
@@ -4361,7 +4368,9 @@ function aiBuildContext(){
     documenti:{
       totale:(db.documenti||[]).length,
       per_tipo:(()=>{const o={};(db.documenti||[]).forEach(d=>{o[d.tipoDoc||'Altro']=(o[d.tipoDoc||'Altro']||0)+1;});return o;})(),
-      detraibili_anno_corrente:(db.documenti||[]).filter(d=>d.detraibile&&(d.data||'').slice(0,4)===String(new Date().getFullYear())).length
+      detraibili_anno_corrente:(db.documenti||[]).filter(d=>d.detraibile&&(d.data||'').slice(0,4)===String(new Date().getFullYear())).length,
+      in_scadenza_entro_60gg:(db.documenti||[]).filter(d=>{const s=statoScadenzaDoc(d);return s&&s.urg;}).length,
+      oltre_il_periodo_di_conservazione:(db.documenti||[]).filter(daButtare).length
     },
     baseline_inizio_apr2026_eur:79977
   };
@@ -4947,6 +4956,18 @@ function confermaPagamento(){
 const TIPI_DOC=['Ricevuta','Fattura','Bolletta','Contratto','Polizza','Multa / Verbale','F24 / Tasse','Estratto conto','Garanzia','Altro'];
 const DOC_ICONE={'Ricevuta':'🧾','Fattura':'📄','Bolletta':'💡','Contratto':'📜','Polizza':'🛡️','Multa / Verbale':'🚨','F24 / Tasse':'🏛️','Estratto conto':'🏦','Garanzia':'🔧','Altro':'📎'};
 const RIF_TIPI=[{k:'',lbl:'— niente —'},{k:'movimento',lbl:'Un movimento'},{k:'scadenza',lbl:'Una scadenza'},{k:'asset',lbl:'Un asset'}];
+// ── Quanto tenere un documento (19/08/2026) ──
+// Anni di conservazione per tipo, 0 = per sempre. Servono a rispondere alla
+// domanda che l'archivio da solo non risolve: non "dove sta" ma "posso buttarlo".
+// ⚠️ Sono durate INDICATIVE, non un parere legale, e l'app lo scrive a schermo:
+// nel dubbio si conserva. I contratti stanno a "sempre" di proposito — la regola
+// vera è "finché dura, più cinque anni", ma l'app non sa quando finisce un
+// contratto, e il default prudente è non proporre mai di buttarlo.
+const CONSERVAZIONE={
+  'Ricevuta':5,'Fattura':5,'Bolletta':5,'Contratto':0,'Polizza':5,
+  'Multa / Verbale':5,'F24 / Tasse':6,'Estratto conto':10,'Garanzia':2,'Altro':5
+};
+const DOC_SCAD_GRACE=60;   // giorni entro cui un documento si considera "in scadenza"
 const DOC_IMG_MAX=1600;    // lato lungo in px dopo la compressione
 const DOC_IMG_Q=0.72;      // qualità JPEG: leggibile a schermo, ~10x più leggero
 const DOC_MAX_MB=8;
@@ -4954,7 +4975,7 @@ const DOC_MAX_MB=8;
 let eDoc=null;                       // id del documento in modifica ('' = nuovo)
 let docTipo='Ricevuta', docRifTipo='', docRifId='', docDet=false;
 let docFileB64=null;                 // {b64,mime,size,nome} del file scelto, prima dell'upload
-let docFiltroTipo='', docFiltroAnno='', docFiltroDet=false;
+let docFiltroTipo='', docFiltroAnno='', docFiltroDet=false, docFiltroStato='';
 let docRifOpts=[];                   // opzioni della tendina "collegato a", per indice
 let attCtx=null;                     // ultimo riquadro allegati disegnato, per il refresh
 let movDocId=null, assetDocId=null, scadDocId=null, payMovId=null;
@@ -4986,6 +5007,47 @@ function docRifLabel(d){
     return a?{ok:true,txt:'◈ '+a.nome}:{ok:false,txt:'collegamento mancante'};
   }
   return null;
+}
+
+// ── Conservazione e scadenza (19/08/2026) ──
+// Due date diverse, e non vanno confuse:
+//  · "conserva fino al" è DERIVATA dal tipo e dalla data → quando è passata, il
+//    documento non serve più a nessuno e si può buttare;
+//  · "scade il" è DICHIARATA dall'utente → è il documento stesso a smettere di
+//    valere (garanzia, carta d'identità, patente, revisione), e va rinnovato.
+// La prima è un permesso, la seconda è un dovere.
+function annoDiConservazione(tipo){
+  const v=CONSERVAZIONE[tipo];
+  return (v===undefined)?5:v;
+}
+function conservaFinoA(d){
+  const anni=annoDiConservazione(d.tipoDoc);
+  if(!anni || !d.data) return null;                 // null = per sempre / data ignota
+  const [y,m,g]=d.data.split('-').map(Number);
+  if(!y) return null;
+  return `${y+anni}-${String(m).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+}
+function daButtare(d){
+  // ⚠️ Una carta d'identità del 2020 valida fino al 2030 NON si butta, anche se
+  // la durata di conservazione del suo tipo è scaduta da un pezzo: finché il
+  // documento VALE, la domanda "posso buttarlo" non si pone nemmeno. La durata
+  // di conservazione riguarda i documenti che hanno esaurito la loro funzione,
+  // non quelli che la stanno ancora svolgendo.
+  if(d.scadeIl && d.scadeIl >= today()) return false;
+  const fino=conservaFinoA(d);
+  return !!fino && fino < today();
+}
+// Giorni che mancano alla scadenza dichiarata; null se il documento non ne ha.
+function giorniAScadenza(d){
+  if(!d.scadeIl) return null;
+  return daysBetween(today(), d.scadeIl);
+}
+function statoScadenzaDoc(d){
+  const g=giorniAScadenza(d);
+  if(g===null) return null;
+  if(g<0)  return {cls:'orf', txt:'scaduto il '+fScadDate(d.scadeIl), urg:true};
+  if(g<=DOC_SCAD_GRACE) return {cls:'orf', txt:'scade fra '+g+' giorn'+(g===1?'o':'i'), urg:true};
+  return {cls:'', txt:'valido fino al '+fScadDate(d.scadeIl), urg:false};
 }
 
 // ── Riquadro allegati dentro le altre modali ──
@@ -5041,6 +5103,7 @@ function openDoc(id,rifTipo,rifId,pre){
   document.getElementById('d-nome').value=d?d.nome:(pre&&pre.nome||'');
   document.getElementById('d-note').value=d?(d.note||''):'';
   document.getElementById('d-data').value=d?(d.data||today()):today();
+  document.getElementById('d-scade').value=d?(d.scadeIl||''):'';
   docTipo=d?(d.tipoDoc||'Altro'):((pre&&pre.tipoDoc)||'Ricevuta');
   docDet=d?!!d.detraibile:false;
   docRifTipo=d?(d.rif&&d.rif.tipo||''):(rifTipo||'');
@@ -5051,8 +5114,22 @@ function openDoc(id,rifTipo,rifId,pre){
 function renderDocTipoChips(){
   document.getElementById('d-tipo-chips').innerHTML=TIPI_DOC.map(t=>
     `<button type="button" class="mv-chip${t===docTipo?' sel':''}" onclick="setDocTipo('${t.replace(/'/g,"\\'")}')">${docIcona(t)} ${esc(t)}</button>`).join('');
+  aggiornaHintConservazione();
 }
 function setDocTipo(t){ docTipo=t; renderDocTipoChips(); }
+// La durata si vede mentre scegli il tipo, non dopo aver salvato: così se un
+// "Contratto" ti risulta da tenere per sempre e non è quello che volevi, cambi
+// tipo subito invece di scoprirlo fra tre anni.
+function aggiornaHintConservazione(){
+  const el=document.getElementById('d-cons-hint'); if(!el) return;
+  const dataIn=document.getElementById('d-data');
+  const anni=annoDiConservazione(docTipo);
+  if(!anni){ el.textContent='Documenti di questo tipo si conservano sempre.'; return; }
+  const fittizio={tipoDoc:docTipo,data:(dataIn&&dataIn.value)||today()};
+  const fino=conservaFinoA(fittizio);
+  el.textContent='Da conservare '+anni+' anni'+(fino?', cioè fino al '+fScadDate(fino):'')+
+                 ' — indicazione pratica, non un parere legale: nel dubbio tienilo.';
+}
 function setDocDetraibile(v){ docDet=v; renderDocDetSeg(); }
 function renderDocDetSeg(){
   document.getElementById('d-det-no').classList.toggle('sel',!docDet);
@@ -5216,6 +5293,7 @@ async function saveDoc(){
   const nome=document.getElementById('d-nome').value.trim();
   if(!nome) return alert('Dai un nome al documento.');
   const data=document.getElementById('d-data').value||today();
+  const scadeIl=document.getElementById('d-scade').value||'';
   const note=document.getElementById('d-note').value.trim();
   const prog=document.getElementById('d-prog');
   const btn=document.getElementById('d-save');
@@ -5223,7 +5301,7 @@ async function saveDoc(){
   if(eDoc){
     const d=db.documenti.find(x=>x.id===eDoc);
     if(!d) return;
-    d.nome=nome; d.tipoDoc=docTipo; d.data=data; d.note=note;
+    d.nome=nome; d.tipoDoc=docTipo; d.data=data; d.note=note; d.scadeIl=scadeIl;
     d.detraibile=docDet; d.rif={tipo:docRifTipo,id:docRifTipo?docRifId:''};
     save(); closeM('mo-doc'); refreshAttBoxes();
     return;
@@ -5235,7 +5313,7 @@ async function saveDoc(){
   try{
     const up=await docUploadFile(nome);
     db.documenti.push({
-      id:uid(), nome, tipoDoc:docTipo, data,
+      id:uid(), nome, tipoDoc:docTipo, data, scadeIl,
       rif:{tipo:docRifTipo,id:docRifTipo?docRifId:''},
       storage:'drive', fileId:up.fileId, url:up.url, mime:up.mime||docFileB64.mime,
       size:up.size||docFileB64.size, detraibile:docDet, note, creato:today()
@@ -5425,11 +5503,14 @@ function docFiltrati(){
   if(docFiltroTipo) arr=arr.filter(d=>d.tipoDoc===docFiltroTipo);
   if(docFiltroAnno) arr=arr.filter(d=>(d.data||'').slice(0,4)===docFiltroAnno);
   if(docFiltroDet) arr=arr.filter(d=>d.detraibile);
+  if(docFiltroStato==='buttare')  arr=arr.filter(daButtare);
+  if(docFiltroStato==='scadenza') arr=arr.filter(d=>{const s=statoScadenzaDoc(d);return s&&s.urg;});
   return arr.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
 }
 function setDocFiltroTipo(t){ docFiltroTipo=(docFiltroTipo===t)?'':t; renderDocumenti(); }
 function toggleDocDet(){ docFiltroDet=!docFiltroDet; renderDocumenti(); }
 function setDocFiltroAnno(v){ docFiltroAnno=v; renderDocumenti(); }
+function setDocFiltroStato(s){ docFiltroStato=(docFiltroStato===s)?'':s; renderDocumenti(); }
 function renderDocumenti(){
   const list=document.getElementById('doc-list'); if(!list) return;
   const tutti=db.documenti||[];
@@ -5442,10 +5523,14 @@ function renderDocumenti(){
     const spazio=tutti.reduce((s,d)=>s+(d.size||0),0);
     const det=tutti.filter(d=>d.detraibile&&(d.data||'').slice(0,4)===anno).length;
     const orfani=tutti.filter(d=>{const r=docRifLabel(d); return r&&!r.ok;}).length;
+    const scad=tutti.filter(d=>{const x=statoScadenzaDoc(d);return x&&x.urg;}).length;
+    const butt=tutti.filter(daButtare).length;
     sum.innerHTML=tutti.length?`
       <div class="doc-chip"><b>${tutti.length}</b> documenti</div>
       <div class="doc-chip"><b>${fBytes(spazio)}</b> su Drive</div>
       <div class="doc-chip">🧾 <b>${det}</b> per il 730 ${anno}</div>`
+      +(scad?`<div class="doc-chip" style="color:var(--orange)">⏳ <b>${scad}</b> in scadenza</div>`:'')
+      +(butt?`<div class="doc-chip" style="color:var(--green)">🗑 <b>${butt}</b> da buttare</div>`:'')
       +(orfani?`<div class="doc-chip" style="color:var(--orange)">⚠ <b>${orfani}</b> senza collegamento</div>`:''):'';
   }
 
@@ -5456,10 +5541,18 @@ function renderDocumenti(){
     f.innerHTML=tutti.length?
       tipiPresenti.map(t=>`<button class="doc-fbtn${docFiltroTipo===t?' sel':''}" onclick="setDocFiltroTipo('${t.replace(/'/g,"\\'")}')">${docIcona(t)} ${esc(t)}</button>`).join('')
       +`<button class="doc-fbtn${docFiltroDet?' sel':''}" onclick="toggleDocDet()">🧾 Solo 730</button>`
+      // I due filtri di stato compaiono solo se c'e' qualcosa da filtrare: un
+      // pulsante che porta sempre a una lista vuota e' rumore.
+      +(tutti.some(d=>{const x=statoScadenzaDoc(d);return x&&x.urg;})?`<button class="doc-fbtn${docFiltroStato==='scadenza'?' sel':''}" onclick="setDocFiltroStato('scadenza')">⏳ In scadenza</button>`:'')
+      +(tutti.some(daButtare)?`<button class="doc-fbtn${docFiltroStato==='buttare'?' sel':''}" onclick="setDocFiltroStato('buttare')">🗑 Da buttare</button>`:'')
       +(anni.length>1?`<select class="doc-fbtn" onchange="setDocFiltroAnno(this.value)"><option value="">Tutti gli anni</option>`+
         anni.map(a=>`<option value="${a}"${docFiltroAnno===a?' selected':''}>${a}</option>`).join('')+`</select>`:'')
       :'';
   }
+  const leg=document.getElementById('doc-legenda');
+  if(leg) leg.innerHTML=(docFiltroStato==='buttare')
+    ? 'Documenti oltre il periodo in cui potrebbero servirti. Le durate sono <b>indicazioni pratiche, non un parere legale</b>: se hai un dubbio su uno di questi, tienilo — buttare costa poco, non averlo può costare molto.'
+    : '';
 
   if(!tutti.length){
     list.innerHTML=`<div class="doc-empty">Nessun documento archiviato.<br>
@@ -5472,16 +5565,25 @@ function renderDocumenti(){
 
   list.innerHTML=arr.map(d=>{
     const rif=docRifLabel(d);
+    const sc=statoScadenzaDoc(d);
+    const fino=conservaFinoA(d);
     const badges=[
       `<span class="doc-badge">${esc(d.tipoDoc||'Altro')}</span>`,
       d.detraibile?`<span class="doc-badge det">🧾 730</span>`:'',
+      sc?`<span class="doc-badge ${sc.cls}">⏳ ${esc(sc.txt)}</span>`:'',
+      daButtare(d)?`<span class="doc-badge det">🗑 puoi buttarlo</span>`:'',
       rif?`<span class="doc-badge ${rif.ok?'rif':'orf'}">${esc(rif.txt)}</span>`:''
     ].join('');
+    // Su un documento ancora valido la data di conservazione non si mostra: il
+    // badge dice già "scade fra X giorni", e affiancargli un "conserva fino al
+    // 2025" ormai passato è solo una contraddizione apparente da decifrare.
+    const cons=(daButtare(d)||(sc&&!sc.urg)||(sc&&sc.urg&&giorniAScadenza(d)>=0))
+      ? '' : (fino?' · conserva fino al '+fScadDate(fino):' · da conservare sempre');
     return `<div class="doc-card">
       <div class="doc-ic">${docIcona(d.tipoDoc)}</div>
       <div class="doc-body">
         <div class="doc-nome">${esc(d.nome)}</div>
-        <div class="doc-meta">${fScadDate(d.data)} · ${fBytes(d.size)}${d.note?' · '+esc(d.note):''}</div>
+        <div class="doc-meta">${fScadDate(d.data)} · ${fBytes(d.size)}${cons}${d.note?' · '+esc(d.note):''}</div>
         <div class="doc-badges">${badges}</div>
       </div>
       <div class="doc-acts">
