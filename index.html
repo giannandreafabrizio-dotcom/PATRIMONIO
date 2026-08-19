@@ -309,6 +309,7 @@ tbody tr:hover td{background:var(--s2);}
 .arow-actions{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:stretch;opacity:0;pointer-events:none;transition:opacity .12s;}
 .arow-wrap.swiping .arow-actions,.arow-wrap.open .arow-actions{opacity:1;pointer-events:auto;}
 .arow-act{width:52px;border:none;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.arow-act-ai{background:var(--teal);color:#000;}
 .arow-act-edit{background:var(--text2);color:#000;}
 .arow-act-del{background:var(--red);color:#fff;}
 .arow{position:relative;background:transparent;display:flex;align-items:center;gap:.7rem;padding:.55rem .2rem;transition:transform .18s ease,background .15s;}
@@ -613,6 +614,47 @@ tbody tr:hover td{background:var(--s2);}
   .scad-imp{font-size:.85rem;}
   .scad-pay{padding:.4rem .6rem;font-size:.72rem;}
 }
+
+/* ══ DOCUMENTI (19/08/2026) ══ */
+.doc-summary{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem;}
+.doc-chip{display:flex;align-items:center;gap:.4rem;padding:.4rem .7rem;background:var(--s1);border:1px solid var(--border);border-radius:11px;font-size:.74rem;color:var(--text2);}
+.doc-chip b{color:var(--text);}
+.doc-filters{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.9rem;align-items:center;}
+.doc-fbtn{padding:.4rem .75rem;border-radius:11px;border:1px solid var(--border);background:var(--s1);color:var(--text2);font-family:'Inter',sans-serif;font-size:.75rem;cursor:pointer;transition:all .12s;}
+.doc-fbtn:hover{border-color:var(--border2);color:var(--text);}
+.doc-fbtn.sel{background:var(--s3);color:var(--text);border-color:var(--border2);}
+.doc-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.7rem;}
+.doc-card{display:flex;gap:.8rem;align-items:flex-start;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:.85rem .95rem;transition:border-color .12s;}
+.doc-card:hover{border-color:var(--border2);}
+.doc-ic{font-size:1.35rem;line-height:1.2;flex-shrink:0;}
+.doc-body{flex:1;min-width:0;}
+.doc-nome{font-size:.85rem;font-weight:500;word-break:break-word;}
+.doc-meta{font-size:.7rem;color:var(--text3);margin-top:.2rem;line-height:1.5;}
+.doc-badges{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.42rem;}
+.doc-badge{font-size:.66rem;padding:.13rem .42rem;border-radius:6px;background:var(--s3);color:var(--text2);}
+.doc-badge.det{background:#162b18;color:var(--green);}
+.doc-badge.rif{background:#12233a;color:var(--blue);}
+.doc-badge.orf{background:#3a2a12;color:var(--orange);}
+.doc-acts{display:flex;flex-direction:column;gap:.3rem;flex-shrink:0;}
+.doc-acts button,.doc-acts a{background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:7px;padding:.28rem .52rem;font-size:.72rem;cursor:pointer;text-decoration:none;text-align:center;font-family:'Inter',sans-serif;line-height:1.4;}
+.doc-acts button:hover,.doc-acts a:hover{color:var(--text);border-color:var(--border2);}
+.doc-empty{padding:2rem 1rem;text-align:center;color:var(--text3);font-size:.8rem;line-height:1.75;}
+.doc-hint{font-size:.67rem;color:var(--text3);margin-top:.3rem;line-height:1.5;}
+.doc-prog{font-size:.73rem;color:var(--text2);margin-top:.45rem;}
+.doc-ocr{font-size:.73rem;color:var(--teal);margin-top:.45rem;line-height:1.55;}
+.doc-file{font-size:.74rem;color:var(--text2);margin-top:.4rem;}
+.att-box{border:1px dashed var(--border2);border-radius:10px;padding:.6rem .7rem;}
+.att-row{display:flex;align-items:center;gap:.5rem;font-size:.76rem;padding:.22rem 0;}
+.att-row a{color:var(--blue);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-row .att-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.85rem;padding:0 .2rem;}
+.att-row .att-del:hover{color:var(--red);}
+.att-none{font-size:.72rem;color:var(--text3);}
+.att-add{margin-top:.5rem;width:100%;justify-content:center;}
+#mo-doc{z-index:600;}
+#toast-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:900;display:flex;flex-direction:column;gap:.5rem;align-items:center;}
+.toast{display:flex;align-items:center;gap:.8rem;background:var(--s3);border:1px solid var(--border2);border-radius:12px;padding:.65rem .9rem;font-size:.78rem;box-shadow:0 8px 28px rgba(0,0,0,.6);max-width:92vw;}
+.toast button{background:var(--text);color:#000;border:none;border-radius:7px;padding:.32rem .7rem;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+@media(max-width:640px){ .doc-list{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -631,6 +673,9 @@ tbody tr:hover td{background:var(--s2);}
     </button>
     <button class="nav-item" onclick="goTo('scadenze',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l2 2 4-4"/></svg>Scadenze
+    </button>
+    <button class="nav-item" onclick="goTo('documenti',this)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3.33 3.33 0 1 1 4.71 4.71l-9.2 9.19a1.67 1.67 0 1 1-2.35-2.36l8.49-8.48"/></svg>Documenti
     </button>
     <button class="nav-item" onclick="goTo('viaggi',this)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.4-.2c.4-.2.7-.6.6-1.2Z"/></svg>Viaggi
@@ -767,6 +812,17 @@ tbody tr:hover td{background:var(--s2);}
     <button class="scad-fbtn" id="sf-pausa" onclick="setScadFiltro('pausa',this)">⏸ In pausa</button>
   </div>
   <div class="scad-list" id="scad-list"></div>
+</div>
+
+<!-- DOCUMENTI -->
+<div class="page" id="page-documenti">
+  <div class="page-hd">
+    <div><h2>Documenti</h2><p>Ricevute, contratti e polizze — i file stanno su Drive, qui c'è la scheda che li collega ai tuoi soldi</p></div>
+    <button class="btn btn-p" onclick="openDoc()">+ Aggiungi</button>
+  </div>
+  <div class="doc-summary" id="doc-summary"></div>
+  <div class="doc-filters" id="doc-filters"></div>
+  <div class="doc-list" id="doc-list"></div>
 </div>
 
 <!-- VIAGGI -->
@@ -981,6 +1037,24 @@ tbody tr:hover td{background:var(--s2);}
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-hd"><h3><span class="set-chip" style="background:rgba(191,90,242,.16);color:#bf5af2">🎯</span>Allocazione obiettivo</h3></div>
+    <div class="card-bd">
+      <div class="set-hint">Percentuali target per tipo di asset, decise una volta e usate dal consulente AI per capire quanto ti sei allontanato dal piano. Lascia vuoto quello che non ti interessa fissare — non serve che la somma faccia 100.</div>
+      <div class="fr" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.7rem">
+        <div class="fg"><label>💰 Liquidità %</label><input type="number" id="ao-liquidita" placeholder="—" step="0.1" min="0" max="100"></div>
+        <div class="fg"><label>📈 Investimenti %</label><input type="number" id="ao-investimenti" placeholder="—" step="0.1" min="0" max="100"></div>
+        <div class="fg"><label>₿ Crypto %</label><input type="number" id="ao-crypto" placeholder="—" step="0.1" min="0" max="100"></div>
+        <div class="fg"><label>💳 Wallet %</label><input type="number" id="ao-wallet" placeholder="—" step="0.1" min="0" max="100"></div>
+        <div class="fg"><label>📦 Altro %</label><input type="number" id="ao-altro" placeholder="—" step="0.1" min="0" max="100"></div>
+      </div>
+      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="salvaAllocObiettivo()">Salva</button>
+        <div id="ao-result" style="font-size:.77rem;color:var(--text3)"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="set-row2">
   <div class="card">
     <div class="card-hd"><h3><span class="set-chip" style="background:rgba(48,209,88,.16);color:#30d158">☁️</span>Sincronizzazione</h3></div>
@@ -1039,7 +1113,9 @@ tbody tr:hover td{background:var(--s2);}
       <div class="fg"><label>Importo (valuta scelta)</label><input type="number" id="a-imp" placeholder="0.00" step="0.01"></div>
       <div class="fg"><label>Controvalore EUR</label><input type="number" id="a-eur" placeholder="0.00" step="0.01"></div>
     </div>
+    <div class="fg"><label>Ticker / ISIN (opzionale)</label><input id="a-ticker" placeholder="es. SWDA, IE00B4L5Y983…"></div>
     <div class="fg"><label>Note (opzionale)</label><textarea id="a-note" placeholder="Conto corrente principale, portafoglio ETF…"></textarea></div>
+    <div class="fg"><label>Documenti</label><div class="att-box" id="a-att"></div></div>
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-asset')">Annulla</button>
       <button class="btn btn-p" onclick="saveAsset()">Salva</button>
@@ -1127,6 +1203,8 @@ tbody tr:hover td{background:var(--s2);}
     </div>
 
     <div class="fg"><label>Descrizione (facoltativa)</label><input id="m-desc" placeholder="Vuoto = usa il cliente o la categoria"></div>
+
+    <div class="fg"><label>Documenti</label><div class="att-box" id="m-att"></div></div>
 
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-mov')">Annulla</button>
@@ -1239,6 +1317,8 @@ tbody tr:hover td{background:var(--s2);}
     <div class="fg"><label>Categoria (per il movimento di spesa)</label><div class="mv-chipgrid" id="s-cat-chips"></div></div>
     <div class="fg"><label>Conto di default (opzionale)</label><div class="mv-chipgrid" id="s-asset-chips"></div></div>
 
+    <div class="fg"><label>Documenti (contratto, polizza…)</label><div class="att-box" id="s-att"></div></div>
+
     <div id="s-undo-wrap" style="display:none;margin-top:.4rem">
       <button class="btn btn-g" style="color:var(--orange);border-color:#3a2a12;width:100%" onclick="annullaUltimoPagamento()">↩ Annulla ultimo pagamento registrato</button>
     </div>
@@ -1259,12 +1339,66 @@ tbody tr:hover td{background:var(--s2);}
     <div class="fg"><label>Importo pagato</label><input type="number" id="p-imp" step="0.01" min="0" inputmode="decimal"></div>
     <div class="fg"><label>Conto da cui è uscito</label><div class="mv-chipgrid" id="p-asset-chips"></div></div>
     <div class="fg"><label>Data pagamento</label><input type="date" id="p-data"></div>
+    <div class="fg"><label>Ricevuta</label><div class="att-box" id="p-att"></div></div>
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-pay')">Annulla</button>
       <button class="btn btn-p" onclick="confermaPagamento()">✓ Conferma e registra spesa</button>
     </div>
   </div>
 </div>
+
+<!-- MODAL DOCUMENTO -->
+<div class="overlay" id="mo-doc">
+  <div class="modal">
+    <h3 id="md-title">Nuovo documento</h3>
+
+    <div class="fg" id="fg-doc-file">
+      <label>File</label>
+      <input type="file" id="d-file" accept="image/*,application/pdf" onchange="docFileScelto(this)">
+      <div class="doc-hint">Foto o PDF. Le foto vengono rimpicciolite in automatico prima di partire, così restano leggibili ma pesano poco.</div>
+      <div class="doc-file" id="d-fileinfo"></div>
+      <button type="button" class="btn btn-g btn-sm" id="d-ocr-btn" style="display:none;margin-top:.5rem" onclick="docOcr()">🔍 Fai leggere i dati all'AI</button>
+      <div class="doc-ocr" id="d-ocr-out"></div>
+    </div>
+
+    <div class="fg" id="fg-doc-esistente" style="display:none">
+      <label>File</label>
+      <div class="att-row"><a id="d-link" href="#" target="_blank" rel="noopener">Apri su Drive</a></div>
+      <div class="doc-hint">Il file non si sostituisce: se ne hai una versione nuova, caricala come documento a sé e cancella il vecchio.</div>
+    </div>
+
+    <div class="fg"><label>Nome</label><input id="d-nome" placeholder="es. Bolletta Vodafone agosto 2026" maxlength="120"></div>
+    <div class="fg"><label>Tipo</label><div class="mv-chipgrid" id="d-tipo-chips"></div></div>
+    <div class="fg"><label>Data del documento</label><input type="date" id="d-data"></div>
+
+    <div class="fg">
+      <label>Collegato a</label>
+      <div class="mv-chipgrid" id="d-rif-chips"></div>
+      <select id="d-rif-sel" style="margin-top:.5rem;display:none"></select>
+      <div class="doc-hint" id="d-rif-hint"></div>
+    </div>
+
+    <div class="fg">
+      <label>Fisco</label>
+      <div class="mv-seg">
+        <button type="button" class="mv-seg-btn" id="d-det-no" onclick="setDocDetraibile(false)">Normale</button>
+        <button type="button" class="mv-seg-btn" id="d-det-si" onclick="setDocDetraibile(true)">🧾 Serve per il 730</button>
+      </div>
+    </div>
+
+    <div class="fg"><label>Note (facoltative)</label><input id="d-note" placeholder="es. numero pratica, riferimento" maxlength="200"></div>
+
+    <div class="doc-prog" id="d-prog"></div>
+
+    <div class="mf">
+      <button class="btn btn-g" id="d-del" style="margin-right:auto;color:var(--red);border-color:#3a1212;display:none" onclick="delDoc()">Elimina</button>
+      <button class="btn btn-g" onclick="closeM('mo-doc')">Annulla</button>
+      <button class="btn btn-p" id="d-save" onclick="saveDoc()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
 
 <script>
 // ── CONFIG ──
@@ -1359,6 +1493,7 @@ async function pullFromSheets(){
       db = data;
       if(!db.snapshots) db.snapshots = [];
       if(!db.scadenze) db.scadenze = [];
+      if(!db.documenti) db.documenti = [];
     if(!db.viaggiStorici) db.viaggiStorici = [];
     if(!db.entrateStoriche) db.entrateStoriche = [];
       applicaMigrazioni();
@@ -1432,6 +1567,29 @@ function salvaConfig(){
   saveCfg(cfg);
   alert('✓ Configurazione salvata!\n\nOra premi "⬇ Scarica" per portare qui i dati del foglio.\n\n(Non "Sincronizza": su un dispositivo appena configurato la prima cosa da fare è sempre scaricare.)');
   updateSettingsStatus();
+}
+
+// ── ALLOCAZIONE OBIETTIVO (15/08/2026) ──
+// Percentuali target per tipo di asset, decise una volta dall'utente e MAI dedotte
+// dall'allocazione attuale (altrimenti il controllo di scostamento del consulente AI
+// sarebbe una tautologia — vedi claude/AI_PROMPT_CONSULENTE.md). Chiave facoltativa
+// in pat4 (db.allocazioneObiettivo, oggetto {tipo:pct}); assente sui backup vecchi →
+// falsy → nessuna migrazione necessaria, validaPayload_ lato server non va toccata.
+const ALLOC_TIPI=['liquidita','investimenti','crypto','wallet','altro'];
+function caricaAllocObiettivo(){
+  const ob=db.allocazioneObiettivo||{};
+  ALLOC_TIPI.forEach(t=>{ const el=document.getElementById('ao-'+t); if(el) el.value=ob[t]||''; });
+  const res=document.getElementById('ao-result'); if(res) res.textContent='';
+}
+function salvaAllocObiettivo(){
+  const ob={};
+  ALLOC_TIPI.forEach(t=>{ const v=parseFloat(document.getElementById('ao-'+t).value); if(!isNaN(v)&&v>0) ob[t]=v; });
+  db.allocazioneObiettivo=ob;
+  save();
+  const res=document.getElementById('ao-result');
+  const somma=Object.values(ob).reduce((s,v)=>s+v,0);
+  res.textContent = Object.keys(ob).length ? `✓ Salvata — somma ${somma.toFixed(1)}%` : '✓ Salvata (vuota: nessun obiettivo dichiarato)';
+  res.style.color='var(--green)';
 }
 
 // ── CONSTANTS ──
@@ -1755,6 +1913,7 @@ function load(){
     if(!db.scadenze) db.scadenze = [];
     if(!db.viaggiStorici) db.viaggiStorici = [];
     if(!db.entrateStoriche) db.entrateStoriche = [];
+    if(!db.documenti) db.documenti = [];
     if(applicaMigrazioni()) saveLocal();
     sincronizzaImporti();
   }catch(e){}
@@ -1784,21 +1943,34 @@ function goTo(name,btn){
   if(name==='asset') renderAsset();
   if(name==='movimenti') renderMov();
   if(name==='scadenze') renderScad();
+  if(name==='documenti') renderDocumenti();
   if(name==='viaggi') renderViaggi();
   if(name==='entrate') renderEntrate();
   if(name==='uscite') renderUscite();
   if(name==='andamento') renderAnd();
   if(name==='ai') renderAiPage();
-  if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); }
+  if(name==='impostazioni'){ document.getElementById('cfg-url').value=getScriptUrl(); updateSettingsStatus(); caricaAllocObiettivo(); }
 }
 
 // ── MODALS ──
-function closeM(id){ document.getElementById(id).classList.remove('open'); eAsset=null; eMov=null; eViagSt=null; }
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+function closeM(id){
+  document.getElementById(id).classList.remove('open');
+  // La modale documento si apre SOPRA le altre: chiudendola non si azzera lo stato
+  // di quella sotto (sarebbe come premere Annulla su un movimento a metà), e si
+  // ridisegnano i suoi allegati, che potrebbero essere appena cambiati.
+  if(id==='mo-doc'){ eDoc=null; docFileB64=null; refreshAttBoxes(); return; }
+  eAsset=null; eMov=null; eViagSt=null;
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){
+  if(e.target!==this) return;
+  this.classList.remove('open');
+  if(this.id==='mo-doc'){ eDoc=null; docFileB64=null; refreshAttBoxes(); }
+}));
 
 // ── ASSET MODAL ──
 function openAsset(id){
   eAsset=id||null;
+  assetDocId = id || uid();
   const a=id?db.assets.find(x=>x.id===id):null;
   document.getElementById('ma-title').textContent=a?'Modifica Asset':'Nuovo Asset';
   document.getElementById('a-nome').value=a?.nome||'';
@@ -1806,7 +1978,9 @@ function openAsset(id){
   document.getElementById('a-val').value=a?.valuta||'EUR';
   document.getElementById('a-imp').value=a?.importo||'';
   document.getElementById('a-eur').value=a?.eur||'';
+  document.getElementById('a-ticker').value=a?.ticker||'';
   document.getElementById('a-note').value=a?.note||'';
+  renderAtt('a-att','asset',assetDocId);
   document.getElementById('mo-asset').classList.add('open');
 }
 function saveAsset(){
@@ -1814,16 +1988,20 @@ function saveAsset(){
   if(!nome)return alert('Inserisci un nome.');
   const importo=parseFloat(document.getElementById('a-imp').value)||0;
   const eur=parseFloat(document.getElementById('a-eur').value)||0;
+  // Ticker/ISIN (15/08/2026): facoltativo, serve solo a identificare con certezza lo
+  // strumento quando l'assistente AI lo analizza — senza deve indovinarlo dal nome.
+  // Campo assente sugli asset vecchi → falsy → nessuna migrazione necessaria.
+  const ticker=document.getElementById('a-ticker').value.trim();
   const t=today();
   if(eAsset){
     const a=db.assets.find(x=>x.id===eAsset);
     const prev=a.eur; a.nome=nome; a.tipo=document.getElementById('a-tipo').value;
     a.valuta=document.getElementById('a-val').value; a.importo=importo; a.eur=eur;
-    a.note=document.getElementById('a-note').value.trim(); a.aggiornato=t;
+    a.ticker=ticker; a.note=document.getElementById('a-note').value.trim(); a.aggiornato=t;
     if(prev!==eur) snap(a.id,t,eur);
   }else{
-    const a={id:uid(),nome,tipo:document.getElementById('a-tipo').value,
-      valuta:document.getElementById('a-val').value,importo,eur,
+    const a={id:assetDocId||uid(),nome,tipo:document.getElementById('a-tipo').value,
+      valuta:document.getElementById('a-val').value,importo,eur,ticker,
       note:document.getElementById('a-note').value.trim(),creato:t,aggiornato:t};
     db.assets.push(a); snap(a.id,t,eur);
   }
@@ -1868,6 +2046,11 @@ function saveSnap(){
 let movTipo='uscita', movCat=null, movAssetId='';
 function openMov(id){
   eMov=id||null;
+  // Id deciso all'APERTURA, non al salvataggio: così si può allegare lo scontrino
+  // mentre si registra la spesa, che è l'unico momento in cui ce l'hai in mano.
+  // Se poi si annulla, il documento resta in archivio marcato "non collegato"
+  // invece di sparire — un file caricato su Drive non deve poter evaporare.
+  movDocId = id || uid();
   const m=id?db.movimenti.find(x=>x.id===id):null;
   document.getElementById('mm-title').textContent=m?'Modifica movimento':'Nuovo movimento';
   document.getElementById('m-desc').value=m?.desc||'';
@@ -1891,6 +2074,7 @@ function openMov(id){
   const dIn=document.getElementById('m-data');
   dIn.value=m?.data||today();
   syncMovTodayBtn();
+  renderAtt('m-att','movimento',movDocId);
   document.getElementById('mo-mov').classList.add('open');
 }
 function renderMovSeg(){
@@ -2077,7 +2261,7 @@ function saveMov(){
     // altrimenti resterebbe attaccato a un movimento dove non ha significato
     old.cliente=tipo==='entrata'?dimNormalizza(movCliente):'';
   }else{
-    db.movimenti.push({id:uid(),data,tipo,desc,cat,assetId,importo,note:'',
+    db.movimenti.push({id:movDocId||uid(),data,tipo,desc,cat,assetId,importo,note:'',
       viaggio:movViaggio||'', cliente:tipo==='entrata'?dimNormalizza(movCliente):''});
   }
   if(assetId){
@@ -2258,6 +2442,7 @@ function renderAsset(){
       // l'importo ricompare da sé.
       const pezzi=[];
       if(a.valuta&&a.valuta!=='EUR') pezzi.push(`${fNum(a.importo)} ${a.valuta}`);
+      if(a.ticker) pezzi.push(esc(a.ticker));
       if(t==='investimenti'||t==='crypto'){
         const ud=ultimoSnapshotAsset(a.id);
         if(ud) pezzi.push(`agg. ${fmtDataBreve(ud)}`);
@@ -2265,6 +2450,7 @@ function renderAsset(){
       const subHtml=pezzi.length?`<div class="arow-cur">${pezzi.join(' · ')}</div>`:'';
       return`<div class="arow-wrap">
         <div class="arow-actions">
+          <button type="button" class="arow-act arow-act-ai" onclick="analizzaAssetAI('${a.id}')" aria-label="Analizza con l'AI">🔍</button>
           <button type="button" class="arow-act arow-act-edit" onclick="openAsset('${a.id}')" aria-label="Modifica">✏</button>
           <button type="button" class="arow-act arow-act-del" onclick="delAsset('${a.id}')" aria-label="Elimina">✕</button>
         </div>
@@ -2279,6 +2465,7 @@ function renderAsset(){
             <div class="arow-pct">${pct.toFixed(1)}%</div>
           </div>
           <div class="arow-edit-desktop">
+            <button class="btn btn-teal btn-sm" onclick="analizzaAssetAI('${a.id}')" title="Analizza con l'AI">🔍</button>
             <button class="btn btn-g btn-sm" onclick="openAsset('${a.id}')">✏</button>
             <button class="btn btn-d btn-sm" onclick="delAsset('${a.id}')">✕</button>
           </div>
@@ -2316,7 +2503,7 @@ function renderAsset(){
 }
 
 function attachAssetSwipeHandlers(){
-  const SWIPE_OPEN=-104;
+  const SWIPE_OPEN=-156;   // 3 azioni × 52px (🔍 analizza, ✏ modifica, ✕ elimina — dal 15/08/2026)
   let openWrap=null;
   document.querySelectorAll('#asset-grid .arow').forEach(row=>{
     const wrap=row.closest('.arow-wrap');
@@ -3977,26 +4164,60 @@ const AI_MAX_HISTORY=10;   // turni massimi rimandati al modello (controllo cost
 let aiHistory=[];          // {role:'user'|'assistant', content:string}
 let aiBusy=false, aiWeb=false, aiInit=false;
 
-const AI_SYSTEM=`Sei l'assistente finanziario personale integrato in "Patrimonio", l'app con cui Fabrizio gestisce asset, movimenti e andamento patrimoniale.
+const AI_SYSTEM=`Sei il consulente finanziario personale di Fabrizio dentro "Patrimonio", l'app con cui gestisce asset, movimenti e andamento patrimoniale. Non sei un chatbot generico: sei la persona che guarda i suoi numeri veri con competenza e franchezza, e il cui valore si misura su dieci anni, non su una settimana.
 
-OBIETTIVO DICHIARATO DELL'UTENTE: far crescere il patrimonio nel minor tempo e col minor rischio possibile. Perseguilo con onestà intellettuale: massimizza il rendimento corretto per il rischio sui suoi numeri reali, senza mai promettere ciò che i dati storici non supportano.
+OBIETTIVO
+Far crescere il patrimonio di Fabrizio nel lungo periodo, massimizzando il rendimento corretto per il rischio. Perseguilo con onestà intellettuale: la crescita viene da quattro leve, in quest'ordine di affidabilità.
+1. Quanto riesce a risparmiare ogni mese (l'unica leva sotto il suo controllo diretto).
+2. Quanto paga in costi e in tasse (certa, ricorrente, spesso ignorata).
+3. Come è allocato fra classi di attività e quanto è concentrato.
+4. Quali singoli titoli sceglie e quando entra o esce.
+La quarta è la più visibile e la meno affidabile. Trattala per ultima e con umiltà. Se una risposta può essere migliorata agendo sulle prime tre, agisci lì.
 
-DATI: a ogni richiesta ricevi lo snapshot JSON aggiornato del patrimonio reale (asset, allocazione, entrate/uscite mensili, uscite per categoria, storico di fine mese). Ancora ogni analisi a questi numeri, citandoli esplicitamente in euro e percentuali.
+COSA NON SEI
+Non sei un servizio di segnali operativi. Non prevedi i prezzi. Non hai un'opinione su dove andrà il mercato la settimana prossima, e quando te la chiedono lo dici invece di inventarla. Non hai un incentivo a far muovere i soldi: il tuo interesse coincide con il suo, ed è che il patrimonio cresca senza essere eroso da attività inutile.
+
+I DATI CHE RICEVI
+A ogni richiesta ricevi uno snapshot JSON del patrimonio reale: asset con valore e peso (e dove disponibili capitale versato, plusvalenza, data dell'ultimo aggiornamento, ticker/ISIN), allocazione per tipo, entrate e uscite mensili, uscite per categoria, storico del patrimonio a fine mese, scadenze imminenti, viaggi, clienti anonimizzati, liquidità disponibile e mesi di autonomia, ed eventualmente un'allocazione obiettivo dichiarata. Ancora ogni analisi a questi numeri e citali esplicitamente in euro e percentuale.
+
+LIMITI NOTI DEI DATI — leggili prima di trarre conclusioni
+- I valori di investimenti e crypto sono aggiornati a mano, circa una volta a settimana. Se il campo dei giorni dall'ultimo aggiornamento è alto, i valori sono vecchi: dillo, invece di ragionare come se fossero di oggi.
+- Lo storico parte dal 30/04/2026: prima non esiste. Le percentuali di rendimento sono calcolate da quella baseline, non dal prezzo di acquisto reale. Non chiamarle "rendimento dall'acquisto".
+- Alcuni acquisti vecchi sono registrati come aggiornamento di valore invece che come versamento. Se vedi un rendimento anomalo su un asset, sospetta un artefatto contabile prima di sospettare una performance vera, e chiedi conferma invece di costruirci sopra un consiglio.
+- I valori un tempo in dollari sono stati convertiti a cambio fisso 1,15. Nei dati non esiste un effetto cambio separato: non calcolarlo mai da questi numeri e non attribuire a "forza del dollaro" variazioni che non puoi vedere.
+- Le entrate d'archivio arrivano da un quaderno di carta e servono solo ai grafici storici: non sono flussi di cassa dell'app, non entrano nel tasso di risparmio e non toccano i saldi.
+- I nomi dei clienti non ti arrivano mai, per privacy: vedi etichette "Cliente 1, 2, 3". Ragiona su concentrazione, ricorrenza e continuità degli incassi, mai su identità.
+- Il tag dei viaggi è facoltativo e può essere stato dimenticato: il totale di un viaggio è un minimo, non un dato certo.
 
 REGOLE VINCOLANTI
-1. Evidenze, non opinioni: usa statistiche finanziarie consolidate (rendimenti storici di lungo periodo per classe di asset, diversificazione, interesse composto, drawdown storici, inflazione). Distingui sempre tra dato documentato e stima.
-2. Solo fonti affidabili: se usi la ricerca web privilegia fonti primarie e istituzionali (BCE, Banca d'Italia, ISTAT, Eurostat, MEF, Borsa Italiana, siti ufficiali di emittenti e gestori, testate finanziarie primarie). Ignora forum, blog promozionali e siti di segnali di trading. Cita sempre le fonti dei dati di mercato attuali; se un dato aggiornato non è reperibile, dichiaralo invece di stimarlo.
-3. Rischio sempre esplicito: ogni ipotesi di crescita deve dichiarare rischio, volatilità attesa e orizzonte temporale. Non esiste crescita rapida a rischio zero: se richiesta, spiega con onestà il trade-off rischio/rendimento invece di assecondare.
-4. Niente ordini operativi secchi: mai "vendi ora" o "compra X". Presenta opzioni con pro, contro e numeri; la decisione resta all'utente.
-5. Niente previsioni certe sui mercati: ragiona per scenari e intervalli.
-6. Quantifica sul suo caso concreto: proiezioni calcolate sui suoi dati (tasso di risparmio mensile effettivo, mesi di spese coperti dalla liquidità, concentrazione per asset).
-7. Formato: risposta diretta all'inizio, poi i dettagli. Testo leggibile su iPhone: paragrafi brevi, elenchi puntati solo quando servono, niente tabelle larghe.
 
-AREE DI COMPETENZA: allocazione e diversificazione; concentrazione del rischio; fondo di emergenza; tasso di risparmio e sua evoluzione; spese anomale o in crescita; costi e fiscalità degli investimenti in Italia (solo principi generali: per casi specifici rimanda a un commercialista); contesto macro e di mercato.
+1. Ancora tutto ai suoi numeri. Ogni affermazione che lo riguarda deve portare con sé l'euro o la percentuale da cui viene. Se un numero non è nei dati, dì che non ce l'hai: non stimarlo di nascosto.
+
+2. Tieni separate tre cose e non usare lo stesso tono per tutte: il dato (viene dal JSON o da una fonte che citi), la stima (l'hai calcolata tu, e spieghi come), l'ipotesi (potrebbe essere falsa, e dici cosa la falsificherebbe).
+
+3. Il costo di un'azione va quantificato PRIMA di proporla. Prima di suggerire qualsiasi movimento metti in conto: imposta sulla plusvalenza che si realizza, spread e commissioni, eventuale cambio valuta, tempo fuori dal mercato, complessità aggiunta e vincoli che si perdono. Se il beneficio atteso non supera il costo con un margine chiaro, la conclusione corretta è "lascia stare" — e la scrivi.
+
+4. "Non fare niente" è una raccomandazione legittima, e il più delle volte è quella giusta. Non sei valutato a numero di suggerimenti. Un report che dice "questo mese non c'è nulla da fare, ed ecco i tre numeri che lo confermano" vale più di uno che inventa un'azione per giustificare la propria esistenza. Non cercare mai qualcosa da segnalare solo perché è il giorno del report.
+
+5. Puoi nominare strumenti concreti come termine di paragone, non come ordine. È utile e corretto scrivere: "esiste un ETF che replica lo stesso indice con TER 0,07% invece di 0,38%, per esempio X; su 27.000 € sono circa 84 € l'anno di differenza". Non è corretto scrivere: "vendi Y e compra X". La differenza non è cosmetica: il primo ti dà un'informazione verificabile su cui decidere, il secondo decide al posto tuo. Quando confronti strumenti, confronta ciò che è strutturale e verificabile — costo corrente, indice replicato, metodo di replica, politica dei proventi, domicilio fiscale, valuta ed eventuale copertura, patrimonio del fondo, liquidità, anzianità — e mai il rendimento passato come motivo per preferirne uno.
+
+6. Rischio sempre esplicito. Ogni ipotesi di crescita dichiara volatilità attesa, perdita massima storicamente plausibile e orizzonte temporale. Non esiste crescita rapida a rischio basso: se te lo chiede, spiega il compromesso invece di assecondare.
+
+7. Niente previsioni puntuali sui mercati. Ragiona per scenari e intervalli, e quando la dispersione è così ampia da rendere il numero inutile, dillo invece di dare un numero.
+
+8. Il rischio di un singolo titolo non è remunerato. Concentrarsi su un'azione singola aumenta la dispersione dei risultati senza aumentare il rendimento atteso: è una scommessa, non una strategia. Puoi analizzarla come tale, ma non presentarla mai come un modo per "far crescere il patrimonio più in fretta".
+
+9. Lente fiscale italiana, sempre attiva. Fabrizio è residente fiscale in Italia e la convenienza di una scelta cambia per il trattamento fiscale, non solo per il rendimento lordo. Considera almeno: aliquota sulle plusvalenze e i casi agevolati; la distinzione fra redditi di capitale e redditi diversi, che rende le minusvalenze da ETF non compensabili con le plusvalenze da ETF; imposta di bollo sul dossier titoli; requisiti e vincolo temporale del PIR; regime amministrato contro dichiarativo. ATTENZIONE: aliquote, soglie e requisiti cambiano nel tempo e tu non puoi saperlo per certo. Se hai la ricerca web attiva, verifica ogni cifra su fonte primaria (Agenzia delle Entrate, MEF, Gazzetta Ufficiale) prima di scriverla. Se non ce l'hai, nomina il meccanismo senza inventare il numero e segnala che va verificato.
+
+10. Fonti: solo primarie e istituzionali. BCE, Banca d'Italia, ISTAT, Eurostat, MEF, Agenzia delle Entrate, Borsa Italiana, documenti ufficiali di emittenti e gestori (KID, prospetto, factsheet), testate finanziarie primarie. Ignora forum, blog promozionali, canali di segnali e contenuti sponsorizzati. Cita sempre la fonte di un dato di mercato attuale; se non lo trovi, dichiaralo invece di stimarlo.
+
+11. Formato. Si legge su iPhone: la risposta diretta nelle prime righe, i dettagli sotto. Paragrafi brevi, elenchi puntati solo quando servono davvero, niente tabelle larghe. Numeri in euro arrotondati all'unità e percentuali con un decimale. Niente entusiasmo, niente allarmismo: il tono è quello di un professionista che ti dice come stanno le cose.
+
+12. Chiudi sempre dichiarando cosa non sai. Una o due righe: quali dati mancavano, quale ipotesi regge il ragionamento, cosa cambierebbe la conclusione. È la parte che rende utilizzabile tutto il resto.
 
 CONTESTO UTENTE: Italia, valuta EUR. Reddito da lavoro dipendente (Vigili del Fuoco) più attività da nutrizionista. Usa l'app soprattutto da iPhone.
 
-LIMITI: non sei un consulente finanziario abilitato; le tue sono analisi informative ed educative. Ricordalo quando davvero rilevante, senza ripeterlo a ogni messaggio.
+Questa analisi è generata sui dati che Fabrizio ha inserito e su informazioni pubbliche. Non è consulenza finanziaria personalizzata né una sollecitazione a investire: le decisioni restano sue.
 
 Rispondi sempre in italiano.`;
 
@@ -4036,11 +4257,60 @@ function aiBuildContext(){
       mo++; if(mo>12){mo=1;y++;}
     }
   }
+  // ── Campi aggiunti il 15/08/2026 per il consulente finanziario (vedi
+  // claude/AI_PROMPT_CONSULENTE.md nel progetto): per ogni investimento/crypto,
+  // capitale versato e plusvalenza reali (riusa rendAsset(), già usata in
+  // Andamento → Rendimenti), le date di apertura/ultimo aggiornamento e — se
+  // presente — il ticker/ISIN. Senza questi campi il modello doveva indovinare
+  // lo strumento dal solo nome dell'asset.
+  const oggiStr=today();
+  const idsInvCry=db.assets.filter(a=>a.tipo==='investimenti'||a.tipo==='crypto').map(a=>a.id);
+  const udGlobale=idsInvCry.length?ultimoSnapshotData(idsInvCry):null;
+  const assetDett=db.assets.map(a=>{
+    const base={nome:a.nome,tipo:a.tipo,valuta:a.valuta,eur:Math.round(a.eur),pct:tot?+(a.eur/tot*100).toFixed(1):0};
+    if(a.ticker) base.ticker=a.ticker;
+    if(a.tipo==='investimenti'||a.tipo==='crypto'){
+      const r=rendAsset(a,REND_START,oggiStr);
+      base.capitale_versato_eur=Math.round(r.base);
+      base.plus_eur=Math.round(r.plus);
+      base.plus_pct=r.pct!==null?+r.pct.toFixed(1):null;
+      const primi=db.snapshots.filter(s=>s.assetId===a.id).map(s=>s.date).sort();
+      base.primo_snapshot=primi.length?primi[0]:null;
+      const ud=ultimoSnapshotAsset(a.id);
+      base.ultimo_snapshot=ud||null;
+      base.giorni_da_ultimo_aggiornamento=ud?Math.floor((new Date(oggiStr)-new Date(ud))/86400000):null;
+    }
+    return base;
+  });
+
+  // ── Igiene di portafoglio: liquidità disponibile, mesi di autonomia, scadenze imminenti ──
+  // "Disponibile per pagare" = gli stessi asset che la modale movimento propone di default
+  // (TIPI_PAGAMENTO): wallet, liquidità, altro. Investimenti e crypto restano fuori perché
+  // liquidarli ha un costo (vedi regola 3 del prompt).
+  const liquiditaDisp=assetPagamento().reduce((s,a)=>s+a.eur,0);
+  const usc3m=mesi.slice(-3).map(m=>m.uscite);
+  const usciteMedie3m=usc3m.length?usc3m.reduce((s,v)=>s+v,0)/usc3m.length:0;
+  const scadImminenti=(db.scadenze||[]).map(s=>({s,st:statoScad(s)}))
+    .filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo')
+    .map(x=>({nome:x.s.nome,stato:x.st.stato,data:x.st.refDate,importo_eur:x.s.importo?Math.round(x.s.importo):null}));
+  // Allocazione obiettivo: SOLO se l'utente l'ha dichiarata in Impostazioni (§9-A del backlog:
+  // il modello non deve mai dedurla da quella attuale, altrimenti il controllo di scostamento
+  // diventa una tautologia).
+  const allocObiettivo=(db.allocazioneObiettivo&&Object.values(db.allocazioneObiettivo).some(v=>v>0))
+    ?Object.entries(db.allocazioneObiettivo).filter(([,v])=>v>0).map(([t,v])=>({tipo:t,pct_obiettivo:v}))
+    :null;
+
   return{
     data_oggi:today(),
     patrimonio_totale_eur:Math.round(tot),
     allocazione:Object.entries(alloc).map(([t,v])=>({tipo:t,eur:Math.round(v),pct:tot?+(v/tot*100).toFixed(1):0})),
-    asset:db.assets.map(a=>({nome:a.nome,tipo:a.tipo,valuta:a.valuta,eur:Math.round(a.eur),pct:tot?+(a.eur/tot*100).toFixed(1):0})),
+    allocazione_obiettivo:allocObiettivo,
+    asset:assetDett,
+    giorni_da_ultimo_aggiornamento_investimenti:udGlobale?Math.floor((new Date(oggiStr)-new Date(udGlobale))/86400000):null,
+    liquidita_disponibile_eur:Math.round(liquiditaDisp),
+    uscite_medie_mensili_3m_eur:Math.round(usciteMedie3m),
+    mesi_autonomia_liquidita:usciteMedie3m>0?+(liquiditaDisp/usciteMedie3m).toFixed(1):null,
+    scadenze_imminenti:scadImminenti,
     ultimi_6_mesi:mesi,
     uscite_per_categoria_ultimi_3_mesi:speseCat,
     trend_patrimonio_fine_mese:trend,
@@ -4064,6 +4334,15 @@ function aiBuildContext(){
       }));
     })(),
     incassi_senza_cliente_eur:Math.round(clientiReport(entrateTutte()).impNonAss),
+    // Solo conteggi: i NOMI dei documenti non partono. Un "Bolletta Enel via X n.3"
+    // o un "Verbale multa" dicono dove abito e cosa mi è successo, e servirebbero a
+    // nulla — le domande utili ("quanti giustificativi 730 ho quest'anno", "quante
+    // spese non hanno ricevuta") si rispondono coi soli numeri.
+    documenti:{
+      totale:(db.documenti||[]).length,
+      per_tipo:(()=>{const o={};(db.documenti||[]).forEach(d=>{o[d.tipoDoc||'Altro']=(o[d.tipoDoc||'Altro']||0)+1;});return o;})(),
+      detraibili_anno_corrente:(db.documenti||[]).filter(d=>d.detraibile&&(d.data||'').slice(0,4)===String(new Date().getFullYear())).length
+    },
     baseline_inizio_apr2026_eur:79977
   };
 }
@@ -4110,6 +4389,50 @@ function aiQuick(k){
   if(aiBusy) return;
   aiAsk(AI_QUICK[k], k==='mercati'?true:aiWeb);
 }
+
+// ── ANALISI DI UN SINGOLO ASSET (15/08/2026) ──
+// Pulsante 🔍 su ogni riga della pagina Asset (swipe su iPhone, hover su desktop).
+// Costruisce il prompt "parte B" del consulente (vedi claude/AI_PROMPT_CONSULENTE.md
+// nel progetto) col nome dell'asset, apre la pagina AI e lo invia. Web attivo di
+// default: serve per verificare aliquote fiscali attuali e cercare alternative
+// strutturalmente comparabili (regole 5 e 9 di AI_SYSTEM).
+function promptAnalisiAsset(nome){
+  return `Analizza l'asset "${nome}" e dimmi se e come si può ottimizzare.
+
+"Ottimizzare" qui non vuol dire "prevedere se salirà". Vuol dire: a parità di esposizione desiderata, questo strumento è il modo migliore per averla? Rispondi in questo ordine, che è l'ordine di quanto ciascuna leva è affidabile.
+
+1. CHE COS'È E CHE RUOLO HA
+Identifica lo strumento reale dietro il nome (fondo, ETF, azione singola, conto, crypto), usando il ticker/ISIN nei dati se presente, e dì in una riga a cosa serve nel portafoglio: mattone di base, scommessa satellite, riserva di liquidità, vincolo fiscale. Se non riesci a identificarlo con certezza, dillo e chiedi l'ISIN invece di tirare a indovinare: un'analisi sullo strumento sbagliato è peggio di nessuna analisi.
+
+2. I SUOI NUMERI
+Peso sul patrimonio totale e sulla sua classe, capitale versato, valore attuale, plusvalenza in euro e percentuale, da quando è in portafoglio, data dell'ultimo aggiornamento di valore. Ricorda i limiti dei dati: la percentuale parte dalla baseline del 30/04/2026, non dall'acquisto, e un rendimento anomalo va trattato come sospetto artefatto contabile prima che come performance vera.
+
+3. LE CINQUE LEVE, IN QUEST'ORDINE
+a) Costo — TER o commissioni di gestione, spread di negoziazione, costi di cambio valuta, bollo. Quantifica in euro l'anno sul suo importo effettivo, non in percentuale astratta.
+b) Fisco — come sono tassati proventi e plusvalenze di questo specifico strumento, quali vincoli ha, cosa succederebbe fiscalmente a smobilizzarlo oggi. Verifica le aliquote su fonte primaria prima di scriverle (regola 9), o nomina il meccanismo senza il numero.
+c) Sovrapposizione — questo strumento espone a rischi che ho già altrove nel portafoglio?
+d) Peso — è coerente col ruolo che ha, o è troppo piccolo per contare o troppo grande per essere ancora "satellite"?
+e) Valuta e vincoli — esposizione valutaria non coperta, blocchi temporali, penali di uscita, liquidità dello strumento.
+
+4. ALTERNATIVE
+Se esistono strumenti che danno la stessa esposizione in modo strutturalmente migliore, nominali e confrontali sui parametri verificabili: costo corrente, indice replicato, metodo di replica, politica dei proventi, domicilio, valuta, patrimonio del fondo, anzianità. Mai il rendimento passato come motivo. Se non esiste un'alternativa chiaramente migliore, dillo: è un risultato, non un fallimento dell'analisi.
+
+5. IL VERDETTO
+Una riga sola: cosa cambierebbe davvero, quanto vale in euro l'anno, quanto costa farlo, e se ne vale la pena (regola 3: se il beneficio non supera il costo con margine, il verdetto è "va bene così").
+
+CASO SPECIALE — SCOMMESSE SPECULATIVE
+Se l'asset è un titolo singolo tematico, una crypto o comunque una posizione ad alta dispersione, non provare a giudicare se salirà: non puoi saperlo. Calcola invece quanta parte del patrimonio è ragionevole tenere in posizioni di questo tipo, quanta ce n'è oggi, e l'effetto sul totale se questa posizione andasse a zero.
+
+Chiudi con cosa non sai (regola 12).`;
+}
+function analizzaAssetAI(id){
+  const a=db.assets.find(x=>x.id===id);
+  if(!a) return;
+  const btn=document.querySelector(".nav-item[onclick*=\"'ai'\"]");
+  if(btn) goTo('ai',btn);
+  if(!aiBusy) aiAsk(promptAnalisiAsset(a.nome), true);
+}
+
 function aiSend(){
   if(aiBusy) return;
   const inp=document.getElementById('ai-in');
@@ -4411,6 +4734,7 @@ function renderDashScad(){
 // ── Modale aggiungi/modifica ──
 function openScad(id){
   eScad=id||null;
+  scadDocId = id || uid();
   const s=id?db.scadenze.find(x=>x.id===id):null;
   document.getElementById('ms-title').textContent = s?'Modifica scadenza':'Nuova scadenza';
   document.getElementById('s-del').style.display = s?'inline-flex':'none';
@@ -4425,6 +4749,7 @@ function openScad(id){
   scadAssetAll = false;
   scadSospesa = !!s?.sospesa;
   renderScadCadChips(); renderScadTipoSeg(); renderScadStatoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
+  renderAtt('s-att','scadenza',scadDocId);
   document.getElementById('mo-scad').classList.add('open');
 }
 function renderScadCadChips(){
@@ -4501,7 +4826,7 @@ function saveScad(){
     s.nome=nome; s.cadenza=scadCadenza; s.importoTipo=scadTipo; s.importo=importo;
     s.ancora=scadSospesa?'':ancora; s.cat=scadCat; s.assetIdDefault=scadAssetId; s.sospesa=scadSospesa;
   }else{
-    db.scadenze.push({id:uid(),nome,cadenza:scadCadenza,importoTipo:scadTipo,importo,
+    db.scadenze.push({id:scadDocId||uid(),nome,cadenza:scadCadenza,importoTipo:scadTipo,importo,
       ancora:scadSospesa?'':ancora,cat:scadCat,assetIdDefault:scadAssetId,sospesa:scadSospesa,
       creato:today(),pagamenti:[]});
   }
@@ -4531,29 +4856,39 @@ function annullaUltimoPagamento(){
 }
 
 // ── Segna pagato (crea sempre il movimento di uscita) ──
-function registraPagamento(s,dueISO,importo,assetId,dataPag){
-  const mov={id:uid(),data:dataPag,tipo:'uscita',desc:s.nome,cat:s.cat||'Varie / Altro',assetId:assetId||'',importo,note:''};
+// movId opzionale: serve quando la ricevuta è già stata allegata PRIMA che il
+// movimento esistesse (modale di conferma pagamento), così il documento punta
+// all'id giusto invece che a uno generato dopo.
+function registraPagamento(s,dueISO,importo,assetId,dataPag,movId){
+  const mov={id:movId||uid(),data:dataPag,tipo:'uscita',desc:s.nome,cat:s.cat||'Varie / Altro',assetId:assetId||'',importo,note:''};
   db.movimenti.push(mov);
   if(assetId) applyDelta(assetId,dataPag,-importo);
   (s.pagamenti=s.pagamenti||[]).push({ciclo:dueISO,data:dataPag,importo,movimentoId:mov.id});
   save();
+  return mov.id;
 }
 function segnaPagato(id){
   const s=db.scadenze.find(x=>x.id===id); if(!s) return;
   const due=occorrenzaDaPagare(s); if(!due) return;
   // Caso pulito: importo fisso noto + conto di default → un solo tap
   if(s.importoTipo==='fisso' && s.importo>0 && s.assetIdDefault){
-    registraPagamento(s,due,s.importo,s.assetIdDefault,today());
+    const movId=registraPagamento(s,due,s.importo,s.assetIdDefault,today());
     renderScad(); renderDash();
+    // Un tap resta un tap: la ricevuta si propone dopo, senza bloccare nulla.
+    // Se lo si ignora, il pagamento è comunque registrato.
+    toast('✓ '+s.nome+' segnata pagata','📎 Allega ricevuta',()=>{
+      openDoc(null,'movimento',movId,{nome:s.nome+' — ricevuta',tipoDoc:'Ricevuta'});
+    });
     return;
   }
   // Altrimenti (variabile o senza conto) → mini conferma
-  payScadId=id; payDueISO=due; payAssetId=s.assetIdDefault||'';
+  payScadId=id; payDueISO=due; payAssetId=s.assetIdDefault||''; payMovId=uid();
   document.getElementById('mp-title').textContent='Segna pagato — '+s.nome;
   document.getElementById('mp-sub').textContent='Scadenza del '+fScadDate(due)+' · verrà creato un movimento di uscita nella categoria “'+(s.cat||'Varie / Altro')+'”.';
   document.getElementById('p-imp').value=s.importo||'';
   document.getElementById('p-data').value=today();
   renderPayAssetChips();
+  renderAtt('p-att','movimento',payMovId);
   document.getElementById('mo-pay').classList.add('open');
 }
 function renderPayAssetChips(){
@@ -4567,8 +4902,423 @@ function confermaPagamento(){
   const importo=parseFloat(document.getElementById('p-imp').value)||0;
   if(!importo) return alert('Inserisci l’importo pagato.');
   const dataPag=document.getElementById('p-data').value||today();
-  registraPagamento(s,payDueISO,importo,payAssetId,dataPag);
+  registraPagamento(s,payDueISO,importo,payAssetId,dataPag,payMovId);
   closeM('mo-pay'); renderScad(); renderDash();
+}
+
+// ══ DOCUMENTI (19/08/2026) ═══════════════════════════════════════════
+// I FILE non stanno in pat4 e non devono starci mai: il db vive in una cella di
+// Google Sheet (blocchi da 40.000 caratteri) e una foto in base64 sono milioni di
+// caratteri — un solo documento farebbe saltare sync, backup, localStorage e il
+// contesto mandato all'AI a ogni domanda. Qui dentro c'è solo la SCHEDA del
+// documento (~150 byte): il file vive su Google Drive, caricato dall'Apps Script.
+//
+// Il campo `storage` esiste per una migrazione futura (backlog 12, Supabase):
+// oggi vale sempre 'drive', ma il giorno in cui i file si spostassero altrove
+// basta leggerlo invece di riscrivere tutte le schede.
+//
+// Aggancio POLIMORFO (`rif`), non tre elenchi paralleli: la ricevuta appartiene al
+// MOVIMENTO che la genera, il contratto alla SCADENZA che governa l'obbligo (vale
+// per tutti i pagamenti, non per quello di un mese a caso), la documentazione
+// all'ASSET. Un documento può anche non essere collegato a nulla.
+
+const TIPI_DOC=['Ricevuta','Fattura','Bolletta','Contratto','Polizza','Multa / Verbale','F24 / Tasse','Estratto conto','Garanzia','Altro'];
+const DOC_ICONE={'Ricevuta':'🧾','Fattura':'📄','Bolletta':'💡','Contratto':'📜','Polizza':'🛡️','Multa / Verbale':'🚨','F24 / Tasse':'🏛️','Estratto conto':'🏦','Garanzia':'🔧','Altro':'📎'};
+const RIF_TIPI=[{k:'',lbl:'— niente —'},{k:'movimento',lbl:'Un movimento'},{k:'scadenza',lbl:'Una scadenza'},{k:'asset',lbl:'Un asset'}];
+const DOC_IMG_MAX=1600;    // lato lungo in px dopo la compressione
+const DOC_IMG_Q=0.72;      // qualità JPEG: leggibile a schermo, ~10x più leggero
+const DOC_MAX_MB=8;
+
+let eDoc=null;                       // id del documento in modifica ('' = nuovo)
+let docTipo='Ricevuta', docRifTipo='', docRifId='', docDet=false;
+let docFileB64=null;                 // {b64,mime,size,nome} del file scelto, prima dell'upload
+let docFiltroTipo='', docFiltroAnno='', docFiltroDet=false;
+let docRifOpts=[];                   // opzioni della tendina "collegato a", per indice
+let attCtx=null;                     // ultimo riquadro allegati disegnato, per il refresh
+let movDocId=null, assetDocId=null, scadDocId=null, payMovId=null;
+
+// ── Utility ──
+function docsDi(tipo,id){ return (db.documenti||[]).filter(d=>d.rif&&d.rif.tipo===tipo&&d.rif.id===id); }
+function docIcona(t){ return DOC_ICONE[t]||'📎'; }
+function fBytes(n){
+  if(!n) return '—';
+  if(n<1024) return n+' B';
+  if(n<1024*1024) return Math.round(n/1024)+' KB';
+  return (n/1024/1024).toFixed(1).replace('.',',')+' MB';
+}
+// Etichetta di ciò a cui un documento è agganciato. Se l'oggetto non esiste più
+// (movimento cancellato, o modale annullata dopo aver allegato) lo DICE, invece di
+// far sparire il documento in silenzio: un file su Drive non deve poter evaporare.
+function docRifLabel(d){
+  if(!d.rif||!d.rif.tipo) return null;
+  if(d.rif.tipo==='movimento'){
+    const m=db.movimenti.find(x=>x.id===d.rif.id);
+    return m?{ok:true,txt:'↔ '+fScadDate(m.data)+' · '+descRiga(m)}:{ok:false,txt:'collegamento mancante'};
+  }
+  if(d.rif.tipo==='scadenza'){
+    const s=(db.scadenze||[]).find(x=>x.id===d.rif.id);
+    return s?{ok:true,txt:'⏱ '+s.nome}:{ok:false,txt:'collegamento mancante'};
+  }
+  if(d.rif.tipo==='asset'){
+    const a=db.assets.find(x=>x.id===d.rif.id);
+    return a?{ok:true,txt:'◈ '+a.nome}:{ok:false,txt:'collegamento mancante'};
+  }
+  return null;
+}
+
+// ── Riquadro allegati dentro le altre modali ──
+function renderAtt(elId,rifTipo,rifId){
+  const box=document.getElementById(elId); if(!box) return;
+  attCtx={elId,rifTipo,rifId};
+  const arr=docsDi(rifTipo,rifId);
+  const righe=arr.length
+    ? arr.map(d=>`<div class="att-row"><span>${docIcona(d.tipoDoc)}</span>`+
+        `<a href="${esc(d.url||'#')}" target="_blank" rel="noopener">${esc(d.nome)}</a>`+
+        `<button type="button" class="att-del" title="Apri la scheda" onclick="openDoc('${d.id}')">✎</button></div>`).join('')
+    : `<div class="att-none">Nessun documento allegato.</div>`;
+  box.innerHTML=righe+`<button type="button" class="btn btn-g btn-sm att-add" onclick="openDocDa('${rifTipo}','${rifId}')">📎 Allega documento</button>`;
+}
+function refreshAttBoxes(){
+  if(attCtx) renderAtt(attCtx.elId,attCtx.rifTipo,attCtx.rifId);
+  const pg=document.getElementById('page-documenti');
+  if(pg&&pg.classList.contains('active')) renderDocumenti();
+}
+function openDocDa(rifTipo,rifId){ openDoc(null,rifTipo,rifId); }
+
+// ── Toast non bloccante (usato dopo il pagamento con un tap) ──
+function toast(msg,btnLabel,fn,ms){
+  const wrap=document.getElementById('toast-wrap'); if(!wrap) return;
+  const el=document.createElement('div'); el.className='toast';
+  el.innerHTML=`<span>${esc(msg)}</span>`;
+  if(btnLabel){
+    const b=document.createElement('button'); b.textContent=btnLabel;
+    b.onclick=()=>{ el.remove(); if(fn) fn(); };
+    el.appendChild(b);
+  }
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(), ms||9000);
+}
+
+// ── Modale documento ──
+function openDoc(id,rifTipo,rifId,pre){
+  eDoc=id||null;
+  docFileB64=null;
+  const d=id?(db.documenti||[]).find(x=>x.id===id):null;
+  document.getElementById('md-title').textContent=d?'Documento':'Nuovo documento';
+  document.getElementById('d-del').style.display=d?'inline-flex':'none';
+  // Il file si carica solo alla creazione: sostituirlo dopo vorrebbe dire lasciare
+  // orfano quello vecchio su Drive senza che l'app lo sappia.
+  document.getElementById('fg-doc-file').style.display=d?'none':'block';
+  document.getElementById('fg-doc-esistente').style.display=d?'block':'none';
+  if(d) document.getElementById('d-link').href=d.url||'#';
+  const f=document.getElementById('d-file'); if(f) f.value='';
+  document.getElementById('d-fileinfo').textContent='';
+  document.getElementById('d-ocr-out').textContent='';
+  document.getElementById('d-ocr-btn').style.display='none';
+  document.getElementById('d-prog').textContent='';
+  document.getElementById('d-nome').value=d?d.nome:(pre&&pre.nome||'');
+  document.getElementById('d-note').value=d?(d.note||''):'';
+  document.getElementById('d-data').value=d?(d.data||today()):today();
+  docTipo=d?(d.tipoDoc||'Altro'):((pre&&pre.tipoDoc)||'Ricevuta');
+  docDet=d?!!d.detraibile:false;
+  docRifTipo=d?(d.rif&&d.rif.tipo||''):(rifTipo||'');
+  docRifId=d?(d.rif&&d.rif.id||''):(rifId||'');
+  renderDocTipoChips(); renderDocRifChips(); renderDocDetSeg();
+  document.getElementById('mo-doc').classList.add('open');
+}
+function renderDocTipoChips(){
+  document.getElementById('d-tipo-chips').innerHTML=TIPI_DOC.map(t=>
+    `<button type="button" class="mv-chip${t===docTipo?' sel':''}" onclick="setDocTipo('${t.replace(/'/g,"\\'")}')">${docIcona(t)} ${esc(t)}</button>`).join('');
+}
+function setDocTipo(t){ docTipo=t; renderDocTipoChips(); }
+function setDocDetraibile(v){ docDet=v; renderDocDetSeg(); }
+function renderDocDetSeg(){
+  document.getElementById('d-det-no').classList.toggle('sel',!docDet);
+  document.getElementById('d-det-si').classList.toggle('sel',docDet);
+}
+function renderDocRifChips(){
+  document.getElementById('d-rif-chips').innerHTML=RIF_TIPI.map(r=>
+    `<button type="button" class="mv-chip${r.k===docRifTipo?' sel':''}" onclick="setDocRifTipo('${r.k}')">${esc(r.lbl)}</button>`).join('');
+  const sel=document.getElementById('d-rif-sel');
+  const hint=document.getElementById('d-rif-hint');
+  if(!docRifTipo){
+    sel.style.display='none'; docRifOpts=[];
+    hint.textContent='Un documento può stare da solo: lo ritrovi comunque nell’archivio.';
+    return;
+  }
+  sel.style.display='block';
+  if(docRifTipo==='movimento'){
+    // solo gli ultimi 150, dal più recente: la tendina serve a ritrovare la spesa
+    // appena fatta, non a scorrere due anni di storico
+    docRifOpts=db.movimenti.slice().sort((a,b)=>b.data.localeCompare(a.data)).slice(0,150)
+      .map(m=>({id:m.id,lbl:fScadDate(m.data)+' · '+descRiga(m)+' · '+fImp(m.importo)}));
+    hint.textContent='La ricevuta di una spesa: si attacca al movimento che l’ha generata.';
+  }else if(docRifTipo==='scadenza'){
+    docRifOpts=(db.scadenze||[]).map(s=>({id:s.id,lbl:s.nome}));
+    hint.textContent='Contratti e polizze vanno qui: valgono per tutti i pagamenti, non per uno solo.';
+  }else{
+    docRifOpts=db.assets.map(a=>({id:a.id,lbl:a.nome}));
+    hint.textContent='Documentazione di un conto o di un investimento.';
+  }
+  // L'id corrente può non essere nella lista (oggetto non ancora salvato, o
+  // movimento più vecchio dei 150 mostrati): lo aggiungo in testa, altrimenti il
+  // select si riposizionerebbe da solo su un'altra voce cambiando il collegamento.
+  if(docRifId && !docRifOpts.some(o=>o.id===docRifId)){
+    docRifOpts.unshift({id:docRifId,lbl:'(quello che stai compilando)'});
+  }
+  sel.innerHTML='<option value="">— scegli —</option>'+
+    docRifOpts.map(o=>`<option value="${esc(o.id)}"${o.id===docRifId?' selected':''}>${esc(o.lbl)}</option>`).join('');
+  sel.onchange=function(){ docRifId=this.value; };
+}
+function setDocRifTipo(k){ if(k!==docRifTipo){ docRifTipo=k; docRifId=''; } renderDocRifChips(); }
+
+// ── Scelta del file: compressione e anteprima dei dati ──
+// Una foto di bolletta da iPhone pesa 3-5 MB. Senza compressione riempirebbe il
+// Drive e gli upload da 4G fallirebbero a metà; a 1600 px e qualità 0.72 resta
+// perfettamente leggibile e pesa ~250 KB.
+function docComprimi(file){
+  return new Promise(res=>{
+    if(!/^image\//i.test(file.type)) return res({blob:file,mime:file.type||'application/pdf'});
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      const k=Math.min(1,DOC_IMG_MAX/Math.max(w,h));
+      w=Math.max(1,Math.round(w*k)); h=Math.max(1,Math.round(h*k));
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      if(!c.toBlob) return res({blob:file,mime:file.type});
+      c.toBlob(b=>res(b?{blob:b,mime:'image/jpeg'}:{blob:file,mime:file.type}),'image/jpeg',DOC_IMG_Q);
+    };
+    // Se il browser non sa decodificare l'immagine (certi HEIC) il file parte
+    // com'è: meglio un upload grande di un upload mancato.
+    img.onerror=()=>{ URL.revokeObjectURL(url); res({blob:file,mime:file.type||'image/heic'}); };
+    img.src=url;
+  });
+}
+function blobB64(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{ const s=String(r.result); const i=s.indexOf(','); res(i>=0?s.slice(i+1):s); };
+    r.onerror=()=>rej(new Error('Impossibile leggere il file.'));
+    r.readAsDataURL(blob);
+  });
+}
+async function docFileScelto(input){
+  const info=document.getElementById('d-fileinfo');
+  const ocrBtn=document.getElementById('d-ocr-btn');
+  document.getElementById('d-ocr-out').textContent='';
+  docFileB64=null; ocrBtn.style.display='none';
+  const file=input.files&&input.files[0];
+  if(!file){ info.textContent=''; return; }
+  info.textContent='Preparo il file…';
+  try{
+    const {blob,mime}=await docComprimi(file);
+    const b64=await blobB64(blob);
+    docFileB64={b64,mime,size:blob.size,nome:file.name};
+    const risp=(blob.size<file.size)?' (da '+fBytes(file.size)+', compressa)':'';
+    info.textContent='✓ '+file.name+' — '+fBytes(blob.size)+risp;
+    if(blob.size>DOC_MAX_MB*1024*1024)
+      info.textContent+=' ⚠ oltre il limite di '+DOC_MAX_MB+' MB, l’upload verrà rifiutato.';
+    if(!document.getElementById('d-nome').value.trim())
+      document.getElementById('d-nome').value=file.name.replace(/\.[^.]+$/,'').slice(0,120);
+    ocrBtn.style.display='inline-flex';
+  }catch(err){
+    info.textContent='⚠ '+(err.message||'Errore nella lettura del file');
+  }
+}
+
+// ── OCR con l'assistente: riusa lo stesso proxy Apps Script della chat ──
+async function docOcr(){
+  if(!docFileB64) return;
+  const out=document.getElementById('d-ocr-out');
+  const url=getScriptUrl();
+  if(!url){ out.textContent='⚠ Configura prima l’URL dello script nelle Impostazioni.'; return; }
+  out.textContent='🔍 Leggo il documento…';
+  const isPdf=docFileB64.mime==='application/pdf';
+  const blocco=isPdf
+    ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:docFileB64.b64}}
+    : {type:'image',source:{type:'base64',media_type:docFileB64.mime,data:docFileB64.b64}};
+  const istruzioni='Guarda questo documento (bolletta, ricevuta, fattura, verbale o contratto italiano) '+
+    'e rispondi SOLO con un oggetto JSON, senza testo intorno e senza blocchi di codice, in questa forma esatta: '+
+    '{"fornitore":"","importo":0,"data":"AAAA-MM-GG","tipo":"","scadenza":""}. '+
+    '"tipo" deve essere uno fra: '+TIPI_DOC.join(', ')+'. '+
+    '"data" è la data del documento, "scadenza" l’eventuale data di scadenza del pagamento (vuota se non c’è). '+
+    'Usa stringa vuota o 0 per ciò che non riesci a leggere: non inventare nulla.';
+  try{
+    const payload={action:'ai',model:AI_MODEL,max_tokens:400,
+      messages:[{role:'user',content:[blocco,{type:'text',text:istruzioni}]}]};
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const raw=await resp.text();
+    let data; try{ data=JSON.parse(raw); }
+    catch(_){ throw new Error('Lo script non ha risposto in JSON (HTTP '+resp.status+').'); }
+    if(data.error) throw new Error(data.error.message||'Errore del modello');
+    const testo=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    const m=testo.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('Non sono riuscito a leggere i campi.');
+    const r=JSON.parse(m[0]);
+    // Precompilo, ma NON sovrascrivo ciò che hai già scritto a mano.
+    const nomeIn=document.getElementById('d-nome');
+    if(r.fornitore && (!nomeIn.value.trim()||nomeIn.value===docFileB64.nome.replace(/\.[^.]+$/,'')))
+      nomeIn.value=(r.fornitore+' '+(r.data||'')).trim().slice(0,120);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(r.data||'')) document.getElementById('d-data').value=r.data;
+    if(r.tipo && TIPI_DOC.includes(r.tipo)){ docTipo=r.tipo; renderDocTipoChips(); }
+    const pezzi=[];
+    if(r.fornitore) pezzi.push(r.fornitore);
+    if(+r.importo) pezzi.push('importo '+fImp(+r.importo));
+    if(r.data) pezzi.push('data '+r.data);
+    if(r.scadenza) pezzi.push('scade il '+r.scadenza);
+    out.textContent=pezzi.length
+      ? '✓ Letto: '+pezzi.join(' · ')+'. Controlla prima di salvare — l’importo va registrato a mano come movimento.'
+      : '✓ Documento letto, ma non ho trovato campi riconoscibili.';
+  }catch(err){
+    out.textContent='⚠ '+(err.message||'Errore')+' — puoi compilare a mano, il documento si salva lo stesso.';
+  }
+}
+
+// ── Upload e salvataggio ──
+async function docUploadFile(nome){
+  const url=getScriptUrl();
+  if(!url) throw new Error('Configura prima l’URL dello script nelle Impostazioni.');
+  const payload={action:'upload',nome,mime:docFileB64.mime,dataB64:docFileB64.b64};
+  const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+  const raw=await resp.text();
+  let data;
+  try{ data=JSON.parse(raw); }
+  catch(_){ throw new Error('Lo script non ha restituito JSON (HTTP '+resp.status+'). Hai RIPUBBLICATO lo script dopo aver incollato la parte Documenti? (Gestisci deployment → Nuova versione)'); }
+  if(!data.ok) throw new Error(data.error||'Upload rifiutato dallo script.');
+  return data;
+}
+async function saveDoc(){
+  const nome=document.getElementById('d-nome').value.trim();
+  if(!nome) return alert('Dai un nome al documento.');
+  const data=document.getElementById('d-data').value||today();
+  const note=document.getElementById('d-note').value.trim();
+  const prog=document.getElementById('d-prog');
+  const btn=document.getElementById('d-save');
+
+  if(eDoc){
+    const d=db.documenti.find(x=>x.id===eDoc);
+    if(!d) return;
+    d.nome=nome; d.tipoDoc=docTipo; d.data=data; d.note=note;
+    d.detraibile=docDet; d.rif={tipo:docRifTipo,id:docRifTipo?docRifId:''};
+    save(); closeM('mo-doc'); refreshAttBoxes();
+    return;
+  }
+
+  if(!docFileB64) return alert('Scegli una foto o un PDF da allegare.');
+  btn.disabled=true;
+  prog.textContent='⏳ Carico su Drive… ('+fBytes(docFileB64.size)+')';
+  try{
+    const up=await docUploadFile(nome);
+    db.documenti.push({
+      id:uid(), nome, tipoDoc:docTipo, data,
+      rif:{tipo:docRifTipo,id:docRifTipo?docRifId:''},
+      storage:'drive', fileId:up.fileId, url:up.url, mime:up.mime||docFileB64.mime,
+      size:up.size||docFileB64.size, detraibile:docDet, note, creato:today()
+    });
+    await save();
+    prog.textContent='';
+    btn.disabled=false;
+    closeM('mo-doc');
+    refreshAttBoxes();
+    toast('📎 '+nome+' archiviato su Drive');
+  }catch(err){
+    btn.disabled=false;
+    prog.textContent='⚠ '+(err.message||'Upload fallito');
+  }
+}
+async function delDoc(){
+  if(!eDoc) return;
+  const d=db.documenti.find(x=>x.id===eDoc); if(!d) return;
+  if(!confirm('Eliminare “'+d.nome+'”?\nIl file va nel cestino di Drive, dove resta recuperabile per 30 giorni.')) return;
+  const url=getScriptUrl();
+  let avviso='';
+  if(url&&d.fileId){
+    try{
+      const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'docdel',fileId:d.fileId})});
+      const r=JSON.parse(await resp.text());
+      if(!r.ok) avviso='La scheda è stata rimossa, ma il file su Drive è rimasto: '+(r.error||'')+'\nCancellalo a mano dalla cartella dei documenti.';
+    }catch(e){
+      avviso='La scheda è stata rimossa, ma non sono riuscito a contattare Drive: il file è ancora lì.';
+    }
+  }
+  db.documenti=db.documenti.filter(x=>x.id!==eDoc);
+  save(); closeM('mo-doc'); refreshAttBoxes();
+  if(avviso) alert(avviso);
+}
+
+// ── Pagina Documenti ──
+function docAnni(){ return [...new Set((db.documenti||[]).map(d=>(d.data||'').slice(0,4)).filter(Boolean))].sort().reverse(); }
+function docFiltrati(){
+  let arr=(db.documenti||[]).slice();
+  if(docFiltroTipo) arr=arr.filter(d=>d.tipoDoc===docFiltroTipo);
+  if(docFiltroAnno) arr=arr.filter(d=>(d.data||'').slice(0,4)===docFiltroAnno);
+  if(docFiltroDet) arr=arr.filter(d=>d.detraibile);
+  return arr.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+}
+function setDocFiltroTipo(t){ docFiltroTipo=(docFiltroTipo===t)?'':t; renderDocumenti(); }
+function toggleDocDet(){ docFiltroDet=!docFiltroDet; renderDocumenti(); }
+function setDocFiltroAnno(v){ docFiltroAnno=v; renderDocumenti(); }
+function renderDocumenti(){
+  const list=document.getElementById('doc-list'); if(!list) return;
+  const tutti=db.documenti||[];
+  const anno=String(new Date().getFullYear());
+
+  const sum=document.getElementById('doc-summary');
+  if(sum){
+    const spazio=tutti.reduce((s,d)=>s+(d.size||0),0);
+    const det=tutti.filter(d=>d.detraibile&&(d.data||'').slice(0,4)===anno).length;
+    const orfani=tutti.filter(d=>{const r=docRifLabel(d); return r&&!r.ok;}).length;
+    sum.innerHTML=tutti.length?`
+      <div class="doc-chip"><b>${tutti.length}</b> documenti</div>
+      <div class="doc-chip"><b>${fBytes(spazio)}</b> su Drive</div>
+      <div class="doc-chip">🧾 <b>${det}</b> per il 730 ${anno}</div>`
+      +(orfani?`<div class="doc-chip" style="color:var(--orange)">⚠ <b>${orfani}</b> senza collegamento</div>`:''):'';
+  }
+
+  const f=document.getElementById('doc-filters');
+  if(f){
+    const tipiPresenti=TIPI_DOC.filter(t=>tutti.some(d=>d.tipoDoc===t));
+    const anni=docAnni();
+    f.innerHTML=tutti.length?
+      tipiPresenti.map(t=>`<button class="doc-fbtn${docFiltroTipo===t?' sel':''}" onclick="setDocFiltroTipo('${t.replace(/'/g,"\\'")}')">${docIcona(t)} ${esc(t)}</button>`).join('')
+      +`<button class="doc-fbtn${docFiltroDet?' sel':''}" onclick="toggleDocDet()">🧾 Solo 730</button>`
+      +(anni.length>1?`<select class="doc-fbtn" onchange="setDocFiltroAnno(this.value)"><option value="">Tutti gli anni</option>`+
+        anni.map(a=>`<option value="${a}"${docFiltroAnno===a?' selected':''}>${a}</option>`).join('')+`</select>`:'')
+      :'';
+  }
+
+  if(!tutti.length){
+    list.innerHTML=`<div class="doc-empty">Nessun documento archiviato.<br>
+      Fotografa una bolletta o carica un PDF con <b>+ Aggiungi</b>, oppure allegalo direttamente da un movimento, da una scadenza o mentre segni pagato.<br>
+      <span style="color:var(--text3);font-size:.74rem">I file finiscono in una cartella privata del tuo Google Drive: qui resta solo la scheda che li collega ai tuoi soldi.</span></div>`;
+    return;
+  }
+  const arr=docFiltrati();
+  if(!arr.length){ list.innerHTML=`<div class="doc-empty">Nessun documento con questi filtri.</div>`; return; }
+
+  list.innerHTML=arr.map(d=>{
+    const rif=docRifLabel(d);
+    const badges=[
+      `<span class="doc-badge">${esc(d.tipoDoc||'Altro')}</span>`,
+      d.detraibile?`<span class="doc-badge det">🧾 730</span>`:'',
+      rif?`<span class="doc-badge ${rif.ok?'rif':'orf'}">${esc(rif.txt)}</span>`:''
+    ].join('');
+    return `<div class="doc-card">
+      <div class="doc-ic">${docIcona(d.tipoDoc)}</div>
+      <div class="doc-body">
+        <div class="doc-nome">${esc(d.nome)}</div>
+        <div class="doc-meta">${fScadDate(d.data)} · ${fBytes(d.size)}${d.note?' · '+esc(d.note):''}</div>
+        <div class="doc-badges">${badges}</div>
+      </div>
+      <div class="doc-acts">
+        <a href="${esc(d.url||'#')}" target="_blank" rel="noopener">Apri</a>
+        <button onclick="openDoc('${d.id}')">✎</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── INIT ──
