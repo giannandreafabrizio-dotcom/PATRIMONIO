@@ -660,6 +660,20 @@ tbody tr:hover td{background:var(--s2);}
 .doc-acts button:hover,.doc-acts a:hover{color:var(--text);border-color:var(--border2);}
 .doc-empty{padding:2rem 1rem;text-align:center;color:var(--text3);font-size:.8rem;line-height:1.75;}
 .doc-hint{font-size:.67rem;color:var(--text3);margin-top:.3rem;line-height:1.5;}
+/* Scorciatoie per la data di scadenza (22/08/2026). Il conto a mano — compro
+   oggi, scade fra due anni, che giorno è? — è dove si sbaglia: stessa ragione
+   per cui il preavviso della disdetta si scrive anche in mesi. */
+.dsc-row{display:flex;gap:.45rem;align-items:center;}
+.dsc-row input{flex:1;min-width:0;}
+.dsc-btn{flex-shrink:0;padding:.5rem .6rem;border-radius:9px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.72rem;cursor:pointer;white-space:nowrap;transition:all .12s;}
+.dsc-btn:hover{border-color:var(--border2);color:var(--text);}
+.dsc-btn.dsc-x{color:var(--text3);padding:.5rem .55rem;}
+@media(max-width:640px){ .dsc-row{flex-wrap:wrap;} .dsc-row input{flex:1 0 100%;} .dsc-btn{flex:1;} }
+/* Come nel trasferimento: qui la griglia non si taglia. I dieci tipi di documento
+   stanno in quattro righe, e il max-height di 132 px ne mozzava una a metà —
+   proprio quella dove cade "Garanzia", che con le scorciatoie qui sopra diventa
+   un tipo che si usa spesso. Scorre la modale, che è una barra sola. */
+#mo-doc .mv-chipgrid{max-height:none;overflow:visible;}
 .doc-prog{font-size:.73rem;color:var(--text2);margin-top:.45rem;}
 .doc-ocr{font-size:.73rem;color:var(--teal);margin-top:.45rem;line-height:1.55;}
 .doc-file{font-size:.74rem;color:var(--text2);margin-top:.4rem;}
@@ -1570,12 +1584,18 @@ tbody tr:hover td{background:var(--s2);}
 
     <div class="fg"><label>Nome</label><input id="d-nome" placeholder="es. Bolletta Vodafone agosto 2026" maxlength="120"></div>
     <div class="fg"><label>Tipo</label><div class="mv-chipgrid" id="d-tipo-chips"></div></div>
-    <div class="fg"><label>Data del documento</label><input type="date" id="d-data" onchange="aggiornaHintConservazione()">
+    <div class="fg"><label>Data del documento</label><input type="date" id="d-data" onchange="aggiornaHintConservazione();aggiornaHintScadenza()">
       <div class="doc-hint" id="d-cons-hint"></div>
     </div>
 
-    <div class="fg"><label>Scade il (facoltativo)</label><input type="date" id="d-scade">
-      <div class="doc-hint">Solo per i documenti che a un certo punto smettono di valere: garanzie, carta d'identità, patente, passaporto, revisione. Te lo ricorda il promemoria del lunedì su Telegram.</div>
+    <div class="fg"><label>Scade il (facoltativo)</label>
+      <div class="dsc-row">
+        <input type="date" id="d-scade" onchange="aggiornaHintScadenza()">
+        <button type="button" class="dsc-btn" onclick="scadeFraAnni(1)">+1 anno</button>
+        <button type="button" class="dsc-btn" onclick="scadeFraAnni(2)">+2 anni</button>
+        <button type="button" class="dsc-btn dsc-x" onclick="scadeFraAnni(0)" title="Svuota">✕</button>
+      </div>
+      <div class="doc-hint" id="d-scade-hint"></div>
     </div>
 
     <div class="fg">
@@ -5838,7 +5858,7 @@ function openDoc(id,rifTipo,rifId,pre){
 function renderDocTipoChips(){
   document.getElementById('d-tipo-chips').innerHTML=TIPI_DOC.map(t=>
     `<button type="button" class="mv-chip${t===docTipo?' sel':''}" onclick="setDocTipo('${t.replace(/'/g,"\\'")}')">${docIcona(t)} ${esc(t)}</button>`).join('');
-  aggiornaHintConservazione();
+  aggiornaHintConservazione(); aggiornaHintScadenza();
 }
 function setDocTipo(t){ docTipo=t; renderDocTipoChips(); }
 // La durata si vede mentre scegli il tipo, non dopo aver salvato: così se un
@@ -5853,6 +5873,35 @@ function aggiornaHintConservazione(){
   const fino=conservaFinoA(fittizio);
   el.textContent='Da conservare '+anni+' anni'+(fino?', cioè fino al '+fScadDate(fino):'')+
                  ' — indicazione pratica, non un parere legale: nel dubbio tienilo.';
+}
+// ── Scorciatoie per "Scade il" (22/08/2026) ──
+// Nascono dalle garanzie: la garanzia legale sui beni nuovi dura due anni dalla
+// consegna, ma per scriverla bisogna fare il conto a mano — compro il 22/08/2026,
+// scade il… — ed è il tipo di conto in cui si sbaglia di un giorno o di un anno.
+// La data si calcola dalla DATA DEL DOCUMENTO, non da oggi: uno scontrino si
+// archivia spesso qualche giorno dopo l'acquisto, e partire da oggi darebbe una
+// scadenza più lunga del vero. Se la data del documento manca si parte da oggi,
+// e l'aiuto lo dichiara invece di farlo di nascosto.
+function scadeFraAnni(n){
+  const el=document.getElementById('d-scade');
+  if(!n){ el.value=''; aggiornaHintScadenza(); return; }
+  const base=document.getElementById('d-data').value||today();
+  el.value=addMonthsISO(base,n*12);
+  aggiornaHintScadenza();
+}
+function aggiornaHintScadenza(){
+  const el=document.getElementById('d-scade-hint'); if(!el) return;
+  const v=document.getElementById('d-scade').value;
+  const fisso="Solo per i documenti che a un certo punto smettono di valere: garanzie, carta d’identità, patente, passaporto, revisione. Te lo ricorda il promemoria del lunedì su Telegram.";
+  if(!v){
+    const senzaData=!document.getElementById('d-data').value;
+    el.innerHTML=fisso+(senzaData?'<br>I pulsanti contano dalla <b>data del documento</b>; se la lasci vuota partono da oggi.':'');
+    return;
+  }
+  const gg=daysBetween(today(),v);
+  el.innerHTML = gg<0
+    ? `Scaduto da ${Math.abs(gg)} giorni.`
+    : `Scade fra <b>${gg} giorni</b>, il ${fScadDate(v)} — ti avviso ${DOC_SCAD_GRACE} giorni prima.`;
 }
 function setDocDetraibile(v){ docDet=v; renderDocDetSeg(); }
 function renderDocDetSeg(){
