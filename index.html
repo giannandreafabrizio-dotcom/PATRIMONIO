@@ -714,6 +714,37 @@ tbody tr:hover td{background:var(--s2);}
 .disd-fatta button{padding:.4rem .8rem;border-radius:11px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.73rem;cursor:pointer;}
 .disd-fatta button:hover{border-color:var(--border2);color:var(--text);}
 .disd-fatta .ok{color:var(--orange);border-color:rgba(251,146,60,.35);}
+/* ── STORICO DI UNA SCADENZA (22/08/2026) ──
+   Contratto e pagamenti restano DUE blocchi, non una cronologia sola: un
+   contratto del 2024 in mezzo ai pagamenti del 2026 finirebbe in fondo, ed è
+   invece la prima cosa che si cerca. È la stessa distinzione del 19/08 —
+   la ricevuta appartiene al pagamento, il contratto alla scadenza. */
+.st-hd{display:flex;align-items:center;gap:.7rem;margin:-.5rem 0 .9rem;}
+.st-hd .scad-dot{width:12px;height:12px;}
+.st-hd-sub{font-size:.72rem;color:var(--text3);}
+.st-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.1rem;}
+.st-chip{padding:.5rem .8rem;border-radius:13px;background:var(--s2);border:1px solid var(--border);font-size:.73rem;color:var(--text3);line-height:1.4;}
+.st-chip b{display:block;font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;color:var(--text);margin-top:.1rem;}
+.st-sec{font-size:.63rem;color:var(--text3);text-transform:uppercase;letter-spacing:.9px;margin:1.1rem 0 .5rem;display:flex;align-items:center;gap:.6rem;}
+.st-sec span{flex:1;}
+.st-add{background:none;border:1px solid var(--border);border-radius:9px;color:var(--text3);font-family:'Inter',sans-serif;font-size:.68rem;padding:.22rem .55rem;cursor:pointer;text-transform:none;letter-spacing:0;}
+.st-add:hover{border-color:var(--border2);color:var(--text);}
+.st-row{display:flex;gap:.7rem;padding:.6rem .75rem;background:var(--s2);border:1px solid var(--border);border-radius:12px;margin-bottom:.45rem;align-items:flex-start;}
+.st-ico{flex-shrink:0;width:22px;text-align:center;font-size:.9rem;line-height:1.5;}
+.st-mid{flex:1;min-width:0;}
+.st-t{font-size:.82rem;color:var(--text);}
+.st-m{font-size:.68rem;color:var(--text3);margin-top:.15rem;}
+.st-r{flex-shrink:0;font-family:'Space Grotesk',sans-serif;font-size:.83rem;font-weight:600;color:var(--text);white-space:nowrap;}
+.st-sub{margin-top:.4rem;padding-top:.4rem;border-top:1px solid var(--border);font-size:.7rem;color:var(--text3);display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+.st-sub a{color:var(--blue);text-decoration:none;}
+.st-sub.manca{color:var(--orange);}
+.st-sub button{background:none;border:1px solid rgba(251,146,60,.35);border-radius:9px;color:var(--orange);font-family:'Inter',sans-serif;font-size:.68rem;padding:.2rem .5rem;cursor:pointer;}
+.st-vuoto{font-size:.73rem;color:var(--text3);line-height:1.6;padding:.7rem .75rem;border:1px dashed var(--border);border-radius:12px;}
+.st-more{display:block;width:100%;background:none;border:none;color:var(--text3);font-family:'Inter',sans-serif;font-size:.72rem;padding:.4rem;cursor:pointer;text-align:left;}
+.st-more:hover{color:var(--text2);}
+.st-foot{margin-top:1rem;padding-top:.7rem;border-top:1px solid var(--border);font-size:.68rem;color:var(--text3);line-height:1.7;}
+.scad-stor{background:none;border:none;padding:0;color:var(--text3);font-family:'Inter',sans-serif;font-size:.72rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.scad-stor:hover{color:var(--text);}
 @media(max-width:640px){
   .disd-row{flex-wrap:wrap;} .disd-row input{flex:1 0 100%;}
   /* La riga della scadenza era una flex a quattro colonne anche a 390 px: nome,
@@ -1385,6 +1416,16 @@ tbody tr:hover td{background:var(--s2);}
       <button class="btn btn-g" onclick="closeM('mo-viagst')">Annulla</button>
       <button class="btn btn-p" onclick="saveViagStorico()">Salva</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL STORICO DI UNA SCADENZA -->
+<div class="overlay" id="mo-stor">
+  <div class="modal">
+    <h3 id="st-title">Storico</h3>
+    <div id="st-head"></div>
+    <div id="st-body"></div>
+    <div class="mf"><button class="btn btn-g" onclick="closeM('mo-stor')">Chiudi</button></div>
   </div>
 </div>
 
@@ -2125,6 +2166,7 @@ function closeM(id){
   // di quella sotto (sarebbe come premere Annulla su un movimento a metà), e si
   // ridisegnano i suoi allegati, che potrebbero essere appena cambiati.
   if(id==='mo-doc'){ eDoc=null; docFileB64=null; refreshAttBoxes(); return; }
+  if(id==='mo-stor'){ storScadId=null; storTutti=false; return; }
   eAsset=null; eMov=null; eViagSt=null;
 }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){
@@ -5152,6 +5194,115 @@ function disdTag(sd){
   if(sd.stato==='futura') return `<div class="disd-tag futura">🚪&nbsp; Puoi disdire entro il ${fScadDate(sd.termine)}</div>`;
   return '';
 }
+// ── STORICO DI UNA SCADENZA (22/08/2026) ──
+// Chiude il punto 7 del backlog §9-D. Fino a qui, per sapere cosa fosse successo
+// a un contratto bisognava guardare in tre posti: la scadenza per le condizioni,
+// Movimenti per i pagamenti, Documenti per le carte. Qui stanno insieme.
+//
+// ⚠️ Nessun dato nuovo: è tutto ricostruito da `s.pagamenti[]`, dai movimenti
+// collegati e da `docsDi()`. Stessa filosofia di `storicoAggiornamenti()` — lo
+// storico si deduce da ciò che c'è già, non si salva una seconda volta.
+const ST_MAX=24;   // pagamenti mostrati prima di "+ altri N"
+let storScadId=null, storTutti=false;
+
+function riepilogoStorico(s){
+  const p=(s.pagamenti||[]);
+  const tot=p.reduce((x,y)=>x+(+y.importo||0),0);
+  const anno=String(new Date().getFullYear());
+  const totAnno=p.filter(y=>((y.data||y.ciclo||'')+'').startsWith(anno))
+                 .reduce((x,y)=>x+(+y.importo||0),0);
+  // "senza ricevuta" conta solo i pagamenti che HANNO un movimento collegato:
+  // quelli vecchi, registrati prima che il collegamento esistesse, non sono
+  // scoperti — semplicemente non sono verificabili, e dirlo sarebbe un falso.
+  const senza=p.filter(y=>y.movimentoId && !docsDi('movimento',y.movimentoId).length).length;
+  return {n:p.length, tot, media:p.length?tot/p.length:0, totAnno, anno, senza};
+}
+function pagamentiStorico(s){
+  return (s.pagamenti||[]).slice().sort((a,b)=>
+    ((b.data||b.ciclo||'')+'').localeCompare((a.data||a.ciclo||'')+''));
+}
+function openStorico(id){
+  storScadId=id; storTutti=false;
+  renderStorico();
+  document.getElementById('mo-stor').classList.add('open');
+}
+function storicoMostraTutti(){ storTutti=true; renderStorico(); }
+function renderStorico(){
+  const s=(db.scadenze||[]).find(x=>x.id===storScadId); if(!s) return;
+  const st=statoScad(s), sd=statoDisdetta(s), r=riepilogoStorico(s);
+  document.getElementById('st-title').textContent='Storico';
+  document.getElementById('st-head').innerHTML=
+    `<div class="st-hd"><span class="scad-dot ${st.stato}"></span>
+       <div><div style="font-size:.95rem;font-weight:500">${esc(s.nome)}</div>
+       <div class="st-hd-sub">${esc(cadLabel(s.cadenza))}${s.cat?' · '+esc(s.cat):''}</div></div></div>
+     <div class="st-chips">
+       <div class="st-chip">Totale pagato<b>${fImp(r.tot)}</b></div>
+       <div class="st-chip">Pagamenti<b>${r.n}</b></div>
+       ${r.n?`<div class="st-chip">Media<b>${fImp(r.media)}</b></div>`:''}
+       ${r.totAnno?`<div class="st-chip">Nel ${r.anno}<b>${fImp(r.totAnno)}</b></div>`:''}
+       ${r.senza?`<div class="st-chip" style="border-color:rgba(251,146,60,.35);color:var(--orange)">Senza ricevuta<b style="color:var(--orange)">${r.senza}</b></div>`:''}
+     </div>`;
+
+  // 1) Il contratto sta in cima e fuori dalla cronologia: un contratto del 2024
+  //    in mezzo ai pagamenti del 2026 finirebbe in fondo, ed è la prima cosa che
+  //    si cerca quando si apre uno storico.
+  const cont=docsDi('scadenza',s.id).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  let html=`<div class="st-sec"><span>📄 Contratto e documenti</span>
+    <button type="button" class="st-add" onclick="openDocDa('scadenza','${s.id}')">📎 Allega</button></div>`;
+  html += cont.length
+    ? cont.map(d=>`<div class="st-row">
+        <span class="st-ico">${docIcona(d.tipoDoc)}</span>
+        <span class="st-mid"><span class="st-t">${esc(d.nome)}</span>
+          <span class="st-m">${esc(d.tipoDoc)}${d.data?' · '+fScadDate(d.data):''}</span></span>
+        <span class="st-r"><a href="${esc(d.url||'#')}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none;font-size:.72rem">Apri</a></span>
+      </div>`).join('')
+    : `<div class="st-vuoto">Nessun contratto allegato. Il contratto va <b>qui</b>, non sul pagamento di un mese a caso: governa tutti i pagamenti, non uno solo.</div>`;
+
+  // 2) I pagamenti, dal più recente, con la ricevuta appesa al pagamento giusto
+  const pag=pagamentiStorico(s);
+  const mostra=storTutti?pag:pag.slice(0,ST_MAX);
+  html+=`<div class="st-sec"><span>💶 Pagamenti${pag.length?' · '+pag.length:''}</span></div>`;
+  if(!pag.length){
+    html+=`<div class="st-vuoto">Nessun pagamento ancora registrato. Compariranno qui appena usi <b>Segna pagato</b>.</div>`;
+  } else {
+    html+=mostra.map(p=>{
+      const m=p.movimentoId?db.movimenti.find(x=>x.id===p.movimentoId):null;
+      const a=m?db.assets.find(x=>x.id===m.assetId):null;
+      const docs=p.movimentoId?docsDi('movimento',p.movimentoId):[];
+      let sub;
+      if(docs.length) sub=`<div class="st-sub">📎 ${docs.map(d=>
+        `<a href="${esc(d.url||'#')}" target="_blank" rel="noopener">${esc(d.nome)}</a>`).join(' · ')}</div>`;
+      else if(p.movimentoId) sub=`<div class="st-sub manca">⚠ nessuna ricevuta
+        <button type="button" onclick="allegaRicevutaDaStorico('${p.movimentoId}')">📎 Allega</button></div>`;
+      // pagamento registrato prima che esistesse il collegamento al movimento:
+      // non è "scoperto", è solo non verificabile, e dirlo è più onesto
+      else sub=`<div class="st-sub">Registrato senza movimento collegato</div>`;
+      return `<div class="st-row"><span class="st-ico">✓</span>
+        <span class="st-mid"><span class="st-t">${fScadDate(p.data||p.ciclo)}</span>
+          <span class="st-m">ciclo del ${fScadDate(p.ciclo)}${a?' · '+esc(a.nome):''}</span>
+          ${sub}</span>
+        <span class="st-r">${fImp(p.importo)}</span></div>`;
+    }).join('');
+    if(pag.length>mostra.length)
+      html+=`<button type="button" class="st-more" onclick="storicoMostraTutti()">+ altri ${pag.length-mostra.length}</button>`;
+  }
+
+  const note=[];
+  if(sd&&sd.stato==='fatta') note.push(`🚪 Disdetta inviata il ${fScadDate(s.disdettaFatta)}`);
+  else if(sd&&sd.termine) note.push(`🚪 Si può disdire entro il ${fScadDate(sd.termine)}`);
+  if(st.prossima) note.push(`📅 Prossima scadenza il ${fScadDate(st.prossima)}`);
+  if(s.creato) note.push(`Scadenza creata il ${fScadDate(s.creato)}`);
+  if(note.length) html+=`<div class="st-foot">${note.join('<br>')}</div>`;
+  document.getElementById('st-body').innerHTML=html;
+}
+// La modale documento si apre SOPRA lo storico: alla chiusura `refreshAttBoxes`
+// ridisegna anche questo, così la ricevuta appena caricata compare senza dover
+// riaprire nulla.
+function allegaRicevutaDaStorico(movId){
+  const s=(db.scadenze||[]).find(x=>x.id===storScadId);
+  allegaRicevutaA(movId, s?s.nome:'Pagamento');
+}
+
 // Un tap dalla riga: è il gesto che serve nel momento in cui la disdetta la mandi
 // davvero. La modale resta per correggere.
 function segnaDisdetta(id){
@@ -5169,6 +5320,14 @@ function metaScad(s,st){
   if(st.stato==='giallo') return `<span class="scad-state giallo">In scadenza il ${fScadDate(st.refDate)}</span> · tra ${st.giorni}g · ${cad}`;
   if(st.stato==='verde')  return `<span class="scad-state verde">✓ In regola</span>${st.prossima?` · prossima ${fScadDate(st.prossima)}`:''} · ${cad}`;
   return `<span class="scad-state grigio">Prossima ${fScadDate(st.refDate)}</span> · ${cad}`;
+}
+
+// Il link compare solo se c'è davvero qualcosa da guardare: su una scadenza
+// appena creata aprirebbe una schermata vuota, e un'azione che non porta a
+// niente insegna a non premerla più.
+function storLink(s){
+  const n=(s.pagamenti||[]).length + docsDi('scadenza',s.id).length;
+  return n? ` · <button type="button" class="scad-stor" onclick="openStorico('${s.id}')">🕘 Storico (${n})</button>`:'';
 }
 
 function renderScad(){
@@ -5232,7 +5391,7 @@ function renderScad(){
       <span class="scad-dot ${st.stato}"></span>
       <div class="scad-main">
         <div class="scad-nome">${esc(s.nome)}</div>
-        <div class="scad-meta">${metaScad(s,st)}</div>
+        <div class="scad-meta">${metaScad(s,st)}${storLink(s)}</div>
         ${disdTag(sd)}
       </div>
       <div class="scad-imp">${imp}</div>
@@ -5628,6 +5787,7 @@ function renderAtt(elId,rifTipo,rifId){
 }
 function refreshAttBoxes(){
   if(attCtx) renderAtt(attCtx.elId,attCtx.rifTipo,attCtx.rifId);
+  if(storScadId && document.getElementById('mo-stor').classList.contains('open')) renderStorico();
   const pg=document.getElementById('page-documenti');
   if(pg&&pg.classList.contains('active')) renderDocumenti();
 }
