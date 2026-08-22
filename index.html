@@ -99,10 +99,30 @@ tbody tr:hover td{background:var(--s2);}
 .mv-datein.sel{border-color:#fff;}
 .mv-today{flex-shrink:0;padding:.55rem 1rem;border-radius:13px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.82rem;cursor:pointer;}
 .mv-today.sel{background:var(--s3);border-color:#fff;color:#fff;font-weight:500;}
+/* Trasferimento in stile cubettoni (22/08/2026). `.mv-chip.off` è l'asset già
+   scelto dall'altra parte: si vede prima di sbagliare, invece di scoprirlo
+   dall'alert al salvataggio. */
+.mv-chip.off{opacity:.3;cursor:not-allowed;}
+/* Nel trasferimento le griglie non si tagliano: con 30 asset il max-height di
+   132px mostrava una riga di chip mozzata a metà, che sembra un errore di
+   render e non dice che c'è dell'altro sotto. Qui scorre la modale, che è una
+   sola barra invece di tre. */
+#mo-trasf .mv-chipgrid{max-height:none;overflow:visible;}
+.tr-swap{display:block;margin:-.35rem auto .85rem;padding:.42rem .95rem;border-radius:13px;border:1.5px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.75rem;cursor:pointer;transition:all .12s;}
+.tr-swap:hover{border-color:var(--border2);color:var(--text);}
+.tr-prev{background:var(--s2);border:1.5px solid var(--border);border-radius:18px;padding:.9rem 1rem;margin-bottom:.85rem;}
+.tr-prev-t{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:.6rem;}
+.tr-prev-row{display:flex;align-items:center;gap:.7rem;}
+.tr-prev-side{flex:1;min-width:0;}
+.tr-prev-nome{font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-prev-val{font-family:'Space Grotesk',sans-serif;font-size:.75rem;color:var(--text3);margin-top:.18rem;}
+.tr-prev-val b{color:var(--text);font-weight:600;}
+.tr-prev-arrow{flex-shrink:0;font-size:1.1rem;color:var(--text3);}
+.tr-prev-warn{margin-top:.6rem;font-size:.72rem;color:var(--orange);line-height:1.45;}
 @media(max-width:720px){
-  .overlay#mo-mov{align-items:flex-end;background:rgba(0,0,0,.55);}
-  #mo-mov .modal{width:100%;max-width:100%;border-radius:26px 26px 0 0;max-height:92vh;padding:1.1rem 1.1rem 1.4rem;}
-  #mo-mov .modal::before{content:'';display:block;width:38px;height:5px;border-radius:3px;background:#48484a;margin:-.3rem auto 1rem;}
+  .overlay#mo-mov,.overlay#mo-trasf{align-items:flex-end;background:rgba(0,0,0,.55);}
+  #mo-mov .modal,#mo-trasf .modal{width:100%;max-width:100%;border-radius:26px 26px 0 0;max-height:92vh;padding:1.1rem 1.1rem 1.4rem;}
+  #mo-mov .modal::before,#mo-trasf .modal::before{content:'';display:block;width:38px;height:5px;border-radius:3px;background:#48484a;margin:-.3rem auto 1rem;}
 }
 .modal{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:1.6rem;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;}
 .modal h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:1.2rem;}
@@ -1288,15 +1308,25 @@ tbody tr:hover td{background:var(--s2);}
 <div class="overlay" id="mo-trasf">
   <div class="modal">
     <h3>⇄ Trasferimento tra conti</h3>
-    <p style="font-size:.77rem;color:var(--text3);margin-bottom:1rem">Sposta denaro da un asset all'altro.</p>
-    <div class="fg"><label>Data</label><input type="date" id="tr-data"></div>
-    <div class="fg"><label>Descrizione (opzionale)</label><input id="tr-desc" placeholder="es. Ricarica Revolut…"></div>
-    <div class="fr">
-      <div class="fg"><label>📤 Da (conto origine)</label><select id="tr-from"><option value="">— seleziona —</option></select></div>
-      <div class="fg"><label>📥 A (conto destinazione)</label><select id="tr-to"><option value="">— seleziona —</option></select></div>
+
+    <div class="mv-amount"><input type="number" id="tr-imp" placeholder="0 €" step="0.01" min="0" inputmode="decimal" oninput="updTrasfPreview()"></div>
+
+    <div class="fg"><label>📤 Da (conto di origine)</label><div class="mv-chipgrid" id="tr-from-chips"></div></div>
+    <button type="button" class="tr-swap" onclick="invertiTrasf()">⇅ Inverti</button>
+    <div class="fg"><label>📥 A (conto di destinazione)</label><div class="mv-chipgrid" id="tr-to-chips"></div></div>
+
+    <div class="tr-prev" id="tr-preview" style="display:none"></div>
+
+    <div class="fg">
+      <label>Data</label>
+      <div class="mv-datebtns">
+        <input type="date" id="tr-data" class="mv-datein">
+        <button type="button" class="mv-today" id="tr-today-btn" onclick="setTrasfOggi()">Oggi</button>
+      </div>
     </div>
-    <div class="fg"><label>Importo EUR</label><input type="number" id="tr-imp" placeholder="0.00" step="0.01" min="0" oninput="updTrasfPreview()"></div>
-    <div id="tr-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.8rem;font-size:.77rem;color:var(--text2);margin-bottom:.5rem"></div>
+
+    <div class="fg"><label>Descrizione (facoltativa)</label><input id="tr-desc" placeholder="Vuoto = «Trasferimento origine → destinazione»"></div>
+
     <div class="mf">
       <button class="btn btn-g" onclick="closeM('mo-trasf')">Annulla</button>
       <button class="btn btn-p" onclick="saveTrasf()">Esegui trasferimento</button>
@@ -2327,38 +2357,91 @@ function delMov(id){
 }
 
 // ── TRASFERIMENTO ──
+// Modale portata allo stile "cubettoni" il 22/08/2026: importo grande, conti a
+// chip, data col pulsante Oggi, bottom sheet su iPhone. Era l'ultima modale col
+// design vecchio.
+// ⚠️ Nessun asset è escluso, e non va escluso: comprare un titolo È un
+// trasferimento liquidità → investimento, quindi un filtro secco renderebbe
+// impossibile l'operazione per cui il trasferimento esiste (§10). Titoli e
+// crypto stanno però dietro "+ Altri N", com'era già per la modale movimento:
+// è un default, non un filtro, e costa un tap. Motivo: con 30 asset la griglia
+// piena occupa mezza schermata per lato e la riga tagliata dal max-height
+// sembra un errore di render.
+let trFrom='', trTo='', trFromAll=false, trToAll=false;
+function trAssetOrdinati(){
+  return [...db.assets.filter(a=>TIPI_PAGAMENTO.includes(a.tipo)),
+          ...db.assets.filter(a=>!TIPI_PAGAMENTO.includes(a.tipo))];
+}
+function renderTrasfChips(){
+  [['tr-from-chips',trFrom,'setTrasfFrom',trTo,trFromAll,'mostraTuttiTrasfFrom'],
+   ['tr-to-chips',  trTo,  'setTrasfTo',  trFrom,trToAll,'mostraTuttiTrasfTo']].forEach(function(c){
+    const el=document.getElementById(c[0]); if(!el)return;
+    const sel=db.assets.find(a=>a.id===c[1]);
+    // se il conto selezionato è fuori dalla lista corta (tipico dopo Inverti su
+    // un acquisto di titoli) la griglia si apre già espansa: altrimenti la sua
+    // chip non esisterebbe e sembrerebbe deselezionato
+    const espansa=c[4] || (sel && !TIPI_PAGAMENTO.includes(sel.tipo));
+    const base=espansa?trAssetOrdinati():db.assets.filter(a=>TIPI_PAGAMENTO.includes(a.tipo));
+    const nascosti=db.assets.length-base.length;
+    el.innerHTML=base.map(function(a){
+      // l'asset già scelto dall'altra parte si disattiva: l'errore si vede prima
+      // di commetterlo, invece di scoprirlo dall'alert al salvataggio
+      const off=a.id===c[3];
+      return `<button type="button" class="mv-chip${a.id===c[1]?' sel':''}${off?' off':''}"${off?' disabled':''} onclick="${c[2]}('${a.id}')">${esc(a.nome)}</button>`;
+    }).join('')
+    +(nascosti>0?`<button type="button" class="mv-chip viag-add" onclick="${c[5]}()">+ Altri ${nascosti}</button>`:'');
+  });
+}
+function mostraTuttiTrasfFrom(){ trFromAll=true; renderTrasfChips(); }
+function mostraTuttiTrasfTo(){ trToAll=true; renderTrasfChips(); }
+function setTrasfFrom(id){ if(id===trTo)return; trFrom=id; renderTrasfChips(); updTrasfPreview(); }
+function setTrasfTo(id){ if(id===trFrom)return; trTo=id; renderTrasfChips(); updTrasfPreview(); }
+function invertiTrasf(){ const t=trFrom; trFrom=trTo; trTo=t; renderTrasfChips(); updTrasfPreview(); }
+function setTrasfOggi(){ document.getElementById('tr-data').value=today(); syncTrasfTodayBtn(); }
+function syncTrasfTodayBtn(){
+  const el=document.getElementById('tr-data'); if(!el)return;
+  const isToday=el.value===today();
+  document.getElementById('tr-today-btn').classList.toggle('sel',isToday);
+  el.classList.toggle('sel',!isToday);
+}
+document.getElementById('tr-data')?.addEventListener('change',syncTrasfTodayBtn);
 function openTrasf(){
+  trFrom=''; trTo=''; trFromAll=false; trToAll=false;
   document.getElementById('tr-data').value=today();
   document.getElementById('tr-desc').value='';
   document.getElementById('tr-imp').value='';
   document.getElementById('tr-preview').style.display='none';
-  const opts='<option value="">— seleziona —</option>'+db.assets.map(a=>`<option value="${a.id}">${esc(a.nome)} (${fEUR(a.eur)})</option>`).join('');
-  document.getElementById('tr-from').innerHTML=opts;
-  document.getElementById('tr-to').innerHTML=opts;
-  document.getElementById('tr-from').onchange=updTrasfPreview;
-  document.getElementById('tr-to').onchange=updTrasfPreview;
+  renderTrasfChips();
+  syncTrasfTodayBtn();
   document.getElementById('mo-trasf').classList.add('open');
 }
 function updTrasfPreview(){
-  const fromId=document.getElementById('tr-from').value;
-  const toId=document.getElementById('tr-to').value;
   const imp=parseFloat(document.getElementById('tr-imp').value)||0;
   const prev=document.getElementById('tr-preview');
-  if(!fromId||!toId||!imp){prev.style.display='none';return;}
-  const from=db.assets.find(a=>a.id===fromId);
-  const to=db.assets.find(a=>a.id===toId);
-  if(!from||!to){prev.style.display='none';return;}
+  const from=db.assets.find(a=>a.id===trFrom);
+  const to=db.assets.find(a=>a.id===trTo);
+  if(!from||!to||!imp){prev.style.display='none';return;}
+  const dopo=from.eur-imp;
   prev.style.display='block';
-  prev.innerHTML=`<div style="margin-bottom:.4rem;color:var(--text);font-weight:500">Riepilogo trasferimento</div>
-    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-      <div><span style="color:var(--red)">📤 ${esc(from.nome)}</span><br><span style="font-size:.67rem">${fEUR(from.eur)} → ${fEUR(from.eur-imp)}</span></div>
-      <div style="font-size:1.2rem;color:var(--text3)">→</div>
-      <div><span style="color:var(--green)">📥 ${esc(to.nome)}</span><br><span style="font-size:.67rem">${fEUR(to.eur)} → ${fEUR(to.eur+imp)}</span></div>
-    </div>`;
+  prev.innerHTML=`<div class="tr-prev-t">Riepilogo</div>
+    <div class="tr-prev-row">
+      <div class="tr-prev-side">
+        <div class="tr-prev-nome" style="color:var(--red)">📤 ${esc(from.nome)}</div>
+        <div class="tr-prev-val">${fEUR(from.eur)} → <b>${fEUR(dopo)}</b></div>
+      </div>
+      <div class="tr-prev-arrow">→</div>
+      <div class="tr-prev-side">
+        <div class="tr-prev-nome" style="color:var(--green)">📥 ${esc(to.nome)}</div>
+        <div class="tr-prev-val">${fEUR(to.eur)} → <b>${fEUR(to.eur+imp)}</b></div>
+      </div>
+    </div>`
+    // avviso e non blocco: un saldo negativo è quasi sempre un importo sbagliato,
+    // ma esistono casi legittimi e non tocca all'app decidere al posto dell'utente
+    +(dopo<0?`<div class="tr-prev-warn">⚠️ Il saldo di ${esc(from.nome)} andrebbe sotto zero (${fEUR(dopo)}). Puoi comunque procedere.</div>`:'');
 }
 function saveTrasf(){
-  const fromId=document.getElementById('tr-from').value;
-  const toId=document.getElementById('tr-to').value;
+  const fromId=trFrom;
+  const toId=trTo;
   const imp=parseFloat(document.getElementById('tr-imp').value)||0;
   const data=document.getElementById('tr-data').value||today();
   let desc=document.getElementById('tr-desc').value.trim();
