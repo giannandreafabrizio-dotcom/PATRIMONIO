@@ -694,6 +694,40 @@ tbody tr:hover td{background:var(--s2);}
 .pack-out a{color:var(--blue);text-decoration:none;}
 @media(max-width:640px){ .doc-list{grid-template-columns:1fr;} .miss-row{flex-wrap:wrap;} .miss-nome{flex:1 0 100%;} }
 
+/* ── DISDETTA (22/08/2026) ──
+   Il pallino delle scadenze risponde a "ho pagato?". La disdetta è un'altra
+   domanda — "devo ancora poter uscire da questo contratto?" — e per questo ha
+   un segno suo e non un quinto colore del pallino: un solo indicatore che
+   risponde a due domande è lo stesso errore evitato con categoria e viaggio. */
+.disd-tag{display:inline-block;margin-top:.28rem;padding:.22rem .55rem;border-radius:9px;font-size:.7rem;line-height:1.5;}
+.disd-tag.ora{background:rgba(251,146,60,.14);color:var(--orange);border:1px solid rgba(251,146,60,.3);}
+.disd-tag.futura{color:var(--text3);padding-left:0;}
+.disd-tag.fatta{color:var(--text3);padding-left:0;}
+.scad-row.disdetta{border-color:rgba(251,146,60,.45);box-shadow:inset 3px 0 0 var(--orange);}
+.scad-disd{padding:.36rem .7rem;border-radius:11px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.1);color:var(--orange);font-family:'Inter',sans-serif;font-size:.72rem;cursor:pointer;white-space:nowrap;}
+.scad-disd:hover{background:rgba(251,146,60,.18);}
+.disd-row{display:flex;gap:.6rem;align-items:center;}
+.disd-row input{flex:0 0 84px;}
+.disd-row .mv-seg{flex:1;margin-bottom:0;gap:8px;}
+.disd-row .mv-seg-btn{padding:.5rem;font-size:.78rem;}
+.disd-fatta{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.5rem;}
+.disd-fatta button{padding:.4rem .8rem;border-radius:11px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-family:'Inter',sans-serif;font-size:.73rem;cursor:pointer;}
+.disd-fatta button:hover{border-color:var(--border2);color:var(--text);}
+.disd-fatta .ok{color:var(--orange);border-color:rgba(251,146,60,.35);}
+@media(max-width:640px){
+  .disd-row{flex-wrap:wrap;} .disd-row input{flex:1 0 100%;}
+  /* La riga della scadenza era una flex a quattro colonne anche a 390 px: nome,
+     importo e pulsanti si accavallavano già prima di questa modifica, e la
+     targhetta della disdetta lo rendeva evidente. Qui diventa a due piani:
+     sopra pallino + testo, sotto importo e azioni. */
+  .scad-row{flex-wrap:wrap;row-gap:.7rem;gap:.7rem;padding:.85rem .9rem;}
+  .scad-main{flex:1 1 calc(100% - 2rem);}
+  .scad-imp{order:2;flex:1;font-size:.9rem;}
+  .scad-actions{order:3;margin-left:auto;}
+  .scad-meta{font-size:.7rem;}
+  .disd-tag{font-size:.68rem;}
+}
+
 /* ── RICERCA GLOBALE (22/08/2026) ──
    Il lanciatore ha l'aspetto di un campo di ricerca ma è un pulsante: il campo
    vero vive nella finestra, dove c'è lo spazio per i risultati. La colonna del
@@ -896,6 +930,7 @@ tbody tr:hover td{background:var(--s2);}
   <div class="scad-filters">
     <button class="scad-fbtn sel" id="sf-tutte" onclick="setScadFiltro('tutte',this)">Tutte</button>
     <button class="scad-fbtn" id="sf-dapagare" onclick="setScadFiltro('dapagare',this)">Da pagare</button>
+    <button class="scad-fbtn" id="sf-disdetta" style="display:none" onclick="setScadFiltro('disdetta',this)">🚪 Da disdire</button>
     <button class="scad-fbtn" id="sf-pausa" onclick="setScadFiltro('pausa',this)">⏸ In pausa</button>
   </div>
   <div class="scad-list" id="scad-list"></div>
@@ -1425,6 +1460,18 @@ tbody tr:hover td{background:var(--s2);}
     <div class="fg" id="s-ancora-wrap"><label id="s-ancora-lbl">Prossima scadenza</label>
       <input type="date" id="s-ancora">
       <div style="font-size:.67rem;color:var(--text3);margin-top:.3rem" id="s-ancora-hint">Da qui in poi calcolo automaticamente le scadenze successive in base alla cadenza.</div>
+    </div>
+
+    <div class="fg" id="s-disd-wrap"><label>Preavviso per disdire (facoltativo)</label>
+      <div class="disd-row">
+        <input type="number" id="s-disd-n" min="0" step="1" inputmode="numeric" placeholder="0" oninput="aggiornaHintDisdetta()">
+        <div class="mv-seg">
+          <button type="button" class="mv-seg-btn" id="s-disd-g" onclick="setDisdUnita('giorni')">Giorni</button>
+          <button type="button" class="mv-seg-btn" id="s-disd-m" onclick="setDisdUnita('mesi')">Mesi</button>
+        </div>
+      </div>
+      <div style="font-size:.67rem;color:var(--text3);margin-top:.35rem;line-height:1.5" id="s-disd-hint"></div>
+      <div class="disd-fatta" id="s-disd-fatta"></div>
     </div>
 
     <div class="fg"><label>Categoria (per il movimento di spesa)</label><div class="mv-chipgrid" id="s-cat-chips"></div></div>
@@ -4986,6 +5033,7 @@ const CADENZE=[
 ];
 const SCAD_GRACE=30; // giorni entro cui una scadenza è "in scadenza" (giallo)
 let eScad=null, scadCadenza='annuale', scadTipo='fisso', scadCat='', scadAssetId='', scadFiltro='tutte', scadSospesa=false;
+let scadDisdUnita='giorni', scadDisdFatta='';
 let payScadId=null, payDueISO=null, payAssetId='';
 
 function cadMesi(k){ const c=CADENZE.find(x=>x.key===k); return c?c.mesi:12; }
@@ -5042,6 +5090,77 @@ function statoScad(s){
 // L'occorrenza che un "Segna pagato" andrebbe a saldare
 function occorrenzaDaPagare(s){ const st=statoScad(s); return st.refDate; }
 
+// ── DISDETTA (22/08/2026) ──
+// Le Scadenze rispondono a "quando devo pagare". Questa risponde all'altra
+// domanda, quella che costa davvero: "entro quando devo disdire, se non voglio
+// che si rinnovi da solo". È l'unica voce del backlog §9-D che fa risparmiare
+// denaro invece che ordine.
+//
+// ⚠️ SCELTA CENTRALE: `statoScad()` NON è stata toccata. Un quinto stato del
+// pallino avrebbe fatto rispondere un solo indicatore a due domande diverse —
+// lo stesso errore evitato con categoria e viaggio (§5) — e avrebbe obbligato
+// a riscrivere anche la copia `statoScad_()` in `Codice.gs` (§7, §10), con il
+// rischio di regressione su tutta la logica dei pallini. Qui è tutto additivo:
+// una funzione nuova, un segno grafico suo, e il backend non va allineato.
+const DISD_GRACE=30;   // giorni prima del termine entro cui si comincia ad avvisare
+// ⚠️ Sotto i sei mesi di cadenza la data si mostra ma NON si suona l'allarme.
+// L'ha imposto un test: un mensile con 30 giorni di preavviso ha il termine
+// sempre a ridosso, quindi sarebbe rimasto arancione per sempre — e un avviso
+// sempre acceso è un avviso che si impara a ignorare (stessa ragione per cui il
+// riquadro "pagamenti senza ricevuta" guarda solo le scadenze). Il criterio è di
+// merito, non estetico: dimenticare la disdetta di un annuale costa un anno di
+// contratto, dimenticare quella di un mensile costa un mese e lo si può disdire
+// il mese dopo. Una tantum è inclusa: lì il termine è definitivo.
+function disdAvvisa(s){ const m=cadMesi(s.cadenza); return m===0 || m>=6; }
+
+function addDaysISO(iso,n){
+  const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// Preavviso in mesi e non solo in giorni perché i contratti italiani sono scritti
+// così ("disdetta almeno tre mesi prima"), e convertirlo a mano — 90 giorni? 92? —
+// è esattamente il conto in cui si sbaglia.
+function termineDisdetta(s,occISO){
+  const n=+s.disdettaN||0;
+  if(!n||!occISO) return null;
+  return s.disdettaUnita==='mesi' ? addMonthsISO(occISO,-n) : addDaysISO(occISO,-n);
+}
+function statoDisdetta(s){
+  if(!s || s.sospesa) return null;              // in pausa = silenzio totale, come per tutto il resto
+  if(!(+s.disdettaN||0)) return null;           // preavviso non impostato: la feature non esiste per questa scadenza
+  if(s.disdettaFatta) return {stato:'fatta',data:s.disdettaFatta,termine:null,giorni:null,rinnovo:null};
+  const t=today();
+  const avanti=Math.max(cadMesi(s.cadenza)*2,24)+(s.disdettaUnita==='mesi'?(+s.disdettaN||0):1);
+  const occ=occorrenzeScad(s,t,addMonthsISO(t,avanti));
+  // Si cerca il PRIMO termine ancora utile. Se quello di questo ciclo è già
+  // passato la domanda giusta non è "sei in ritardo" — su un abbonamento mensile
+  // lo saresti quasi sempre — ma "quand'è la prossima volta che puoi farlo".
+  for(let i=0;i<occ.length;i++){
+    const term=termineDisdetta(s,occ[i]);
+    if(term && term>=t){
+      const gg=daysBetween(t,term);
+      const suona = disdAvvisa(s) && gg<=DISD_GRACE;
+      return {stato: suona?'ora':'futura', termine:term, giorni:gg, rinnovo:occ[i], avvisa:disdAvvisa(s)};
+    }
+  }
+  return {stato:'nessuna',termine:null,giorni:null,rinnovo:occ.length?occ[0]:null};
+}
+function disdTag(sd){
+  if(!sd) return '';
+  if(sd.stato==='fatta')  return `<div class="disd-tag fatta">🚪&nbsp; Disdetta inviata il ${fScadDate(sd.data)}</div>`;
+  if(sd.stato==='ora')    return `<div class="disd-tag ora">🚪&nbsp; Disdici entro il <b>${fScadDate(sd.termine)}</b> · ${sd.giorni===0?'oggi è l’ultimo giorno':`tra ${sd.giorni}g`} · poi si rinnova il ${fScadDate(sd.rinnovo)}</div>`;
+  if(sd.stato==='futura') return `<div class="disd-tag futura">🚪&nbsp; Puoi disdire entro il ${fScadDate(sd.termine)}</div>`;
+  return '';
+}
+// Un tap dalla riga: è il gesto che serve nel momento in cui la disdetta la mandi
+// davvero. La modale resta per correggere.
+function segnaDisdetta(id){
+  const s=(db.scadenze||[]).find(x=>x.id===id); if(!s) return;
+  s.disdettaFatta=today();
+  save(); renderScad(); renderDash();
+  toast('🚪 Disdetta segnata: '+s.nome);
+}
+
 const SCAD_ORDER={rosso:0,giallo:1,grigio:2,verde:3,pausa:4};
 function metaScad(s,st){
   const cad=cadLabel(s.cadenza);
@@ -5054,45 +5173,70 @@ function metaScad(s,st){
 
 function renderScad(){
   const list=document.getElementById('scad-list'); if(!list) return;
-  const arr=(db.scadenze||[]).map(s=>({s,st:statoScad(s)}));
+  const arr=(db.scadenze||[]).map(s=>({s,st:statoScad(s),sd:statoDisdetta(s)}));
   // riepilogo
   const nR=arr.filter(x=>x.st.stato==='rosso').length;
   const nG=arr.filter(x=>x.st.stato==='giallo').length;
   const nOk=arr.filter(x=>x.st.stato==='verde').length;
   const nP=arr.filter(x=>x.st.stato==='pausa').length;
+  const nD=arr.filter(x=>x.sd&&x.sd.stato==='ora').length;
+  // il filtro compare solo se serve, come il quarto filtro Viaggio in Movimenti
+  const fd=document.getElementById('sf-disdetta');
+  if(fd){
+    fd.style.display=nD?'inline-flex':'none';
+    fd.textContent=`🚪 Da disdire${nD>1?' ('+nD+')':''}`;
+    if(!nD && scadFiltro==='disdetta'){ scadFiltro='tutte'; document.querySelectorAll('.scad-fbtn').forEach(b=>b.classList.remove('sel')); document.getElementById('sf-tutte')?.classList.add('sel'); }
+  }
   const sum=document.getElementById('scad-summary');
   if(sum){
     sum.innerHTML = arr.length? `
       <div class="scad-sum-chip"><span class="scad-dot rosso"></span><b>${nR}</b> scadute</div>
       <div class="scad-sum-chip"><span class="scad-dot giallo"></span><b>${nG}</b> in scadenza</div>
       <div class="scad-sum-chip"><span class="scad-dot verde"></span><b>${nOk}</b> in regola</div>`
-      + (nP? `<div class="scad-sum-chip"><span class="scad-dot pausa"></span><b>${nP}</b> in pausa</div>`:'') : '';
+      + (nP? `<div class="scad-sum-chip"><span class="scad-dot pausa"></span><b>${nP}</b> in pausa</div>`:'')
+      + (nD? `<div class="scad-sum-chip" style="border-color:rgba(251,146,60,.35)">🚪 <b>${nD}</b> da disdire</div>`:'') : '';
   }
   // ordinamento + filtro
+  // Le disdette da mandare vanno IN CIMA, sopra anche le scadute. L'ordine per
+  // pallino le seppelliva in mezzo alle grigie — il rinnovo è lontano, quindi il
+  // pallino è tranquillo — proprio mentre sono l'unica riga su cui bisogna agire
+  // adesso. Il criterio è lo stesso della riga in Dashboard: una bolletta pagata
+  // in ritardo costa una mora, un contratto rinnovato per non averlo disdetto in
+  // tempo costa un ciclo intero.
+  const urgDisd=x=>(x.sd&&x.sd.stato==='ora')?0:1;
   let vis=arr.slice().sort((a,b)=>{
+    const d=urgDisd(a)-urgDisd(b); if(d) return d;
+    if(!urgDisd(a)) return (a.sd.termine||'9999')<(b.sd.termine||'9999')?-1:1;
     const o=SCAD_ORDER[a.st.stato]-SCAD_ORDER[b.st.stato]; if(o) return o;
     return (a.st.refDate||'9999')<(b.st.refDate||'9999')?-1:1;
   });
   if(scadFiltro==='dapagare') vis=vis.filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo');
   if(scadFiltro==='pausa') vis=vis.filter(x=>x.st.stato==='pausa');
+  if(scadFiltro==='disdetta') vis=vis.filter(x=>x.sd&&x.sd.stato==='ora');
   if(!arr.length){ list.innerHTML=`<div class="scad-empty">Nessuna scadenza registrata.<br>Aggiungi bollo, assicurazioni, bollette, rate, tasse fisse o il 730 con “+ Aggiungi”.</div>`; return; }
   if(!vis.length && scadFiltro==='pausa'){ list.innerHTML=`<div class="scad-empty">Nessuna scadenza in pausa.<br>Metti in pausa ciò che possiedi ma non è attivo (es. moto ferma) per tenerlo sott’occhio senza solleciti.</div>`; return; }
+  if(!vis.length && scadFiltro==='disdetta'){ list.innerHTML=`<div class="scad-empty">Nessuna disdetta da mandare adesso.<br>Qui compaiono le scadenze il cui termine per disdire cade entro ${DISD_GRACE} giorni.</div>`; return; }
   if(!vis.length){ list.innerHTML=`<div class="scad-empty">Tutto in regola: nessuna scadenza da pagare al momento. 🎉</div>`; return; }
-  list.innerHTML=vis.map(({s,st})=>{
+  list.innerHTML=vis.map(({s,st,sd})=>{
     const imp = (s.importo? (s.importoTipo==='variabile'?'~':'')+fImp(s.importo) : (s.importoTipo==='variabile'?'variabile':'—'));
     const payBtn = st.stato==='pausa'
       ? `<button class="scad-pay attiva" onclick="attivaScad('${s.id}')">▶ Attiva</button>`
       : st.stato==='verde'
       ? `<span class="scad-pay done">✓ Pagato</span>`
       : `<button class="scad-pay" onclick="segnaPagato('${s.id}')">Segna pagato</button>`;
-    return `<div class="scad-row${st.stato==='pausa'?' pausa':''}">
+    // il pulsante di disdetta compare SOLO quando serve davvero: un'azione sempre
+    // presente su ogni riga sarebbe rumore, e per giunta su un gesto irreversibile
+    const disdBtn = (sd&&sd.stato==='ora')
+      ? `<button class="scad-disd" onclick="segnaDisdetta('${s.id}')">🚪 Disdetta fatta</button>` : '';
+    return `<div class="scad-row${st.stato==='pausa'?' pausa':''}${(sd&&sd.stato==='ora')?' disdetta':''}">
       <span class="scad-dot ${st.stato}"></span>
       <div class="scad-main">
         <div class="scad-nome">${esc(s.nome)}</div>
         <div class="scad-meta">${metaScad(s,st)}</div>
+        ${disdTag(sd)}
       </div>
       <div class="scad-imp">${imp}</div>
-      <div class="scad-actions">${payBtn}<button class="scad-edit" onclick="openScad('${s.id}')" aria-label="Modifica">✎</button></div>
+      <div class="scad-actions">${disdBtn}${payBtn}<button class="scad-edit" onclick="openScad('${s.id}')" aria-label="Modifica">✎</button></div>
     </div>`;
   }).join('');
 }
@@ -5113,18 +5257,25 @@ function renderDashScad(){
   if(!arr.length){ el.innerHTML=''; return; }
   const nR=arr.filter(x=>x.st.stato==='rosso').length;
   const nG=arr.filter(x=>x.st.stato==='giallo').length;
+  const nD=arr.filter(x=>{const d=statoDisdetta(x.s); return d&&d.stato==='ora';}).length;
   // prossima cosa da fare: prima le rosse, poi gialle, poi la scadenza futura più vicina
   const urg=arr.filter(x=>x.st.stato==='rosso'||x.st.stato==='giallo')
     .sort((a,b)=>(a.st.refDate||'9999')<(b.st.refDate||'9999')?-1:1);
   const nextInfo=arr.filter(x=>x.st.prossima).sort((a,b)=>a.st.prossima<b.st.prossima?-1:1)[0];
+  const disd=arr.map(x=>({s:x.s,d:statoDisdetta(x.s)})).filter(x=>x.d&&x.d.stato==='ora')
+    .sort((a,b)=>a.d.termine<b.d.termine?-1:1);
   let line='';
-  if(urg.length){ const u=urg[0]; line=`<b>${esc(u.s.nome)}</b> — ${u.st.stato==='rosso'?'scaduta il':'scade il'} ${fScadDate(u.st.refDate)}`; }
+  // La disdetta viene prima: una bolletta pagata in ritardo costa una mora, un
+  // contratto rinnovato per non averlo disdetto in tempo costa un anno intero.
+  if(disd.length){ const u=disd[0]; line=`🚪 <b>${esc(u.s.nome)}</b> — disdici entro il ${fScadDate(u.d.termine)}`; }
+  else if(urg.length){ const u=urg[0]; line=`<b>${esc(u.s.nome)}</b> — ${u.st.stato==='rosso'?'scaduta il':'scade il'} ${fScadDate(u.st.refDate)}`; }
   else if(nextInfo){ line=`Prossima: <b>${esc(nextInfo.s.nome)}</b> — ${fScadDate(nextInfo.st.prossima)}`; }
   else line='Tutto in regola 🎉';
   const badges=[];
   if(nR) badges.push(`<span class="dscad-badge" style="color:var(--red)"><span class="scad-dot rosso"></span>${nR}</span>`);
   if(nG) badges.push(`<span class="dscad-badge" style="color:var(--yellow)"><span class="scad-dot giallo"></span>${nG}</span>`);
-  if(!nR&&!nG) badges.push(`<span class="dscad-badge" style="color:var(--green)"><span class="scad-dot verde"></span>ok</span>`);
+  if(nD) badges.push(`<span class="dscad-badge" style="color:var(--orange)">🚪${nD}</span>`);
+  if(!nR&&!nG&&!nD) badges.push(`<span class="dscad-badge" style="color:var(--green)"><span class="scad-dot verde"></span>ok</span>`);
   el.innerHTML=`<button class="dscad" onclick="apriScadenze()">
     <div class="dscad-hd"><span class="dscad-ttl">📅 Scadenze</span><span class="dscad-badges">${badges.join('')}</span></div>
     <div class="dscad-next">${line}</div>
@@ -5148,7 +5299,11 @@ function openScad(id){
   scadAssetId = s?.assetIdDefault||'';
   scadAssetAll = false;
   scadSospesa = !!s?.sospesa;
+  document.getElementById('s-disd-n').value = s?.disdettaN || '';
+  scadDisdUnita = s?.disdettaUnita || 'giorni';
+  scadDisdFatta = s?.disdettaFatta || '';
   renderScadCadChips(); renderScadTipoSeg(); renderScadStatoSeg(); renderScadCatChips(); renderScadAssetChips(); updateScadLabels();
+  renderDisdUnitaSeg(); renderDisdFatta(); aggiornaHintDisdetta();
   renderAtt('s-att','scadenza',scadDocId);
   document.getElementById('mo-scad').classList.add('open');
 }
@@ -5156,7 +5311,7 @@ function renderScadCadChips(){
   document.getElementById('s-cad-chips').innerHTML=CADENZE.map(c=>
     `<button type="button" class="mv-chip${c.key===scadCadenza?' sel':''}" onclick="setScadCadenza('${c.key}')">${esc(c.label)}</button>`).join('');
 }
-function setScadCadenza(k){ scadCadenza=k; renderScadCadChips(); updateScadLabels(); }
+function setScadCadenza(k){ scadCadenza=k; renderScadCadChips(); updateScadLabels(); aggiornaHintDisdetta(); }
 function renderScadTipoSeg(){
   document.getElementById('s-tipo-fisso').classList.toggle('sel',scadTipo==='fisso');
   document.getElementById('s-tipo-fisso').classList.toggle('ent',scadTipo==='fisso');
@@ -5170,13 +5325,48 @@ function renderScadStatoSeg(){
   a.classList.toggle('sel',!scadSospesa); a.classList.toggle('att',!scadSospesa);
   p.classList.toggle('sel',scadSospesa);  p.classList.toggle('pau',scadSospesa);
 }
+function renderDisdUnitaSeg(){
+  const g=document.getElementById('s-disd-g'), m=document.getElementById('s-disd-m');
+  if(!g||!m) return;
+  g.classList.toggle('sel',scadDisdUnita==='giorni'); g.classList.toggle('att',scadDisdUnita==='giorni');
+  m.classList.toggle('sel',scadDisdUnita==='mesi');   m.classList.toggle('att',scadDisdUnita==='mesi');
+}
+function setDisdUnita(u){ scadDisdUnita=u; renderDisdUnitaSeg(); aggiornaHintDisdetta(); }
+function renderDisdFatta(){
+  const el=document.getElementById('s-disd-fatta'); if(!el) return;
+  const n=Math.max(0,parseInt(document.getElementById('s-disd-n').value,10)||0);
+  if(!n){ el.innerHTML=''; return; }
+  el.innerHTML = scadDisdFatta
+    ? `<span class="disd-tag fatta" style="margin:0">🚪 Disdetta inviata il ${fScadDate(scadDisdFatta)}</span><button type="button" onclick="setDisdFatta('')">Annulla</button>`
+    : `<button type="button" class="ok" onclick="setDisdFatta(today())">🚪 Segna disdetta inviata oggi</button>`;
+}
+function setDisdFatta(v){ scadDisdFatta=v; renderDisdFatta(); aggiornaHintDisdetta(); }
+// L'aiuto si aggiorna MENTRE si scrive, e mostra la data calcolata invece della
+// regola: "tre mesi prima" non dice niente, "entro il 05/09/2026" sì.
+function aggiornaHintDisdetta(){
+  const el=document.getElementById('s-disd-hint'); if(!el) return;
+  renderDisdFatta();
+  const n=Math.max(0,parseInt(document.getElementById('s-disd-n').value,10)||0);
+  if(!n){ el.textContent='Quanto preavviso chiede il contratto per disdire. Lascia vuoto se non si disdice (bollo, tasse, revisione).'; return; }
+  const ancora=document.getElementById('s-ancora').value;
+  if(!ancora){ el.textContent='Imposta la data della prossima scadenza e ti calcolo il termine esatto.'; return; }
+  const finto={cadenza:scadCadenza,ancora,disdettaN:n,disdettaUnita:scadDisdUnita};
+  const term=termineDisdetta(finto,ancora);
+  const gg=daysBetween(today(),term);
+  el.innerHTML = `Con rinnovo il <b>${fScadDate(ancora)}</b>, l’ultimo giorno utile per disdire è il <b>${fScadDate(term)}</b>`
+    + (gg<0?` — già passato per questo ciclo: guarderò al prossimo.`:` — fra ${gg} giorni.`)
+    + (disdAvvisa(finto)
+        ? `<br>Ti avviso a partire da ${DISD_GRACE} giorni prima.`
+        : `<br>Su una cadenza ${cadLabel(scadCadenza).toLowerCase()} la data resta scritta ma <b>non ti avviso</b>: puoi disdire al ciclo dopo perdendo poco. L’avviso vale da semestrale in su.`);
+}
 function setScadStato(v){
   const nuovaSosp = (v==='pausa');
   if(nuovaSosp && !scadSospesa) document.getElementById('s-ancora').value=''; // la data si imposta alla riattivazione
   if(!nuovaSosp && scadSospesa && !document.getElementById('s-ancora').value) document.getElementById('s-ancora').value=today();
   scadSospesa=nuovaSosp;
-  renderScadStatoSeg(); updateScadLabels();
+  renderScadStatoSeg(); updateScadLabels(); aggiornaHintDisdetta();
 }
+document.getElementById('s-ancora')?.addEventListener('change',aggiornaHintDisdetta);
 function updateScadLabels(){
   const lbl=document.getElementById('s-ancora-lbl');
   if(scadCadenza==='una-tantum') lbl.textContent='Data della scadenza';
@@ -5221,13 +5411,16 @@ function saveScad(){
   const ancora=document.getElementById('s-ancora').value;
   if(!ancora && !scadSospesa) return alert('Imposta la data della prossima scadenza, oppure mettila in pausa se non sai ancora quando riattivarla.');
   const importo=parseFloat(document.getElementById('s-imp').value)||0;
+  const disdN=Math.max(0,parseInt(document.getElementById('s-disd-n').value,10)||0);
   if(eScad){
     const s=db.scadenze.find(x=>x.id===eScad);
     s.nome=nome; s.cadenza=scadCadenza; s.importoTipo=scadTipo; s.importo=importo;
     s.ancora=scadSospesa?'':ancora; s.cat=scadCat; s.assetIdDefault=scadAssetId; s.sospesa=scadSospesa;
+    s.disdettaN=disdN; s.disdettaUnita=scadDisdUnita; s.disdettaFatta=disdN?scadDisdFatta:'';
   }else{
     db.scadenze.push({id:scadDocId||uid(),nome,cadenza:scadCadenza,importoTipo:scadTipo,importo,
       ancora:scadSospesa?'':ancora,cat:scadCat,assetIdDefault:scadAssetId,sospesa:scadSospesa,
+      disdettaN:disdN,disdettaUnita:scadDisdUnita,disdettaFatta:disdN?scadDisdFatta:'',
       creato:today(),pagamenti:[]});
   }
   save(); closeM('mo-scad'); renderScad(); renderDash();
